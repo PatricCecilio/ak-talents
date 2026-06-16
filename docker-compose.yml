@@ -1,0 +1,21 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: ak-talent-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: aktalent
+      POSTGRES_USER: aktalent
+      POSTGRES_PASSWORD: aktalent
+    ports:
+      - "5432:5432"
+    volumes:
+      - ak_talent_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U aktalent -d aktalent"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  ak_talent_postgres_data:
