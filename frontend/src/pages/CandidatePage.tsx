@@ -196,7 +196,7 @@ export function CandidatePage() {
         <PageHeader
           eyebrow="Portal do candidato"
           title="Vagas abertas para voce."
-          description={`${user?.name ? `${user.name}, ` : ''}encontre oportunidades, melhore seu perfil e envie candidaturas pela AK Talents.`}
+          description={`${user?.name ? `${user.name}, ` : ''}encontre oportunidades, melhore seu perfil e envie candidaturas pela AK Talent.`}
           action={
             <Button
             type="button"

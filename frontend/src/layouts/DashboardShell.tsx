@@ -35,7 +35,7 @@ export function DashboardShell({ active, children }: DashboardShellProps) {
         <div className="grid gap-6 lg:grid-cols-[260px_1fr]">
           <aside className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm lg:sticky lg:top-28 lg:h-[calc(100svh-8rem)]">
             <div className="rounded-lg bg-ink-950 p-4 text-white">
-              <p className="text-xs font-black uppercase tracking-[0.2em] text-gold-400">AK Talents</p>
+              <p className="text-xs font-black uppercase tracking-[0.2em] text-gold-400">AK Talent</p>
               <p className="mt-3 text-lg font-black">{user?.name || 'Dashboard'}</p>
               <p className="mt-1 text-sm capitalize text-slate-300">{active}</p>
             </div>

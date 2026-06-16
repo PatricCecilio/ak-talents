@@ -8,7 +8,7 @@ export function NotFoundPage() {
         <p className="text-sm font-black uppercase tracking-[0.22em] text-brand-700">404</p>
         <h1 className="mt-4 text-4xl font-black text-ink-950">Pagina nao encontrada</h1>
         <p className="mx-auto mt-4 max-w-xl text-lg leading-8 text-ink-600">
-          A rota solicitada nao existe na Fase 1 da AK Talents.
+          A rota solicitada nao existe na Fase 1 da AK Talent.
         </p>
         <div className="mt-8">
           <ButtonLink to="/">Voltar para inicio</ButtonLink>

@@ -109,7 +109,7 @@ export function AdminPage() {
     <DashboardShell active="admin">
         <PageHeader
           eyebrow="Painel Admin"
-          title="Controle interno AK Talents."
+          title="Controle interno AK Talent."
           description="Gerencie empresas, vagas, candidatos, usuarios e candidaturas da plataforma."
           action={
             <Button

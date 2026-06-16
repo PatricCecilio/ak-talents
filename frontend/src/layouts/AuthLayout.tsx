@@ -12,7 +12,7 @@ export function AuthLayout({ title, subtitle, children }: AuthLayoutProps) {
       <Container>
         <div className="mx-auto grid max-w-5xl overflow-hidden rounded-lg border border-slate-200 bg-white shadow-xl shadow-slate-200/70 lg:grid-cols-[0.9fr_1.1fr]">
           <aside className="bg-ink-950 p-8 text-white sm:p-10">
-            <p className="text-sm font-black uppercase tracking-[0.22em] text-gold-400">AK Talents</p>
+            <p className="text-sm font-black uppercase tracking-[0.22em] text-gold-400">AK Talent</p>
             <h1 className="mt-6 text-3xl font-black leading-tight sm:text-4xl">{title}</h1>
             <p className="mt-4 text-base leading-7 text-slate-300">{subtitle}</p>
 

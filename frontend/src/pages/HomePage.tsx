@@ -1,7 +1,10 @@
 import { useState } from 'react'
 import heroImage from '../assets/ak-talent-hero.png'
 import { Container } from '../components/Container'
+import { Alert } from '../components/ui/Alert'
 import { Button } from '../components/ui/Button'
+
+const FORMSUBMIT_ENDPOINT = 'https://formsubmit.co/ajax/contato@aktalent.com.br'
 
 const problems = [
   'Muitos currículos para analisar',
@@ -33,21 +36,42 @@ const formInitialState = {
 }
 
 type WaitlistForm = typeof formInitialState
+type SubmitStatus = 'idle' | 'sending' | 'success' | 'error'
 
 export function HomePage() {
   const [form, setForm] = useState<WaitlistForm>(formInitialState)
-  const [submitted, setSubmitted] = useState(false)
+  const [status, setStatus] = useState<SubmitStatus>('idle')
 
   function updateForm(field: keyof WaitlistForm, value: string) {
     setForm((current) => ({ ...current, [field]: value }))
   }
 
-  function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
-    const entries = JSON.parse(localStorage.getItem('ak_talents_waitlist') || '[]') as WaitlistForm[]
-    localStorage.setItem('ak_talents_waitlist', JSON.stringify([...entries, form]))
-    setSubmitted(true)
-    setForm(formInitialState)
+    setStatus('sending')
+
+    try {
+      const response = await fetch(FORMSUBMIT_ENDPOINT, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+        body: JSON.stringify({
+          _subject: 'Novo contato pela landing page - AK Talent',
+          Nome: form.name,
+          Empresa: form.company,
+          'E-mail': form.email,
+          WhatsApp: form.whatsapp,
+          Tipo: form.type,
+          Mensagem: form.message,
+        }),
+      })
+
+      if (!response.ok) throw new Error('Falha ao enviar formulário')
+
+      setStatus('success')
+      setForm(formInitialState)
+    } catch {
+      setStatus('error')
+    }
   }
 
   return (
@@ -57,13 +81,13 @@ export function HomePage() {
           <div>
             <p className="text-sm font-black uppercase tracking-[0.22em] text-gold-500">Recrutamento Inteligente com IA</p>
             <h1 className="mt-5 max-w-4xl text-5xl font-black leading-[1.02] text-ink-950 sm:text-6xl lg:text-7xl">
-              AK Talents
+              AK Talent
             </h1>
             <p className="mt-6 max-w-2xl text-xl font-bold leading-8 text-ink-800">
               Recrutamento inteligente com IA para empresas e profissionais.
             </p>
             <p className="mt-4 max-w-2xl text-lg leading-8 text-ink-600">
-              A AK Talents utiliza inteligência artificial para ajudar empresas a encontrar profissionais qualificados e
+              A AK Talent utiliza inteligência artificial para ajudar empresas a encontrar profissionais qualificados e
               candidatos a encontrarem melhores oportunidades.
             </p>
 
@@ -166,7 +190,7 @@ export function HomePage() {
             <p className="text-sm font-black uppercase tracking-[0.22em] text-gold-500">Sobre</p>
             <h2 className="mt-3 text-3xl font-black text-ink-950 sm:text-4xl">Tecnologia para aproximar empresas e talentos.</h2>
             <p className="mt-5 leading-7 text-ink-600">
-              A AK Talents nasce para tornar o recrutamento mais inteligente, prático e humano, combinando dados,
+              A AK Talent nasce para tornar o recrutamento mais inteligente, prático e humano, combinando dados,
               automação e análise assistida por inteligência artificial.
             </p>
           </div>
@@ -206,10 +230,13 @@ export function HomePage() {
             <p id="lista-espera" className="text-sm font-black uppercase tracking-[0.22em] text-gold-500">
               Lista de espera
             </p>
-            <h2 className="mt-3 text-3xl font-black text-ink-950 sm:text-4xl">Fale com a AK Talents</h2>
+            <h2 className="mt-3 text-3xl font-black text-ink-950 sm:text-4xl">Fale com a AK Talent</h2>
             <p className="mt-5 leading-7 text-ink-600">
-              Conte um pouco sobre sua empresa ou perfil. Por enquanto, a inscrição fica salva neste navegador e a página
-              funciona sem backend.
+              Conte um pouco sobre sua empresa ou perfil. Sua mensagem é enviada diretamente para nossa equipe em{' '}
+              <a href="mailto:contato@aktalent.com.br" className="font-bold text-brand-700">
+                contato@aktalent.com.br
+              </a>
+              .
             </p>
           </div>
 
@@ -261,7 +288,7 @@ export function HomePage() {
                 className="mt-2 h-12 w-full rounded-lg border border-slate-300 px-4 text-ink-950 outline-none transition focus:border-brand-600"
               >
                 <option>Empresa</option>
-                <option>Profissional</option>
+                <option>Candidato</option>
               </select>
             </label>
             <label className="text-sm font-bold text-ink-800">
@@ -273,8 +300,8 @@ export function HomePage() {
               />
             </label>
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-              <Button type="submit" className="sm:w-auto">
-                Entrar na lista de espera
+              <Button type="submit" isLoading={status === 'sending'} className="sm:w-auto">
+                {status === 'sending' ? 'Enviando...' : 'Entrar na lista de espera'}
               </Button>
               <a
                 href="#contato"
@@ -283,10 +310,13 @@ export function HomePage() {
                 Falar com especialista
               </a>
             </div>
-            {submitted ? (
-              <p className="rounded-lg bg-emerald-50 px-4 py-3 text-sm font-bold text-emerald-700">
-                Inscrição recebida com sucesso. Obrigado pelo interesse na AK Talents.
-              </p>
+            {status === 'success' ? (
+              <Alert tone="success">Mensagem enviada com sucesso. Obrigado pelo interesse na AK Talent.</Alert>
+            ) : null}
+            {status === 'error' ? (
+              <Alert tone="error">
+                Não foi possível enviar sua mensagem agora. Tente novamente ou escreva para contato@aktalent.com.br.
+              </Alert>
             ) : null}
           </form>
         </Container>

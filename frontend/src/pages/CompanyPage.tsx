@@ -270,7 +270,7 @@ export function CompanyPage() {
                       id="company_name"
                       label="Nome da empresa"
                       value={companyProfileValues.company_name}
-                      placeholder="AK Talents"
+                      placeholder="AK Talent"
                       onChange={(value) => updateCompanyProfileField('company_name', value)}
                     />
                     <FormField
