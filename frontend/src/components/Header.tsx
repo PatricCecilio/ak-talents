@@ -1,3 +1,4 @@
+import { AppIntelliButton } from './AppIntelliButton'
 import { Container } from './Container'
 import { Logo } from './Logo'
 
@@ -12,27 +13,25 @@ const navLinks = [
 export function Header() {
   return (
     <header className="fixed inset-x-0 top-0 z-40 border-b border-slate-200/80 bg-white/95 shadow-sm backdrop-blur">
-      <Container className="flex h-20 items-center justify-between gap-3">
+      <Container className="flex h-24 items-center justify-between gap-6">
         <Logo />
 
-        <nav className="hidden items-center gap-5 lg:flex" aria-label="Principal">
+        <nav className="hidden items-center gap-7 lg:flex" aria-label="Principal">
           {navLinks.map((link) => (
             <a
               key={link.href}
               href={link.href}
-              className="text-sm font-semibold text-ink-600 transition hover:text-brand-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold-500"
+              className="text-[15px] font-semibold text-ink-700 transition hover:text-brand-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold-500"
             >
               {link.label}
             </a>
           ))}
         </nav>
 
-        <a
-          href="#conversa"
-          className="hidden min-h-11 shrink-0 items-center justify-center rounded-lg bg-ink-950 px-4 text-sm font-bold text-white shadow-sm transition hover:bg-ink-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold-500 sm:inline-flex"
-        >
-          Falar com a AK Talent
-        </a>
+        <AppIntelliButton
+          cta="headerContact"
+          className="hidden min-h-12 shrink-0 items-center justify-center rounded-lg bg-ink-950 px-5 text-sm font-black [color:white] shadow-sm transition hover:bg-ink-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold-500 sm:inline-flex"
+        />
       </Container>
     </header>
   )
