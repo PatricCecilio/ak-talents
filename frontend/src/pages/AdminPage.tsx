@@ -10,7 +10,9 @@ import {
   getAdminCompanies,
   getAdminJobs,
   getAdminUsers,
+  getJobScreeningQuestions,
   hideJob,
+  updateJobScreeningQuestions,
 } from '../services/adminService'
 import { logout } from '../services/authService'
 import type { AdminApplication, AdminCandidate, AdminCompany, AdminJob, AdminUser } from '../types/user'
@@ -27,6 +29,8 @@ export function AdminPage() {
   const [applications, setApplications] = useState<AdminApplication[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [actionId, setActionId] = useState<string | null>(null)
+  const [screeningConfigByJobId, setScreeningConfigByJobId] = useState<Record<number, string>>({})
+  const [openScreeningJobId, setOpenScreeningJobId] = useState<number | null>(null)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
 
@@ -57,6 +61,52 @@ export function AdminPage() {
       setSuccess(message)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Nao foi possivel executar a acao.')
+    } finally {
+      setActionId(null)
+    }
+  }
+
+  async function loadScreeningConfig(jobId: number) {
+    setActionId(`screening-load-${jobId}`)
+    setError('')
+    try {
+      const questions = await getJobScreeningQuestions(jobId)
+      setScreeningConfigByJobId((currentValues) => ({
+        ...currentValues,
+        [jobId]: JSON.stringify(
+          questions.map((question) => {
+            const editableQuestion: Record<string, unknown> = { ...question }
+            delete editableQuestion.id
+            delete editableQuestion.job_id
+            delete editableQuestion.created_at
+            return editableQuestion
+          }),
+          null,
+          2,
+        ),
+      }))
+      setOpenScreeningJobId(jobId)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Nao foi possivel carregar a triagem.')
+    } finally {
+      setActionId(null)
+    }
+  }
+
+  async function saveScreeningConfig(jobId: number) {
+    setActionId(`screening-save-${jobId}`)
+    setError('')
+    setSuccess('')
+    try {
+      const parsed = JSON.parse(screeningConfigByJobId[jobId] || '[]') as unknown
+      if (!Array.isArray(parsed)) {
+        throw new Error('A configuracao precisa ser uma lista JSON de perguntas.')
+      }
+      await updateJobScreeningQuestions(jobId, parsed)
+      setSuccess('Triagem salva para a vaga.')
+      await refreshAdminData()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Nao foi possivel salvar a triagem.')
     } finally {
       setActionId(null)
     }
@@ -225,8 +275,46 @@ export function AdminPage() {
                       >
                         Ocultar
                       </Button>
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        isLoading={actionId === `screening-load-${job.id}`}
+                        onClick={() => void loadScreeningConfig(job.id)}
+                      >
+                        Triagem
+                      </Button>
                     </div>
                   </div>
+                  {openScreeningJobId === job.id ? (
+                    <div className="mt-5 grid gap-3 border-t border-slate-200 pt-5">
+                      <p className="text-sm font-bold text-ink-700">
+                        Configure a triagem como uma lista JSON de perguntas usando YES_NO, SINGLE_SELECT ou TEXT.
+                      </p>
+                      <textarea
+                        value={screeningConfigByJobId[job.id] || '[]'}
+                        onChange={(event) =>
+                          setScreeningConfigByJobId((currentValues) => ({
+                            ...currentValues,
+                            [job.id]: event.target.value,
+                          }))
+                        }
+                        rows={12}
+                        className="w-full rounded-lg border border-slate-300 bg-white px-4 py-3 font-mono text-sm text-ink-950 outline-none transition focus:border-gold-500 focus:ring-4 focus:ring-amber-100"
+                      />
+                      <div className="flex flex-wrap gap-2">
+                        <Button
+                          type="button"
+                          isLoading={actionId === `screening-save-${job.id}`}
+                          onClick={() => void saveScreeningConfig(job.id)}
+                        >
+                          Salvar triagem
+                        </Button>
+                        <Button type="button" variant="ghost" onClick={() => setOpenScreeningJobId(null)}>
+                          Fechar
+                        </Button>
+                      </div>
+                    </div>
+                  ) : null}
                 </article>
               ))}
             </div>
@@ -239,7 +327,11 @@ export function AdminPage() {
               {candidates.map((candidate) => (
                 <article key={candidate.id} className="rounded-lg border border-slate-200 p-4">
                   <h3 className="font-black text-ink-950">{candidate.name}</h3>
-                  <p className="mt-1 text-sm text-ink-600">{candidate.email}</p>
+                  <p className="mt-1 text-sm text-ink-600">{candidate.email || 'Email nao informado'}</p>
+                  <p className="mt-1 text-sm text-ink-600">{candidate.phone || 'Telefone nao informado'}</p>
+                  <p className="mt-1 text-sm text-ink-600">
+                    {[candidate.city, candidate.neighborhood].filter(Boolean).join(' / ') || 'Localizacao nao informada'}
+                  </p>
                   <p className="mt-1 text-sm text-ink-600">{candidate.desired_role || 'Cargo nao informado'}</p>
                 </article>
               ))}
@@ -254,7 +346,16 @@ export function AdminPage() {
                 <article key={application.id} className="rounded-lg border border-slate-200 p-4">
                   <h3 className="font-black text-ink-950">{application.candidate_name}</h3>
                   <p className="mt-1 text-sm text-ink-600">{application.job_title}</p>
+                  <p className="mt-1 text-sm text-ink-600">{application.candidate_phone || 'Telefone nao informado'}</p>
+                  <p className="mt-1 text-sm text-ink-600">
+                    {[application.candidate_city, application.candidate_neighborhood].filter(Boolean).join(' / ') ||
+                      'Localizacao nao informada'}
+                  </p>
                   <p className="mt-1 text-sm font-bold text-ink-700">{application.status}</p>
+                  <p className="mt-1 text-sm font-bold text-brand-700">
+                    Triagem: {application.screening_status}
+                    {application.screening_score !== null ? ` (${application.screening_score})` : ''}
+                  </p>
                 </article>
               ))}
             </div>

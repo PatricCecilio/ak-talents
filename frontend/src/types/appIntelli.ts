@@ -8,6 +8,7 @@ export interface AppIntelliEntryContext {
   journeyStage?: string
   metadata?: {
     ctaLabel?: string
+    applicationReference?: string
   }
 }
 

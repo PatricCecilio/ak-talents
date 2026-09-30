@@ -13,6 +13,7 @@ class Settings(BaseSettings):
     BACKEND_CORS_ORIGINS: str = "http://localhost:5173,http://127.0.0.1:5173"
     OPENAI_API_KEY: str = ""
     OPENAI_MODEL: str = "gpt-5.5"
+    APPINTELLI_INTEGRATION_SECRET: str = ""
 
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
 

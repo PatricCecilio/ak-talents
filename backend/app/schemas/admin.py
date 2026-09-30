@@ -16,10 +16,12 @@ class AdminUserRead(BaseModel):
 
 class AdminCandidateRead(BaseModel):
     id: int
-    user_id: int
+    user_id: int | None
     name: str
-    email: EmailStr
+    email: EmailStr | None
+    phone: str | None
     city: str | None
+    neighborhood: str | None
     desired_role: str | None
     skills: str | None
     experience_years: float | None
@@ -58,7 +60,13 @@ class AdminApplicationRead(BaseModel):
     id: int
     candidate_id: int
     candidate_name: str
+    candidate_phone: str | None
+    candidate_city: str | None
+    candidate_neighborhood: str | None
     job_id: int
     job_title: str
     status: str
+    screening_status: str
+    screening_score: int | None
+    screening_summary: str | None
     created_at: datetime

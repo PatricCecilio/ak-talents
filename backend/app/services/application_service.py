@@ -1,3 +1,5 @@
+from datetime import datetime, timezone
+
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
@@ -6,7 +8,12 @@ from app.models.candidate import Candidate
 from app.models.company import Company
 from app.models.job import Job
 from app.models.user import User, UserRole
-from app.schemas.application import ApplicationCreate
+from app.schemas.application import ApplicationCreate, PublicApplicationCreate, PublicApplicationRead
+from app.services.identity_service import normalize_email, normalize_phone
+from app.services.token_service import generate_public_token, hash_public_token
+
+
+PUBLIC_APPLICATION_STATUS = "pending_screening"
 
 
 def create_application(db: Session, current_user: User, payload: ApplicationCreate) -> Application:
@@ -66,3 +73,112 @@ def list_applications(db: Session, current_user: User) -> list[Application]:
         )
 
     raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Unsupported user role")
+
+
+def _find_candidate_by_phone(db: Session, normalized_phone: str) -> Candidate | None:
+    candidates = db.query(Candidate).filter(Candidate.phone.isnot(None)).all()
+    return next(
+        (candidate for candidate in candidates if normalize_phone(candidate.phone or "") == normalized_phone),
+        None,
+    )
+
+
+def _resolve_public_candidate(
+    db: Session,
+    payload: PublicApplicationCreate,
+    normalized_email: str,
+    normalized_phone: str,
+) -> Candidate:
+    candidate_by_email = db.query(Candidate).filter(Candidate.email == normalized_email).first()
+    candidate_by_phone = _find_candidate_by_phone(db, normalized_phone)
+
+    if candidate_by_email and candidate_by_phone and candidate_by_email.id != candidate_by_phone.id:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Nao foi possivel confirmar sua identidade com os dados informados.",
+        )
+
+    candidate = candidate_by_email or candidate_by_phone
+
+    if candidate and candidate.email and candidate.email != normalized_email:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Nao foi possivel confirmar sua identidade com os dados informados.",
+        )
+
+    if candidate and candidate.phone and normalize_phone(candidate.phone) != normalized_phone:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Nao foi possivel confirmar sua identidade com os dados informados.",
+        )
+
+    if candidate:
+        if candidate.user_id is None:
+            candidate.full_name = candidate.full_name or payload.full_name.strip()
+            candidate.email = candidate.email or normalized_email
+            candidate.phone = candidate.phone or normalized_phone
+            candidate.city = candidate.city or payload.city.strip()
+            candidate.neighborhood = candidate.neighborhood or payload.neighborhood.strip()
+        return candidate
+
+    candidate = Candidate(
+        full_name=payload.full_name.strip(),
+        email=normalized_email,
+        phone=normalized_phone,
+        city=payload.city.strip(),
+        neighborhood=payload.neighborhood.strip(),
+    )
+    db.add(candidate)
+    db.flush()
+    return candidate
+
+
+def create_public_application(
+    db: Session,
+    slug: str,
+    payload: PublicApplicationCreate,
+) -> PublicApplicationRead:
+    if not payload.privacy_accepted:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Privacy acceptance is required")
+
+    normalized_email = normalize_email(str(payload.email))
+    normalized_phone = normalize_phone(payload.phone)
+
+    if len(normalized_phone) < 8 or len(normalized_phone) > 15:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Invalid phone")
+
+    job = db.query(Job).filter(Job.slug == slug, Job.is_active.is_(True), Job.status == "approved").first()
+
+    if not job:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Job not found")
+
+    candidate = _resolve_public_candidate(db, payload, normalized_email, normalized_phone)
+
+    existing_application = (
+        db.query(Application)
+        .filter(Application.candidate_id == candidate.id, Application.job_id == job.id)
+        .first()
+    )
+
+    if existing_application:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Application already exists")
+
+    application = Application(
+        candidate_id=candidate.id,
+        job_id=job.id,
+        status=PUBLIC_APPLICATION_STATUS,
+        privacy_accepted_at=datetime.now(timezone.utc),
+    )
+    public_screening_token = generate_public_token()
+    application.public_screening_token_hash = hash_public_token(public_screening_token)
+    db.add(application)
+    db.commit()
+    db.refresh(application)
+
+    return PublicApplicationRead(
+        status=application.status,
+        screening_status=application.screening_status,
+        public_screening_token=public_screening_token,
+        application_reference=application.appintelli_reference,
+        message="Candidatura recebida com sucesso.",
+    )

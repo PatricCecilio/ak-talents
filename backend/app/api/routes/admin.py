@@ -11,6 +11,7 @@ from app.schemas.admin import (
     AdminJobRead,
     AdminUserRead,
 )
+from app.schemas.screening import ScreeningQuestionRead, ScreeningQuestionsUpdate
 from app.services.admin_service import (
     approve_company,
     approve_job,
@@ -22,6 +23,7 @@ from app.services.admin_service import (
     list_admin_jobs,
     list_admin_users,
 )
+from app.services.screening_service import list_admin_screening_questions, replace_admin_screening_questions
 
 router = APIRouter()
 
@@ -44,6 +46,25 @@ def get_companies(db: Session = Depends(get_db), current_user: User = Depends(ge
 @router.get("/jobs", response_model=list[AdminJobRead])
 def get_jobs(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     return list_admin_jobs(db, current_user)
+
+
+@router.get("/jobs/{job_id}/screening-questions", response_model=list[ScreeningQuestionRead])
+def get_job_screening_questions(
+    job_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    return list_admin_screening_questions(db, current_user, job_id)
+
+
+@router.put("/jobs/{job_id}/screening-questions", response_model=list[ScreeningQuestionRead])
+def update_job_screening_questions(
+    job_id: int,
+    payload: ScreeningQuestionsUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    return replace_admin_screening_questions(db, current_user, job_id, payload.questions)
 
 
 @router.get("/applications", response_model=list[AdminApplicationRead])

@@ -2,6 +2,8 @@ from datetime import datetime
 
 from pydantic import BaseModel, Field
 
+from app.schemas.screening import PublicScreeningQuestionRead
+
 
 class JobBase(BaseModel):
     title: str = Field(min_length=3, max_length=180)
@@ -20,8 +22,18 @@ class JobCreate(JobBase):
 class JobRead(JobBase):
     id: int
     company_id: int
+    slug: str
     status: str
     is_active: bool
     created_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+class PublicJobRead(JobBase):
+    id: int
+    slug: str
+    created_at: datetime
+    screening_questions: list[PublicScreeningQuestionRead] = []
 
     model_config = {"from_attributes": True}

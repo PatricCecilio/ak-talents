@@ -1,4 +1,4 @@
-import type { AdminApplication, AdminCandidate, AdminCompany, AdminJob, AdminUser } from '../types/user'
+import type { AdminApplication, AdminCandidate, AdminCompany, AdminJob, AdminScreeningQuestion, AdminUser } from '../types/user'
 import { apiRequest } from './api'
 
 export function getAdminUsers(): Promise<AdminUser[]> {
@@ -19,6 +19,20 @@ export function getAdminJobs(): Promise<AdminJob[]> {
 
 export function getAdminApplications(): Promise<AdminApplication[]> {
   return apiRequest<AdminApplication[]>('/admin/applications')
+}
+
+export function getJobScreeningQuestions(jobId: number): Promise<AdminScreeningQuestion[]> {
+  return apiRequest<AdminScreeningQuestion[]>(`/admin/jobs/${jobId}/screening-questions`)
+}
+
+export function updateJobScreeningQuestions(
+  jobId: number,
+  questions: unknown[],
+): Promise<AdminScreeningQuestion[]> {
+  return apiRequest<AdminScreeningQuestion[]>(`/admin/jobs/${jobId}/screening-questions`, {
+    method: 'PUT',
+    body: { questions },
+  })
 }
 
 export function approveCompany(companyId: number): Promise<AdminCompany> {

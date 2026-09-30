@@ -56,6 +56,21 @@ export const appIntelliCtas = {
 
 export type AppIntelliCtaId = keyof typeof appIntelliCtas
 
+export function toRecruitmentScreeningOpenOptions(applicationReference: string): AppIntelliOpenOptions {
+  return {
+    context: {
+      intentHint: 'recruitment_screening',
+      entryPoint: 'public_application_success',
+      pageSection: 'job_detail',
+      journeyStage: 'screening',
+      metadata: {
+        ctaLabel: 'Continuar triagem',
+        applicationReference,
+      },
+    },
+  }
+}
+
 export function toOpenOptions(cta: AppIntelliCta): AppIntelliOpenOptions {
   return {
     context: {
@@ -88,13 +103,8 @@ function tryOpen(host: AppIntelliHost, options: AppIntelliOpenOptions): boolean 
   return true
 }
 
-/**
- * Opens the AppIntelli chat with the CTA's entry context. Only calls the public widget API: it
- * never posts a message, never touches the widget iframe and never creates a conversation.
- */
-export function openAppIntelli(cta: AppIntelliCta, env: OpenEnvironment = {}): OpenResult {
+export function openAppIntelliOptions(options: AppIntelliOpenOptions, env: OpenEnvironment = {}): OpenResult {
   const host = env.host ?? window
-  const options = toOpenOptions(cta)
 
   if (pendingWait) {
     clearInterval(pendingWait)
@@ -124,4 +134,12 @@ export function openAppIntelli(cta: AppIntelliCta, env: OpenEnvironment = {}): O
     }
   }, pollMs)
   return 'waiting'
+}
+
+/**
+ * Opens the AppIntelli chat with the CTA's entry context. Only calls the public widget API: it
+ * never posts a message, never touches the widget iframe and never creates a conversation.
+ */
+export function openAppIntelli(cta: AppIntelliCta, env: OpenEnvironment = {}): OpenResult {
+  return openAppIntelliOptions(toOpenOptions(cta), env)
 }

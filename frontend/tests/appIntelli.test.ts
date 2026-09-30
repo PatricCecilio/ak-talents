@@ -4,7 +4,13 @@ import assert from 'node:assert/strict'
 import { readdirSync, readFileSync } from 'node:fs'
 import { test } from 'node:test'
 import type { AppIntelliApi, AppIntelliOpenOptions } from '../src/types/appIntelli.ts'
-import { appIntelliCtas, openAppIntelli, type AppIntelliCta } from '../src/services/appIntelliWidget.ts'
+import {
+  appIntelliCtas,
+  openAppIntelli,
+  openAppIntelliOptions,
+  toRecruitmentScreeningOpenOptions,
+  type AppIntelliCta,
+} from '../src/services/appIntelliWidget.ts'
 
 const root = new URL('../', import.meta.url)
 const read = (path: string) => readFileSync(new URL(path, root), 'utf8').replace(/\r\n/g, '\n')
@@ -132,6 +138,26 @@ test('a widget API that throws never breaks the page', () => {
     },
   }
   assert.equal(openAppIntelli(appIntelliCtas.heroHiring, { host }), 'unavailable')
+})
+
+test('recruitment screening opens AppIntelli with only the opaque application reference', () => {
+  const { host, calls } = fakeHost()
+  const options = toRecruitmentScreeningOpenOptions('appref_public_123')
+
+  assert.equal(openAppIntelliOptions(options, { host }), 'opened')
+  assert.deepEqual(calls[0], {
+    context: {
+      intentHint: 'recruitment_screening',
+      entryPoint: 'public_application_success',
+      pageSection: 'job_detail',
+      journeyStage: 'screening',
+      metadata: {
+        ctaLabel: 'Continuar triagem',
+        applicationReference: 'appref_public_123',
+      },
+    },
+  })
+  assert.doesNotMatch(JSON.stringify(calls[0]), /full_name|email|phone|city|neighborhood|candidate_id|application_id|job_id/)
 })
 
 test('T11/T12: AK Talent code only uses the public API (no messages, no conversation endpoint, no iframe access)', () => {

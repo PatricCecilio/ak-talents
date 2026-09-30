@@ -5,6 +5,8 @@ import { CandidatePage } from '../pages/CandidatePage'
 import { CompanyPage } from '../pages/CompanyPage'
 import { AdminPage } from '../pages/AdminPage'
 import { HomePage } from '../pages/HomePage'
+import { JobDetailPage } from '../pages/JobDetailPage'
+import { JobsPage } from '../pages/JobsPage'
 import { LoginPage } from '../pages/LoginPage'
 import { NotFoundPage } from '../pages/NotFoundPage'
 import { RegisterPage } from '../pages/RegisterPage'
@@ -15,6 +17,8 @@ export function AppRoutes() {
       <Routes>
         <Route element={<MainLayout />}>
           <Route path="/" element={<HomePage />} />
+          <Route path="/vagas" element={<JobsPage />} />
+          <Route path="/vagas/:slug" element={<JobDetailPage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
           <Route

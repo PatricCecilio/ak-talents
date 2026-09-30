@@ -449,7 +449,9 @@ export function CompanyPage() {
                 </p>
                 <div className="mt-2 flex flex-wrap items-center justify-between gap-3">
                   <h3 className="text-lg font-black text-ink-950">{job.title}</h3>
-                  <Badge status={job.status as 'pending' | 'approved' | 'blocked' | 'hidden'}>{job.status}</Badge>
+                  <Badge status={(job.status || 'approved') as 'pending' | 'approved' | 'blocked' | 'hidden'}>
+                    {job.status || 'approved'}
+                  </Badge>
                 </div>
                 <p className="mt-2 line-clamp-3 text-sm leading-6 text-ink-600">{job.description}</p>
                 <p className="mt-3 text-sm font-bold text-ink-700">{job.location || 'Cidade nao informada'}</p>

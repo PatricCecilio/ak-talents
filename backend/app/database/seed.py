@@ -8,6 +8,7 @@ from app.models.candidate import Candidate
 from app.models.company import Company
 from app.models.job import Job
 from app.models.user import User, UserRole
+from app.services.slug_service import generate_unique_job_slug
 
 
 ADMIN_EMAIL = "admin@aktalent.com"
@@ -96,8 +97,10 @@ def seed_candidate(db: Session) -> Candidate:
         db.add(candidate)
 
     candidate.full_name = "Candidato Teste"
+    candidate.email = CANDIDATE_EMAIL
     candidate.phone = "(11) 99999-2000"
     candidate.city = "Sao Paulo"
+    candidate.neighborhood = "Centro"
     candidate.state = "SP"
     candidate.desired_role = "Frontend Developer"
     candidate.bio = "Profissional com experiencia em React, TypeScript e integracao de APIs."
@@ -119,10 +122,17 @@ def seed_job(db: Session, company: Company) -> Job:
     )
 
     if not job:
-        job = Job(company_id=company.id, title="Frontend Developer React", description="placeholder")
+        job = Job(
+            company_id=company.id,
+            title="Frontend Developer React",
+            slug=generate_unique_job_slug(db, "Frontend Developer React"),
+            description="placeholder",
+        )
         db.add(job)
 
     job.description = "Criar interfaces modernas em React, integrar APIs e colaborar com produto."
+    if not job.slug:
+        job.slug = generate_unique_job_slug(db, job.title)
     job.requirements = "React, TypeScript, APIs, 3 anos de experiencia"
     job.salary_min = 8000
     job.salary_max = 12000

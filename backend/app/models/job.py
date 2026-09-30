@@ -12,6 +12,7 @@ class Job(Base):
     id: Mapped[int] = mapped_column(primary_key=True, index=True)
     company_id: Mapped[int] = mapped_column(ForeignKey("companies.id", ondelete="CASCADE"), nullable=False)
     title: Mapped[str] = mapped_column(String(180), nullable=False)
+    slug: Mapped[str] = mapped_column(String(220), unique=True, index=True, nullable=False)
     description: Mapped[str] = mapped_column(Text, nullable=False)
     requirements: Mapped[str | None] = mapped_column(Text, nullable=True)
     salary_min: Mapped[float | None] = mapped_column(Float, nullable=True)
@@ -26,3 +27,9 @@ class Job(Base):
 
     company = relationship("Company", back_populates="jobs")
     applications = relationship("Application", back_populates="job")
+    screening_questions = relationship(
+        "ScreeningQuestion",
+        back_populates="job",
+        cascade="all, delete-orphan",
+        order_by="ScreeningQuestion.sort_order",
+    )

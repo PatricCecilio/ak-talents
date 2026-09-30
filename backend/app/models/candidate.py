@@ -10,8 +10,9 @@ class Candidate(Base):
     __tablename__ = "candidates"
 
     id: Mapped[int] = mapped_column(primary_key=True, index=True)
-    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), unique=True, nullable=False)
+    user_id: Mapped[int | None] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), unique=True, nullable=True)
     full_name: Mapped[str | None] = mapped_column(String(180), nullable=True)
+    email: Mapped[str | None] = mapped_column(String(255), index=True, nullable=True)
     phone: Mapped[str | None] = mapped_column(String(40), nullable=True)
     state: Mapped[str | None] = mapped_column(String(80), nullable=True)
     desired_role: Mapped[str | None] = mapped_column(String(180), nullable=True)
@@ -19,6 +20,7 @@ class Candidate(Base):
     bio: Mapped[str | None] = mapped_column(Text, nullable=True)
     skills: Mapped[str | None] = mapped_column(Text, nullable=True)
     city: Mapped[str | None] = mapped_column(String(180), nullable=True)
+    neighborhood: Mapped[str | None] = mapped_column(String(180), nullable=True)
     work_mode: Mapped[str | None] = mapped_column(String(80), nullable=True)
     salary_expectation: Mapped[float | None] = mapped_column(Float, nullable=True)
     experience_years: Mapped[float | None] = mapped_column(Float, nullable=True)

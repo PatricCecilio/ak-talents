@@ -57,14 +57,16 @@ def list_admin_users(db: Session, current_user: User) -> list[AdminUserRead]:
 
 def list_admin_candidates(db: Session, current_user: User) -> list[AdminCandidateRead]:
     require_admin(current_user)
-    candidates = db.query(Candidate).join(Candidate.user).order_by(Candidate.created_at.desc()).all()
+    candidates = db.query(Candidate).outerjoin(Candidate.user).order_by(Candidate.created_at.desc()).all()
     return [
         AdminCandidateRead(
             id=candidate.id,
             user_id=candidate.user_id,
-            name=candidate.full_name or candidate.user.name,
-            email=candidate.user.email,
+            name=candidate.full_name or (candidate.user.name if candidate.user else "Candidato"),
+            email=candidate.email or (candidate.user.email if candidate.user else None),
+            phone=candidate.phone,
             city=candidate.city,
+            neighborhood=candidate.neighborhood,
             desired_role=candidate.desired_role,
             skills=candidate.skills,
             experience_years=candidate.experience_years,
@@ -101,10 +103,17 @@ def list_admin_applications(db: Session, current_user: User) -> list[AdminApplic
         AdminApplicationRead(
             id=application.id,
             candidate_id=application.candidate_id,
-            candidate_name=application.candidate.full_name or application.candidate.user.name,
+            candidate_name=application.candidate.full_name
+            or (application.candidate.user.name if application.candidate.user else "Candidato"),
+            candidate_phone=application.candidate.phone,
+            candidate_city=application.candidate.city,
+            candidate_neighborhood=application.candidate.neighborhood,
             job_id=application.job_id,
             job_title=application.job.title,
             status=application.status,
+            screening_status=application.screening_status,
+            screening_score=application.screening_score,
+            screening_summary=application.screening_summary,
             created_at=application.created_at,
         )
         for application in applications

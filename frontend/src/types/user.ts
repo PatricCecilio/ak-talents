@@ -28,7 +28,8 @@ export interface AuthResponse {
 
 export interface Job {
   id: number
-  company_id: number
+  company_id?: number
+  slug: string
   title: string
   description: string
   requirements: string | null
@@ -36,9 +37,10 @@ export interface Job {
   salary_max: number | null
   location: string | null
   work_mode: string | null
-  status: string
-  is_active: boolean
+  status?: string
+  is_active?: boolean
   created_at: string
+  screening_questions?: PublicScreeningQuestion[]
 }
 
 export interface JobPayload {
@@ -57,12 +59,89 @@ export interface Application {
   job_id: number
   cover_letter: string | null
   status: string
+  privacy_accepted_at?: string | null
   created_at: string
 }
 
 export interface ApplicationPayload {
   job_id: number
   cover_letter?: string
+}
+
+export interface PublicApplicationPayload {
+  full_name: string
+  email: string
+  phone: string
+  city: string
+  neighborhood: string
+  privacy_accepted: boolean
+}
+
+export interface PublicApplicationResponse {
+  status: string
+  screening_status: string
+  public_screening_token: string
+  application_reference: string
+  message: string
+}
+
+export type ScreeningQuestionType = 'YES_NO' | 'SINGLE_SELECT' | 'TEXT'
+
+export interface ScreeningOption {
+  value: string
+  label: string
+}
+
+export interface ScreeningRule {
+  operator: 'EQUALS' | 'IN'
+  value?: boolean | string
+  values?: string[]
+}
+
+export interface PublicScreeningQuestion {
+  id: number
+  key: string
+  label: string
+  question_type: ScreeningQuestionType
+  required: boolean
+  options?: ScreeningOption[] | null
+  sort_order: number
+}
+
+export interface AdminScreeningQuestion extends PublicScreeningQuestion {
+  job_id: number
+  rule?: ScreeningRule | null
+  is_active: boolean
+  created_at: string
+}
+
+export interface ScreeningAnswerPayload {
+  question_id: number
+  value: boolean | string
+}
+
+export interface ScreeningSubmitPayload {
+  answers: ScreeningAnswerPayload[]
+}
+
+export interface ScreeningSubmitResponse {
+  application_id: number
+  screening_status: 'QUALIFIED' | 'REVIEW' | 'NOT_MATCHED' | 'PENDING'
+  screening_score: number
+  screening_summary: string
+}
+
+export interface PublicScreeningResponse {
+  job: {
+    id: number
+    title: string
+    slug: string
+    location: string | null
+    work_mode: string | null
+  }
+  screening_status: 'QUALIFIED' | 'REVIEW' | 'NOT_MATCHED' | 'PENDING' | 'pending_screening'
+  screening_completed: boolean
+  questions: PublicScreeningQuestion[]
 }
 
 export interface CandidateMatch {
@@ -144,10 +223,12 @@ export interface AdminUser {
 
 export interface AdminCandidate {
   id: number
-  user_id: number
+  user_id: number | null
   name: string
-  email: string
+  email: string | null
+  phone: string | null
   city: string | null
+  neighborhood: string | null
   desired_role: string | null
   skills: string | null
   experience_years: number | null
@@ -186,8 +267,14 @@ export interface AdminApplication {
   id: number
   candidate_id: number
   candidate_name: string
+  candidate_phone: string | null
+  candidate_city: string | null
+  candidate_neighborhood: string | null
   job_id: number
   job_title: string
   status: string
+  screening_status: string
+  screening_score: number | null
+  screening_summary: string | null
   created_at: string
 }

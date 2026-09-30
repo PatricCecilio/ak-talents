@@ -15,6 +15,13 @@ export function getJobs(): Promise<Job[]> {
   })
 }
 
+export function getJobBySlug(slug: string): Promise<Job> {
+  return apiRequest<Job>(`/jobs/${slug}`, {
+    method: 'GET',
+    auth: false,
+  })
+}
+
 export function getJobMatches(jobId: number): Promise<CandidateMatch[]> {
   return apiRequest<CandidateMatch[]>(`/jobs/${jobId}/matches`, {
     method: 'GET',
