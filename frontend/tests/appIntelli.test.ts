@@ -11,6 +11,11 @@ import {
   toRecruitmentScreeningOpenOptions,
   type AppIntelliCta,
 } from '../src/services/appIntelliWidget.ts'
+import {
+  DEFAULT_APPINTELLI_WIDGET_URL,
+  installAppIntelliWidget,
+  resolveAppIntelliWidgetConfig,
+} from '../src/services/appIntelliWidgetLoader.ts'
 
 const root = new URL('../', import.meta.url)
 const read = (path: string) => readFileSync(new URL(path, root), 'utf8').replace(/\r\n/g, '\n')
@@ -195,8 +200,51 @@ test('T13: menu stays navigation (anchor links, no chat buttons inside the nav)'
   }
 })
 
-test('T15: exactly one AppIntelli widget installation remains', () => {
+test('T15: AppIntelli widget is installed by runtime config, not a hardcoded HTML script', () => {
   const html = read('index.html')
-  assert.equal((html.match(/https:\/\/www\.appintelli\.com\.br\/widget\.js/g) ?? []).length, 1)
-  assert.equal((html.match(/data-widget-key=/g) ?? []).length, 1)
+  assert.equal((html.match(/https:\/\/www\.appintelli\.com\.br\/widget\.js/g) ?? []).length, 0)
+  assert.equal((html.match(/data-widget-key=/g) ?? []).length, 0)
+  assert.match(read('src/main.tsx'), /installAppIntelliWidget\(\)/)
+})
+
+test('widget config defaults to production URL without embedding a live key', () => {
+  const config = resolveAppIntelliWidgetConfig({} as ImportMetaEnv)
+
+  assert.equal(config.url, DEFAULT_APPINTELLI_WIDGET_URL)
+  assert.equal(config.key, '')
+  assert.doesNotMatch(read('src/services/appIntelliWidgetLoader.ts'), /wk_live_/)
+})
+
+test('widget config accepts local URL and local public key from Vite env', () => {
+  const config = resolveAppIntelliWidgetConfig({
+    VITE_APPINTELLI_WIDGET_URL: 'http://localhost:3000/widget.js',
+    VITE_APPINTELLI_WIDGET_KEY: 'local-test-key',
+  } as ImportMetaEnv)
+
+  assert.equal(config.url, 'http://localhost:3000/widget.js')
+  assert.equal(config.key, 'local-test-key')
+})
+
+test('widget installer writes script src and public key without backend secrets', () => {
+  const scripts: Array<{ src?: string; async?: boolean; dataset: Record<string, string> }> = []
+  const documentRef = {
+    createElement: () => {
+      const script = { dataset: {} as Record<string, string> }
+      scripts.push(script)
+      return script
+    },
+    body: {
+      appendChild: (script: unknown) => script,
+    },
+  } as unknown as Document
+
+  const script = installAppIntelliWidget({
+    VITE_APPINTELLI_WIDGET_URL: 'http://localhost:3000/widget.js',
+    VITE_APPINTELLI_WIDGET_KEY: 'local-test-key',
+  } as ImportMetaEnv, documentRef)
+
+  assert.equal(script.src, 'http://localhost:3000/widget.js')
+  assert.equal(script.async, true)
+  assert.equal(script.dataset.widgetKey, 'local-test-key')
+  assert.doesNotMatch(JSON.stringify(script), /APPINTELLI_INTEGRATION_SECRET|AKTALENT_INTEGRATION_SECRET/)
 })
