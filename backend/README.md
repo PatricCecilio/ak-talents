@@ -28,7 +28,9 @@ Configure `OPENAI_API_KEY` in `.env` to enable Career AI and Recruiter AI.
 Default local `.env`:
 
 ```env
+ENVIRONMENT="development"
 DATABASE_URL="postgresql+psycopg2://aktalent:aktalent@localhost:5432/aktalent"
+AUTO_CREATE_TABLES_ON_STARTUP=true
 JWT_SECRET_KEY="change-this-secret-in-production"
 BACKEND_CORS_ORIGINS="http://localhost:5173,http://127.0.0.1:5173"
 OPENAI_API_KEY=""
@@ -85,6 +87,56 @@ API docs:
 
 ```text
 http://127.0.0.1:8000/docs
+```
+
+## Database migrations
+
+Alembic is the schema authority for production databases:
+
+```bash
+alembic upgrade head
+```
+
+`Base.metadata.create_all(bind=engine)` is still available for local startup by default, but it is disabled whenever `ENVIRONMENT="production"` or `AUTO_CREATE_TABLES_ON_STARTUP=false`.
+
+## Render preparation
+
+Use the backend directory as the service root.
+
+Build command:
+
+```bash
+pip install -r requirements.txt
+```
+
+Start command:
+
+```bash
+uvicorn app.main:app --host 0.0.0.0 --port $PORT
+```
+
+Health check path:
+
+```text
+/health
+```
+
+Required environment variables should be configured in Render without committing real values:
+
+```env
+ENVIRONMENT="production"
+AUTO_CREATE_TABLES_ON_STARTUP=false
+DATABASE_URL="replace-with-render-postgres-url"
+JWT_SECRET_KEY="replace-with-secure-secret"
+BACKEND_CORS_ORIGINS="replace-with-frontend-origin"
+OPENAI_API_KEY="replace-if-ai-features-are-enabled"
+APPINTELLI_INTEGRATION_SECRET="replace-with-secure-shared-secret"
+```
+
+Run migrations against the production database as a separate release/setup step:
+
+```bash
+alembic upgrade head
 ```
 
 ## Run frontend

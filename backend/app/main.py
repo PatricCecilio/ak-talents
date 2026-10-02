@@ -6,7 +6,8 @@ from app.core.config import settings
 from app.database.base import Base
 from app.database.session import engine
 
-Base.metadata.create_all(bind=engine)
+if settings.should_create_tables_on_startup:
+    Base.metadata.create_all(bind=engine)
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
