@@ -3,6 +3,7 @@ from datetime import datetime, timezone
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
+from app.core.config import settings
 from app.core.privacy import PRIVACY_CONSENT_REQUIRED_MESSAGE, PRIVACY_POLICY_VERSION
 from app.models.application import Application
 from app.models.candidate import Candidate
@@ -88,8 +89,16 @@ def list_applications(db: Session, current_user: User) -> list[Application]:
     raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Unsupported user role")
 
 
+def _linkable_candidates(db: Session):
+    """Candidates the public form may reuse. Account holders only when the link flag is on."""
+    query = db.query(Candidate)
+    if not settings.LINK_PUBLIC_APPLICATIONS_BY_EMAIL:
+        query = query.filter(Candidate.user_id.is_(None))
+    return query
+
+
 def _find_candidate_by_phone(db: Session, normalized_phone: str) -> Candidate | None:
-    candidates = db.query(Candidate).filter(Candidate.phone.isnot(None)).all()
+    candidates = _linkable_candidates(db).filter(Candidate.phone.isnot(None)).all()
     return next(
         (candidate for candidate in candidates if normalize_phone(candidate.phone or "") == normalized_phone),
         None,
@@ -102,7 +111,7 @@ def _resolve_public_candidate(
     normalized_email: str,
     normalized_phone: str,
 ) -> Candidate:
-    candidate_by_email = db.query(Candidate).filter(Candidate.email == normalized_email).first()
+    candidate_by_email = _linkable_candidates(db).filter(Candidate.email == normalized_email).first()
     candidate_by_phone = _find_candidate_by_phone(db, normalized_phone)
 
     if candidate_by_email and candidate_by_phone and candidate_by_email.id != candidate_by_phone.id:
@@ -126,9 +135,8 @@ def _resolve_public_candidate(
         )
 
     if candidate:
-        # Fill only what is still empty (never overwrite). This also completes the contact data of an
-        # account holder applying through the public form, so the AK team and, after approval, the
-        # client company can reach them.
+        # Fill only what is still empty; the public form never overwrites existing data. With the link
+        # flag on, this completes an account holder's missing contact data (never changes it).
         candidate.full_name = candidate.full_name or payload.full_name.strip()
         candidate.email = candidate.email or normalized_email
         candidate.phone = candidate.phone or normalized_phone

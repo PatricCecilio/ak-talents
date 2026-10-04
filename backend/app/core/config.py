@@ -28,6 +28,9 @@ class Settings(BaseSettings):
     RATE_LIMIT_ENABLED: bool = True
     # Recruiter home highlights finalists waiting longer than this for the client decision.
     FINALIST_ALERT_DAYS: int = 3
+    # Off until e-mail verification exists: typing someone's e-mail (or phone) in the public job form
+    # must not attach the application to, or change, that person's account.
+    LINK_PUBLIC_APPLICATIONS_BY_EMAIL: bool = False
 
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
 
