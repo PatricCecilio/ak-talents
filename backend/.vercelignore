@@ -1,0 +1,8 @@
+.venv/
+tests/
+**/__pycache__/
+alembic/
+alembic.ini
+requirements-dev.txt
+.env
+.env.*

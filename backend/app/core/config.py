@@ -26,6 +26,8 @@ class Settings(BaseSettings):
     OPENAI_MODEL: str = "gpt-5.5"
     APPINTELLI_INTEGRATION_SECRET: str = ""
     RATE_LIMIT_ENABLED: bool = True
+    # True only when running behind Vercel: take the client IP from Vercel's (non-spoofable) headers.
+    TRUST_PROXY_HEADERS: bool = False
     # Recruiter home highlights finalists waiting longer than this for the client decision.
     FINALIST_ALERT_DAYS: int = 3
     # Off until e-mail verification exists: typing someone's e-mail (or phone) in the public job form
