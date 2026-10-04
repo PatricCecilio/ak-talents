@@ -13,6 +13,9 @@ import {
   getAdminUsers,
   getJobScreeningQuestions,
   hideJob,
+  setApplicationHidden,
+  setCandidateActive,
+  setCompanyActive,
   updateJobScreeningQuestions,
 } from '../services/adminService'
 import { logout } from '../services/authService'
@@ -34,14 +37,15 @@ export function AdminPage() {
   const [openScreeningJobId, setOpenScreeningJobId] = useState<number | null>(null)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
+  const [showHiddenApplications, setShowHiddenApplications] = useState(false)
 
-  async function refreshAdminData() {
+  async function refreshAdminData(includeHidden = showHiddenApplications) {
     const [usersData, candidatesData, companiesData, jobsData, applicationsData] = await Promise.all([
       getAdminUsers(),
       getAdminCandidates(),
       getAdminCompanies(),
       getAdminJobs(),
-      getAdminApplications(),
+      getAdminApplications(includeHidden),
     ])
 
     setUsers(usersData)
@@ -51,7 +55,7 @@ export function AdminPage() {
     setApplications(applicationsData)
   }
 
-  async function runAction(actionKey: string, action: () => Promise<AdminCompany | AdminJob>, message: string) {
+  async function runAction(actionKey: string, action: () => Promise<unknown>, message: string) {
     setActionId(actionKey)
     setError('')
     setSuccess('')
@@ -211,7 +215,10 @@ export function AdminPage() {
                 <article key={company.id} className="rounded-lg border border-slate-200 p-4">
                   <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                     <div>
-                      <h3 className="font-black text-ink-950">{company.company_name}</h3>
+                      <h3 className="font-black text-ink-950">
+                        {company.company_name}
+                        {company.is_active === false ? <span className="ml-2 text-sm font-bold text-red-700">(desativada)</span> : null}
+                      </h3>
                       <p className="mt-1 text-sm text-ink-600">{company.email}</p>
                       <p className="mt-1 text-sm text-ink-600">{company.city || 'Cidade nao informada'}</p>
                     </div>
@@ -241,6 +248,21 @@ export function AdminPage() {
                         }
                       >
                         Bloquear
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        isLoading={actionId === `company-active-${company.id}`}
+                        disabled={actionId === `company-active-${company.id}`}
+                        onClick={() =>
+                          void runAction(
+                            `company-active-${company.id}`,
+                            () => setCompanyActive(company.id, company.is_active === false),
+                            company.is_active === false ? 'Empresa reativada.' : 'Empresa desativada (nada foi apagado).',
+                          )
+                        }
+                      >
+                        {company.is_active === false ? 'Reativar' : 'Desativar'}
                       </Button>
                     </div>
                   </div>
@@ -338,6 +360,25 @@ export function AdminPage() {
                     {[candidate.city, candidate.neighborhood].filter(Boolean).join(' / ') || 'Localizacao nao informada'}
                   </p>
                   <p className="mt-1 text-sm text-ink-600">{candidate.desired_role || 'Cargo nao informado'}</p>
+                  {candidate.is_active === false ? <p className="mt-1 text-sm font-bold text-red-700">Desativado</p> : null}
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    className="mt-3"
+                    isLoading={actionId === `candidate-active-${candidate.id}`}
+                    disabled={actionId === `candidate-active-${candidate.id}`}
+                    onClick={() =>
+                      void runAction(
+                        `candidate-active-${candidate.id}`,
+                        () => setCandidateActive(candidate.id, candidate.is_active === false),
+                        candidate.is_active === false
+                          ? 'Candidato reativado e candidaturas visíveis novamente.'
+                          : 'Candidato desativado e candidaturas ocultas (nada foi apagado).',
+                      )
+                    }
+                  >
+                    {candidate.is_active === false ? 'Reativar' : 'Desativar'}
+                  </Button>
                 </article>
               ))}
             </div>
@@ -345,6 +386,18 @@ export function AdminPage() {
 
           <Card className="p-6">
             <h2 className="text-2xl font-black text-ink-950">Candidaturas</h2>
+            <label className="mt-3 flex w-fit items-center gap-2 text-sm font-semibold text-ink-700">
+              <input
+                type="checkbox"
+                checked={showHiddenApplications}
+                onChange={(event) => {
+                  setShowHiddenApplications(event.target.checked)
+                  void refreshAdminData(event.target.checked)
+                }}
+                className="h-4 w-4"
+              />
+              Mostrar candidaturas ocultas
+            </label>
             <div className="mt-5 grid gap-3 md:grid-cols-2">
               {applications.length === 0 ? <EmptyState title="Nenhuma candidatura recebida." /> : null}
               {applications.map((application) => (
@@ -356,11 +409,30 @@ export function AdminPage() {
                     {[application.candidate_city, application.candidate_neighborhood].filter(Boolean).join(' / ') ||
                       'Localizacao nao informada'}
                   </p>
-                  <p className="mt-1 text-sm font-bold text-ink-700">{application.status}</p>
+                  <p className="mt-1 text-sm font-bold text-ink-700">
+                    Etapa: {application.stage_label ?? application.status}
+                    {application.is_hidden ? <span className="ml-2 text-red-700">(oculta)</span> : null}
+                  </p>
                   <p className="mt-1 text-sm font-bold text-brand-700">
                     Triagem: {application.screening_status}
                     {application.screening_score !== null ? ` (${application.screening_score})` : ''}
                   </p>
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    className="mt-3"
+                    isLoading={actionId === `application-hidden-${application.id}`}
+                    disabled={actionId === `application-hidden-${application.id}`}
+                    onClick={() =>
+                      void runAction(
+                        `application-hidden-${application.id}`,
+                        () => setApplicationHidden(application.id, !application.is_hidden),
+                        application.is_hidden ? 'Candidatura visível novamente.' : 'Candidatura ocultada das listas (nada foi apagado).',
+                      )
+                    }
+                  >
+                    {application.is_hidden ? 'Mostrar' : 'Ocultar'}
+                  </Button>
                 </article>
               ))}
             </div>

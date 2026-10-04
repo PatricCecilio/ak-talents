@@ -40,21 +40,22 @@ def list_company_jobs(db: Session, current_user: User) -> list[Job]:
     return db.query(Job).filter(Job.company_id == company.id).order_by(Job.created_at.desc(), Job.id.desc()).all()
 
 
-def list_jobs(db: Session) -> list[Job]:
+def publishable_jobs(db: Session):
+    """Jobs candidates may see and apply to: approved, active and from an active (not deactivated) company."""
     return (
         db.query(Job)
-        .filter(Job.is_active.is_(True), Job.status == "approved")
-        .order_by(Job.created_at.desc())
-        .all()
+        .join(Company, Job.company_id == Company.id)
+        .join(User, Company.user_id == User.id)
+        .filter(Job.is_active.is_(True), Job.status == "approved", User.is_active.is_(True))
     )
+
+
+def list_jobs(db: Session) -> list[Job]:
+    return publishable_jobs(db).order_by(Job.created_at.desc()).all()
 
 
 def get_public_job_by_slug(db: Session, slug: str) -> Job:
-    job = (
-        db.query(Job)
-        .filter(Job.slug == slug, Job.is_active.is_(True), Job.status == "approved")
-        .first()
-    )
+    job = publishable_jobs(db).filter(Job.slug == slug).first()
 
     if not job:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Job not found")

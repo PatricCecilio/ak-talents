@@ -17,8 +17,8 @@ export function getAdminJobs(): Promise<AdminJob[]> {
   return apiRequest<AdminJob[]>('/admin/jobs')
 }
 
-export function getAdminApplications(): Promise<AdminApplication[]> {
-  return apiRequest<AdminApplication[]>('/admin/applications')
+export function getAdminApplications(includeHidden = false): Promise<AdminApplication[]> {
+  return apiRequest<AdminApplication[]>(`/admin/applications${includeHidden ? '?include_hidden=true' : ''}`)
 }
 
 export function getJobScreeningQuestions(jobId: number): Promise<AdminScreeningQuestion[]> {
@@ -67,5 +67,28 @@ export function createRecruiter(payload: RecruiterCreatePayload): Promise<StaffM
   return apiRequest<StaffMember>('/admin/recruiters', {
     method: 'POST',
     body: payload,
+  })
+}
+
+/** Deactivate (never delete) a company: login blocked and its jobs leave the public and AK lists. */
+export function setCompanyActive(companyId: number, isActive: boolean): Promise<AdminCompany> {
+  return apiRequest<AdminCompany>(`/admin/companies/${companyId}/active`, {
+    method: 'PUT',
+    body: { is_active: isActive },
+  })
+}
+
+/** Deactivate (never delete) a candidate: login blocked (if any) and all applications hidden. */
+export function setCandidateActive(candidateId: number, isActive: boolean): Promise<AdminCandidate> {
+  return apiRequest<AdminCandidate>(`/admin/candidates/${candidateId}/active`, {
+    method: 'PUT',
+    body: { is_active: isActive },
+  })
+}
+
+export function setApplicationHidden(applicationId: number, isHidden: boolean): Promise<AdminApplication> {
+  return apiRequest<AdminApplication>(`/admin/applications/${applicationId}/hidden`, {
+    method: 'PUT',
+    body: { is_hidden: isHidden },
   })
 }

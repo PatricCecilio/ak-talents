@@ -28,6 +28,8 @@ class AdminCandidateRead(BaseModel):
     salary_expectation: float | None
     work_mode: str | None
     created_at: datetime
+    is_active: bool = True
+
 
 
 class AdminCompanyRead(BaseModel):
@@ -42,6 +44,8 @@ class AdminCompanyRead(BaseModel):
     company_size: str | None
     status: str
     created_at: datetime
+    is_active: bool = True
+
 
 
 class AdminJobRead(BaseModel):
@@ -95,3 +99,14 @@ class AdminApplicationRead(BaseModel):
     screening_score: int | None
     screening_summary: str | None
     created_at: datetime
+    is_hidden: bool = False
+    stage: str = "new"
+    stage_label: str = "Nova"
+
+
+class ActiveUpdate(BaseModel):
+    is_active: bool
+
+
+class HiddenUpdate(BaseModel):
+    is_hidden: bool

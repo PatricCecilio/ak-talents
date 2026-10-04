@@ -241,6 +241,7 @@ export interface AdminCandidate {
   salary_expectation: number | null
   work_mode: string | null
   created_at: string
+  is_active?: boolean
 }
 
 export interface AdminCompany {
@@ -255,6 +256,7 @@ export interface AdminCompany {
   company_size: string | null
   status: string
   created_at: string
+  is_active?: boolean
 }
 
 export interface AdminJob {
@@ -300,4 +302,7 @@ export interface AdminApplication {
   screening_score: number | null
   screening_summary: string | null
   created_at: string
+  is_hidden?: boolean
+  stage?: string
+  stage_label?: string
 }

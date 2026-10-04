@@ -6,6 +6,7 @@ from app.models.candidate import Candidate
 from app.models.company import Company
 from app.models.job import Job
 from app.models.user import STAFF_ROLES, User, UserRole
+from app.schemas.pipeline import stage_label
 from app.schemas.admin import (
     AdminApplicationRead,
     AdminCandidateRead,
@@ -39,6 +40,7 @@ def _company_to_admin_read(company: Company) -> AdminCompanyRead:
         company_size=company.company_size,
         status=company.status,
         created_at=company.created_at,
+        is_active=company.user.is_active,
     )
 
 
@@ -64,27 +66,36 @@ def list_admin_users(db: Session, current_user: User) -> list[AdminUserRead]:
     return db.query(User).order_by(User.created_at.desc()).all()
 
 
+def _candidate_is_active(candidate: Candidate) -> bool:
+    # Account holders: their login. Applicants without an account: not all of their applications hidden.
+    if candidate.user:
+        return candidate.user.is_active
+    return not candidate.applications or any(not application.is_hidden for application in candidate.applications)
+
+
+def _candidate_to_admin_read(candidate: Candidate) -> AdminCandidateRead:
+    return AdminCandidateRead(
+        id=candidate.id,
+        user_id=candidate.user_id,
+        name=candidate.full_name or (candidate.user.name if candidate.user else "Candidato"),
+        email=candidate.email or (candidate.user.email if candidate.user else None),
+        phone=candidate.phone,
+        city=candidate.city,
+        neighborhood=candidate.neighborhood,
+        desired_role=candidate.desired_role,
+        skills=candidate.skills,
+        experience_years=candidate.experience_years,
+        salary_expectation=candidate.salary_expectation,
+        work_mode=candidate.work_mode,
+        created_at=candidate.created_at,
+        is_active=_candidate_is_active(candidate),
+    )
+
+
 def list_admin_candidates(db: Session, current_user: User) -> list[AdminCandidateRead]:
     require_admin(current_user)
     candidates = db.query(Candidate).outerjoin(Candidate.user).order_by(Candidate.created_at.desc()).all()
-    return [
-        AdminCandidateRead(
-            id=candidate.id,
-            user_id=candidate.user_id,
-            name=candidate.full_name or (candidate.user.name if candidate.user else "Candidato"),
-            email=candidate.email or (candidate.user.email if candidate.user else None),
-            phone=candidate.phone,
-            city=candidate.city,
-            neighborhood=candidate.neighborhood,
-            desired_role=candidate.desired_role,
-            skills=candidate.skills,
-            experience_years=candidate.experience_years,
-            salary_expectation=candidate.salary_expectation,
-            work_mode=candidate.work_mode,
-            created_at=candidate.created_at,
-        )
-        for candidate in candidates
-    ]
+    return [_candidate_to_admin_read(candidate) for candidate in candidates]
 
 
 def list_admin_companies(db: Session, current_user: User) -> list[AdminCompanyRead]:
@@ -99,34 +110,34 @@ def list_admin_jobs(db: Session, current_user: User) -> list[AdminJobRead]:
     return [job_to_admin_read(job) for job in jobs]
 
 
-def list_admin_applications(db: Session, current_user: User) -> list[AdminApplicationRead]:
-    require_admin(current_user)
-    applications = (
-        db.query(Application)
-        .join(Application.candidate)
-        .join(Application.job)
-        .order_by(Application.created_at.desc())
-        .all()
+def _application_to_admin_read(application: Application) -> AdminApplicationRead:
+    return AdminApplicationRead(
+        id=application.id,
+        candidate_id=application.candidate_id,
+        candidate_name=application.candidate.full_name
+        or (application.candidate.user.name if application.candidate.user else "Candidato"),
+        candidate_phone=application.candidate.phone,
+        candidate_city=application.candidate.city,
+        candidate_neighborhood=application.candidate.neighborhood,
+        job_id=application.job_id,
+        job_title=application.job.title,
+        status=application.status,
+        screening_status=application.screening_status,
+        screening_score=application.screening_score,
+        screening_summary=application.screening_summary,
+        created_at=application.created_at,
+        is_hidden=application.is_hidden,
+        stage=application.stage,
+        stage_label=stage_label(application.stage),
     )
-    return [
-        AdminApplicationRead(
-            id=application.id,
-            candidate_id=application.candidate_id,
-            candidate_name=application.candidate.full_name
-            or (application.candidate.user.name if application.candidate.user else "Candidato"),
-            candidate_phone=application.candidate.phone,
-            candidate_city=application.candidate.city,
-            candidate_neighborhood=application.candidate.neighborhood,
-            job_id=application.job_id,
-            job_title=application.job.title,
-            status=application.status,
-            screening_status=application.screening_status,
-            screening_score=application.screening_score,
-            screening_summary=application.screening_summary,
-            created_at=application.created_at,
-        )
-        for application in applications
-    ]
+
+
+def list_admin_applications(db: Session, current_user: User, include_hidden: bool = False) -> list[AdminApplicationRead]:
+    require_admin(current_user)
+    query = db.query(Application).join(Application.candidate).join(Application.job)
+    if not include_hidden:
+        query = query.filter(Application.is_hidden.is_(False))
+    return [_application_to_admin_read(application) for application in query.order_by(Application.created_at.desc()).all()]
 
 
 def approve_company(db: Session, current_user: User, company_id: int) -> AdminCompanyRead:
@@ -177,3 +188,41 @@ def hide_job(db: Session, current_user: User, job_id: int) -> AdminJobRead:
     db.commit()
     db.refresh(job)
     return job_to_admin_read(job)
+
+
+def set_company_active(db: Session, current_user: User, company_id: int, is_active: bool) -> AdminCompanyRead:
+    """Deactivate (never delete) a company: login blocked and its jobs leave public and AK lists."""
+    require_admin(current_user)
+    company = db.query(Company).filter(Company.id == company_id).first()
+    if not company:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Empresa não encontrada.")
+    company.user.is_active = is_active
+    db.commit()
+    db.refresh(company)
+    return _company_to_admin_read(company)
+
+
+def set_candidate_active(db: Session, current_user: User, candidate_id: int, is_active: bool) -> AdminCandidateRead:
+    """Deactivate (never delete) a candidate: login blocked (if any) and all applications hidden or shown again."""
+    require_admin(current_user)
+    candidate = db.query(Candidate).filter(Candidate.id == candidate_id).first()
+    if not candidate:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Candidato não encontrado.")
+    if candidate.user:
+        candidate.user.is_active = is_active
+    for application in candidate.applications:
+        application.is_hidden = not is_active
+    db.commit()
+    db.refresh(candidate)
+    return _candidate_to_admin_read(candidate)
+
+
+def set_application_hidden(db: Session, current_user: User, application_id: int, is_hidden: bool) -> AdminApplicationRead:
+    require_admin(current_user)
+    application = db.query(Application).filter(Application.id == application_id).first()
+    if not application:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Candidatura não encontrada.")
+    application.is_hidden = is_hidden
+    db.commit()
+    db.refresh(application)
+    return _application_to_admin_read(application)

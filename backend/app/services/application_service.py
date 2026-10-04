@@ -11,6 +11,7 @@ from app.models.job import Job
 from app.models.user import User, UserRole
 from app.schemas.application import ApplicationCreate, PublicApplicationCreate, PublicApplicationRead
 from app.services.identity_service import normalize_email, normalize_phone
+from app.services.job_service import publishable_jobs
 from app.services.pipeline_service import record_initial_stage
 from app.services.token_service import generate_public_token, hash_public_token
 
@@ -27,7 +28,7 @@ def create_application(db: Session, current_user: User, payload: ApplicationCrea
     if not candidate:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Candidate profile not found")
 
-    job = db.query(Job).filter(Job.id == payload.job_id, Job.is_active.is_(True), Job.status == "approved").first()
+    job = publishable_jobs(db).filter(Job.id == payload.job_id).first()
 
     if not job:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Job not found")
@@ -159,7 +160,7 @@ def create_public_application(
     if len(normalized_phone) < 8 or len(normalized_phone) > 15:
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Invalid phone")
 
-    job = db.query(Job).filter(Job.slug == slug, Job.is_active.is_(True), Job.status == "approved").first()
+    job = publishable_jobs(db).filter(Job.slug == slug).first()
 
     if not job:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Job not found")

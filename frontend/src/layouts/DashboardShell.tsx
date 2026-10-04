@@ -32,7 +32,7 @@ export function DashboardShell({ active, children }: DashboardShellProps) {
   return (
     <section className="bg-slate-100 py-6 sm:py-8">
       <Container>
-        <div className="grid gap-6 lg:grid-cols-[260px_1fr]">
+        <div className="grid grid-cols-[minmax(0,1fr)] gap-6 lg:grid-cols-[260px_1fr]">
           <aside className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm lg:sticky lg:top-28 lg:h-[calc(100svh-8rem)]">
             <div className="rounded-lg bg-ink-950 p-4 text-white">
               <p className="text-xs font-black uppercase tracking-[0.2em] text-gold-400">AK Talent</p>

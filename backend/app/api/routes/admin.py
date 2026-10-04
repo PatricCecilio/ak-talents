@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
 from app.api.deps import require_role
@@ -10,6 +10,8 @@ from app.schemas.admin import (
     AdminCompanyRead,
     AdminJobRead,
     AdminUserRead,
+    ActiveUpdate,
+    HiddenUpdate,
     RecruiterCreate,
     StaffMemberRead,
 )
@@ -24,6 +26,9 @@ from app.services.admin_service import (
     list_admin_companies,
     list_admin_jobs,
     list_admin_users,
+    set_application_hidden,
+    set_candidate_active,
+    set_company_active,
 )
 from app.services.screening_service import list_admin_screening_questions, replace_admin_screening_questions
 from app.services.staff_service import StaffCreationError, StaffEmailTakenError, create_staff_user, list_staff
@@ -76,8 +81,42 @@ def update_job_screening_questions(
 
 
 @router.get("/applications", response_model=list[AdminApplicationRead])
-def get_applications(db: Session = Depends(get_db), current_user: User = Depends(admin_only)):
-    return list_admin_applications(db, current_user)
+def get_applications(
+    include_hidden: bool = Query(default=False),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(admin_only),
+):
+    return list_admin_applications(db, current_user, include_hidden=include_hidden)
+
+
+@router.put("/companies/{company_id}/active", response_model=AdminCompanyRead)
+def set_company_active_endpoint(
+    company_id: int,
+    payload: ActiveUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(admin_only),
+):
+    return set_company_active(db, current_user, company_id, payload.is_active)
+
+
+@router.put("/candidates/{candidate_id}/active", response_model=AdminCandidateRead)
+def set_candidate_active_endpoint(
+    candidate_id: int,
+    payload: ActiveUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(admin_only),
+):
+    return set_candidate_active(db, current_user, candidate_id, payload.is_active)
+
+
+@router.put("/applications/{application_id}/hidden", response_model=AdminApplicationRead)
+def set_application_hidden_endpoint(
+    application_id: int,
+    payload: HiddenUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(admin_only),
+):
+    return set_application_hidden(db, current_user, application_id, payload.is_hidden)
 
 
 @router.put("/companies/{company_id}/approve", response_model=AdminCompanyRead)

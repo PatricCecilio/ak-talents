@@ -11,6 +11,7 @@ from app.core.config import settings
 from app.core.pipeline import ACTIVE_STAGES, Stage
 from app.models.application import Application
 from app.models.candidate import Candidate
+from app.models.company import Company
 from app.models.job import Job
 from app.models.screening import ScreeningAnswer, ScreeningQuestion
 from app.models.user import User
@@ -96,7 +97,14 @@ def _summaries(db: Session, jobs: list[Job]) -> list[RecruiterJobSummary]:
 
 
 def list_recruiter_jobs(db: Session) -> RecruiterJobsResponse:
-    jobs = db.query(Job).order_by(Job.created_at.desc(), Job.id.desc()).all()
+    jobs = (
+        db.query(Job)
+        .join(Company, Job.company_id == Company.id)
+        .join(User, Company.user_id == User.id)
+        .filter(User.is_active.is_(True))  # deactivated (test) companies drop out of the AK lists
+        .order_by(Job.created_at.desc(), Job.id.desc())
+        .all()
+    )
     return RecruiterJobsResponse(finalist_alert_days=_alert_days(), jobs=_summaries(db, jobs))
 
 
