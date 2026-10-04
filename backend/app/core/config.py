@@ -17,7 +17,10 @@ class Settings(BaseSettings):
     JWT_SECRET_KEY: str = DEFAULT_JWT_SECRET_KEY
     JWT_ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24
+    # Comma-separated list of exact origins, e.g. "https://aktalent.com.br,https://www.aktalent.com.br".
     BACKEND_CORS_ORIGINS: str = "http://localhost:5173,http://127.0.0.1:5173"
+    # Optional regex for extra origins (e.g. Vercel previews). Empty = disabled.
+    BACKEND_CORS_ORIGIN_REGEX: str = ""
     AUTO_CREATE_TABLES_ON_STARTUP: bool = True
     OPENAI_API_KEY: str = ""
     OPENAI_MODEL: str = "gpt-5.5"
@@ -40,9 +43,22 @@ class Settings(BaseSettings):
                 )
         return self
 
+    @model_validator(mode="after")
+    def _reject_wildcard_cors(self) -> "Settings":
+        # Browsers ignore "*" on credentialed requests, so it would silently break the frontend.
+        if "*" in self.cors_origins:
+            raise ValueError("BACKEND_CORS_ORIGINS não aceita '*': liste os domínios exatos separados por vírgula.")
+        return self
+
     @cached_property
     def cors_origins(self) -> list[str]:
-        return [origin.strip() for origin in self.BACKEND_CORS_ORIGINS.split(",") if origin.strip()]
+        # Origins never carry a path; tolerate "https://site.com/" and stray spaces from the env var.
+        origins = (origin.strip().rstrip("/") for origin in self.BACKEND_CORS_ORIGINS.split(","))
+        return list(dict.fromkeys(origin for origin in origins if origin))
+
+    @cached_property
+    def cors_origin_regex(self) -> str | None:
+        return self.BACKEND_CORS_ORIGIN_REGEX.strip() or None
 
     @cached_property
     def should_create_tables_on_startup(self) -> bool:

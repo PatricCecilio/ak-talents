@@ -13,7 +13,10 @@ services:
       - key: AUTO_CREATE_TABLES_ON_STARTUP
         value: "false"
       - key: BACKEND_CORS_ORIGINS
-        value: https://www.aktalent.com.br
+        value: https://aktalent.com.br,https://www.aktalent.com.br
+      # Optional, off by default: allow Vercel preview URLs (see DEPLOY.md before enabling).
+      # - key: BACKEND_CORS_ORIGIN_REGEX
+      #   value: ^https://ak-talents-[a-z0-9]+-patriccecilios-projects\.vercel\.app$
       - key: DATABASE_URL
         sync: false
       - key: JWT_SECRET_KEY
