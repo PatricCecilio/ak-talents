@@ -1,7 +1,8 @@
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, Request, status
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_user
+from app.core.rate_limit import PUBLIC_APPLICATION_LIMIT, limiter
 from app.database.session import get_db
 from app.models.user import User
 from app.schemas.application import PublicApplicationCreate, PublicApplicationRead
@@ -38,7 +39,9 @@ def get_job_matches_endpoint(
 
 
 @router.post("/{slug}/applications", response_model=PublicApplicationRead, status_code=status.HTTP_201_CREATED)
+@limiter.limit(PUBLIC_APPLICATION_LIMIT)
 def create_public_application_endpoint(
+    request: Request,
     slug: str,
     payload: PublicApplicationCreate,
     db: Session = Depends(get_db),

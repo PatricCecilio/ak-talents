@@ -10,3 +10,4 @@ pydantic-settings==2.7.1
 python-multipart==0.0.20
 openai>=1.59.0
 alembic==1.14.0
+slowapi==0.1.10

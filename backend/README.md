@@ -89,6 +89,21 @@ API docs:
 http://127.0.0.1:8000/docs
 ```
 
+## Tests
+
+Test-only dependencies (e.g. `httpx` for FastAPI's `TestClient`) live in `requirements-dev.txt`:
+
+```bash
+pip install -r requirements-dev.txt
+python -m unittest discover -s tests
+```
+
+## Rate limiting
+
+Login, registration, public applications and public screening endpoints are rate limited per
+client IP (`app/core/rate_limit.py`). Counters are in memory (single instance). Set
+`RATE_LIMIT_ENABLED=false` to disable locally.
+
 ## Database migrations
 
 Alembic is the schema authority for production databases:

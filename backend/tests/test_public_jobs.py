@@ -9,6 +9,7 @@ from sqlalchemy.pool import StaticPool
 from app.api.deps import get_current_user
 from app.api.routes import admin, applications, integrations, jobs, public
 from app.core.config import settings
+from app.core.rate_limit import limiter
 from app.database.base import Base
 from app.database.session import get_db
 from app.models.application import Application
@@ -24,6 +25,8 @@ from app.services.slug_service import generate_unique_job_slug, slugify
 
 class PublicJobsTestCase(unittest.TestCase):
     def setUp(self) -> None:
+        # Rate-limit counters are process-wide; start every test from zero.
+        limiter.reset()
         self.original_appintelli_secret = settings.APPINTELLI_INTEGRATION_SECRET
         settings.APPINTELLI_INTEGRATION_SECRET = "test-appintelli-secret"
         self.engine = create_engine(
