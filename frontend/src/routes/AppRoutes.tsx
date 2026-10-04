@@ -4,7 +4,7 @@ import { PrivateRoute } from '../components/PrivateRoute'
 import { CandidatePage } from '../pages/CandidatePage'
 import { CompanyPage } from '../pages/CompanyPage'
 import { AdminPage } from '../pages/AdminPage'
-import { HomePage } from '../pages/HomePage'
+import { HomePage, RecruitmentSolutionPage } from '../pages/HomePage'
 import { JobDetailPage } from '../pages/JobDetailPage'
 import { JobsPage } from '../pages/JobsPage'
 import { LoginPage } from '../pages/LoginPage'
@@ -17,6 +17,7 @@ export function AppRoutes() {
       <Routes>
         <Route element={<MainLayout />}>
           <Route path="/" element={<HomePage />} />
+          <Route path="/solucoes/recrutamento" element={<RecruitmentSolutionPage />} />
           <Route path="/vagas" element={<JobsPage />} />
           <Route path="/vagas/:slug" element={<JobDetailPage />} />
           <Route path="/login" element={<LoginPage />} />

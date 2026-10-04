@@ -1,4 +1,10 @@
-export const API_BASE_URL = 'http://localhost:8000'
+const LOCAL_API_BASE_URL = 'http://localhost:8000'
+
+export function resolveApiBaseUrl(env: ImportMetaEnv | undefined = import.meta.env): string {
+  return env?.VITE_API_BASE_URL?.trim() || LOCAL_API_BASE_URL
+}
+
+export const API_BASE_URL = resolveApiBaseUrl()
 const TOKEN_KEY = 'ak_talent_access_token'
 const USER_KEY = 'ak_talent_auth_user'
 

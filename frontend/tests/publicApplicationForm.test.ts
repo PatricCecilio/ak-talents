@@ -103,3 +103,15 @@ test('admin page wires configurable screening questions per job', () => {
   assert.match(source, /Salvar triagem/)
   assert.match(source, /lista JSON de perguntas/)
 })
+
+test('jobs page handles unavailable API with a friendly retry state', () => {
+  const root = new URL('../', import.meta.url)
+  const source = readFileSync(new URL('src/pages/JobsPage.tsx', root), 'utf8')
+
+  assert.match(source, /Nao foi possivel carregar as vagas no momento\./)
+  assert.match(source, /Tente novamente em alguns instantes\./)
+  assert.match(source, /Tentar novamente/)
+  assert.match(source, /onClick=\{\(\) => void loadJobs\(\)\}/)
+  assert.match(source, /No momento nao temos vagas disponiveis\./)
+  assert.doesNotMatch(source, /Failed to fetch/)
+})

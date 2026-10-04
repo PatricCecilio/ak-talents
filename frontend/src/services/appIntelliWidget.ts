@@ -1,4 +1,5 @@
 import type { AppIntelliApi, AppIntelliOpenOptions } from '../types/appIntelli'
+import { installAppIntelliWidget } from './appIntelliWidgetLoader.ts'
 
 export interface AppIntelliCta {
   intentHint: string
@@ -10,47 +11,54 @@ export interface AppIntelliCta {
 
 // Every landing CTA that opens the AppIntelli chat, in one place. Menu links stay plain navigation.
 export const appIntelliCtas = {
-  heroHiring: {
+  heroDemo: {
     intentHint: 'hiring',
-    entryPoint: 'hero_company',
+    entryPoint: 'hero_demo',
     pageSection: 'hero',
     journeyStage: 'consideration',
-    ctaLabel: 'Quero contratar',
-  },
-  heroJobSeeker: {
-    intentHint: 'job_seeker',
-    entryPoint: 'hero_professional',
-    pageSection: 'hero',
-    journeyStage: 'consideration',
-    ctaLabel: 'Busco oportunidades',
+    ctaLabel: 'Conversar com a AK Talent',
   },
   headerContact: {
     intentHint: 'general_contact',
     entryPoint: 'header_contact',
     pageSection: 'header',
     journeyStage: 'consideration',
-    ctaLabel: 'Falar com a AK Talent',
+    ctaLabel: 'Conversar com a AK Talent',
   },
-  companySection: {
+  sectionDemo: {
     intentHint: 'hiring',
-    entryPoint: 'company_section',
-    pageSection: 'companies',
+    entryPoint: 'solution_section',
+    pageSection: 'solution',
     journeyStage: 'consideration',
-    ctaLabel: 'Quero contratar',
+    ctaLabel: 'Conversar com a AK Talent',
   },
-  professionalSection: {
-    intentHint: 'job_seeker',
-    entryPoint: 'professional_section',
-    pageSection: 'professionals',
+  triageDemo: {
+    intentHint: 'hiring',
+    entryPoint: 'triage_section',
+    pageSection: 'triage',
     journeyStage: 'consideration',
-    ctaLabel: 'Apresentar meu perfil',
+    ctaLabel: 'Conversar com a AK Talent',
   },
-  finalContact: {
+  benefitsDemo: {
+    intentHint: 'hiring',
+    entryPoint: 'benefits_section',
+    pageSection: 'benefits',
+    journeyStage: 'consideration',
+    ctaLabel: 'Conversar com a AK Talent',
+  },
+  finalDemo: {
     intentHint: 'general_contact',
     entryPoint: 'final_cta',
     pageSection: 'final_cta',
     journeyStage: 'decision',
-    ctaLabel: 'Falar com a AK Talent',
+    ctaLabel: 'Conversar com a AK Talent',
+  },
+  floatingChat: {
+    intentHint: 'general_contact',
+    entryPoint: 'floating_chat',
+    pageSection: 'floating_chat',
+    journeyStage: 'consideration',
+    ctaLabel: 'Conversar com a AK Talent',
   },
 } as const satisfies Record<string, AppIntelliCta>
 
@@ -87,6 +95,7 @@ type AppIntelliHost = { AppIntelli?: AppIntelliApi }
 
 interface OpenEnvironment {
   host?: AppIntelliHost
+  installWidget?: () => HTMLScriptElement | null
   // widget.js loads async: a very early click waits briefly for window.AppIntelli (no event exists).
   waitMs?: number
   pollMs?: number
@@ -103,6 +112,10 @@ function tryOpen(host: AppIntelliHost, options: AppIntelliOpenOptions): boolean 
   return true
 }
 
+function shouldInstallWidget(env: OpenEnvironment, host: AppIntelliHost): boolean {
+  return !env.host && typeof window !== 'undefined' && host === window
+}
+
 export function openAppIntelliOptions(options: AppIntelliOpenOptions, env: OpenEnvironment = {}): OpenResult {
   const host = env.host ?? window
 
@@ -114,7 +127,15 @@ export function openAppIntelliOptions(options: AppIntelliOpenOptions, env: OpenE
   try {
     if (tryOpen(host, options)) return 'opened'
   } catch {
+    console.error('[AK Talent] AppIntelli.open falhou ao abrir o chat.')
     return 'unavailable'
+  }
+
+  if (shouldInstallWidget(env, host)) {
+    const script = (env.installWidget ?? installAppIntelliWidget)()
+    if (!script) {
+      return 'unavailable'
+    }
   }
 
   const waitMs = env.waitMs ?? 8000
@@ -130,7 +151,7 @@ export function openAppIntelliOptions(options: AppIntelliOpenOptions, env: OpenE
     if (opened || Date.now() - startedAt >= waitMs) {
       if (pendingWait) clearInterval(pendingWait)
       pendingWait = null
-      if (!opened) console.warn('[AK Talent] AppIntelli widget indisponivel no momento.')
+      if (!opened) console.error('[AK Talent] AppIntelli widget indisponivel no momento.')
     }
   }, pollMs)
   return 'waiting'

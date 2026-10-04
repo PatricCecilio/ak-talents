@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Alert, Badge, Card, EmptyState, LoadingSpinner, PageHeader } from '../components/ui'
+import { Alert, Badge, Button, Card, EmptyState, LoadingSpinner, PageHeader } from '../components/ui'
 import { Container } from '../components/Container'
 import { getJobs } from '../services/jobService'
 import type { Job } from '../types/user'
@@ -26,6 +26,27 @@ export function JobsPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState('')
 
+  const loadJobs = useCallback(async (isMounted: () => boolean = () => true) => {
+    setIsLoading(true)
+    setError('')
+
+    try {
+      const response = await getJobs()
+      if (isMounted()) {
+        setJobs(response)
+      }
+    } catch {
+      if (isMounted()) {
+        setJobs([])
+        setError('Nao foi possivel carregar as vagas no momento.')
+      }
+    } finally {
+      if (isMounted()) {
+        setIsLoading(false)
+      }
+    }
+  }, [])
+
   useEffect(() => {
     let isMounted = true
 
@@ -35,9 +56,10 @@ export function JobsPage() {
           setJobs(response)
         }
       })
-      .catch((err: unknown) => {
+      .catch(() => {
         if (isMounted) {
-          setError(err instanceof Error ? err.message : 'Nao foi possivel carregar as vagas.')
+          setJobs([])
+          setError('Nao foi possivel carregar as vagas no momento.')
         }
       })
       .finally(() => {
@@ -60,10 +82,28 @@ export function JobsPage() {
       />
 
       <div className="mt-8 grid gap-4">
-        {error ? <Alert tone="error">{error}</Alert> : null}
-        {isLoading ? <Card className="p-6"><LoadingSpinner label="Carregando vagas..." /></Card> : null}
-        {!isLoading && jobs.length === 0 ? (
-          <EmptyState title="Nenhuma vaga publicada no momento." description="Volte em breve para conferir novas oportunidades." />
+        {isLoading ? (
+          <Card className="p-6">
+            <LoadingSpinner label="Carregando vagas..." />
+          </Card>
+        ) : null}
+
+        {!isLoading && error ? (
+          <Alert tone="error">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p>{error}</p>
+                <p className="mt-1 font-normal text-red-600">Tente novamente em alguns instantes.</p>
+              </div>
+              <Button type="button" variant="danger" onClick={() => void loadJobs()}>
+                Tentar novamente
+              </Button>
+            </div>
+          </Alert>
+        ) : null}
+
+        {!isLoading && !error && jobs.length === 0 ? (
+          <EmptyState title="No momento nao temos vagas disponiveis." description="Volte em breve para conferir novas oportunidades." />
         ) : null}
 
         {jobs.map((job) => {

@@ -44,3 +44,8 @@ lerna-debug.log*
 *.tmp
 *.temp
 .vercel
+
+# Landing source PNGs (kept outside Git; the WebP versions are what the site uses)
+frontend/src/assets/ak-talent-hero-office.png
+frontend/src/assets/ak-talent-video-thumbnail.png
+frontend/src/assets/ak-talent-enterprise-team.png

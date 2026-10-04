@@ -44,93 +44,93 @@ function expectedContext(cta: AppIntelliCta) {
   }
 }
 
-test('T1-T6: "Quero contratar" opens AppIntelli exactly once with the hiring hero context', () => {
+test('T1-T6: "Conversar com a AK Talent" opens AppIntelli exactly once with the hiring hero context', () => {
   const { host, calls } = fakeHost()
-  assert.equal(openAppIntelli(appIntelliCtas.heroHiring, { host }), 'opened')
+  assert.equal(openAppIntelli(appIntelliCtas.heroDemo, { host }), 'opened')
   assert.equal(calls.length, 1)
   assert.deepEqual(calls[0], {
     context: {
       intentHint: 'hiring',
-      entryPoint: 'hero_company',
+      entryPoint: 'hero_demo',
       pageSection: 'hero',
       journeyStage: 'consideration',
-      metadata: { ctaLabel: 'Quero contratar' },
+      metadata: { ctaLabel: 'Conversar com a AK Talent' },
     },
   })
 })
 
-test('T7-T9: "Busco oportunidades" opens AppIntelli exactly once with the job seeker hero context', () => {
-  const { host, calls } = fakeHost()
-  openAppIntelli(appIntelliCtas.heroJobSeeker, { host })
-  assert.equal(calls.length, 1)
-  assert.deepEqual(calls[0], {
-    context: {
-      intentHint: 'job_seeker',
-      entryPoint: 'hero_professional',
-      pageSection: 'hero',
-      journeyStage: 'consideration',
-      metadata: { ctaLabel: 'Busco oportunidades' },
-    },
-  })
-})
-
-test('T10: header "Falar com a AK Talent" uses the neutral general_contact context', () => {
+test('T10: header contact context remains available but is not rendered as a header CTA', () => {
   const { host, calls } = fakeHost()
   openAppIntelli(appIntelliCtas.headerContact, { host })
   assert.deepEqual(calls[0], expectedContext(appIntelliCtas.headerContact))
   assert.equal(calls[0].context?.intentHint, 'general_contact')
   assert.equal(calls[0].context?.entryPoint, 'header_contact')
   assert.equal(calls[0].context?.pageSection, 'header')
+  assert.doesNotMatch(read('src/components/Header.tsx'), /AppIntelliButton|headerContact/)
 })
 
 test('section and final CTAs carry their own contexts', () => {
-  assert.deepEqual(appIntelliCtas.companySection, {
+  assert.deepEqual(appIntelliCtas.sectionDemo, {
     intentHint: 'hiring',
-    entryPoint: 'company_section',
-    pageSection: 'companies',
+    entryPoint: 'solution_section',
+    pageSection: 'solution',
     journeyStage: 'consideration',
-    ctaLabel: 'Quero contratar',
+    ctaLabel: 'Conversar com a AK Talent',
   })
-  assert.deepEqual(appIntelliCtas.professionalSection, {
-    intentHint: 'job_seeker',
-    entryPoint: 'professional_section',
-    pageSection: 'professionals',
+  assert.deepEqual(appIntelliCtas.triageDemo, {
+    intentHint: 'hiring',
+    entryPoint: 'triage_section',
+    pageSection: 'triage',
     journeyStage: 'consideration',
-    ctaLabel: 'Apresentar meu perfil',
+    ctaLabel: 'Conversar com a AK Talent',
   })
-  assert.deepEqual(appIntelliCtas.finalContact, {
+  assert.deepEqual(appIntelliCtas.benefitsDemo, {
+    intentHint: 'hiring',
+    entryPoint: 'benefits_section',
+    pageSection: 'benefits',
+    journeyStage: 'consideration',
+    ctaLabel: 'Conversar com a AK Talent',
+  })
+  assert.deepEqual(appIntelliCtas.finalDemo, {
     intentHint: 'general_contact',
     entryPoint: 'final_cta',
     pageSection: 'final_cta',
     journeyStage: 'decision',
-    ctaLabel: 'Falar com a AK Talent',
+    ctaLabel: 'Conversar com a AK Talent',
+  })
+  assert.deepEqual(appIntelliCtas.floatingChat, {
+    intentHint: 'general_contact',
+    entryPoint: 'floating_chat',
+    pageSection: 'floating_chat',
+    journeyStage: 'consideration',
+    ctaLabel: 'Conversar com a AK Talent',
   })
 })
 
 test('T14: early click before widget.js loads waits, then opens once with the latest click context', async () => {
   const host: { AppIntelli?: AppIntelliApi } = {}
-  assert.equal(openAppIntelli(appIntelliCtas.heroHiring, { host, pollMs: 5, waitMs: 500 }), 'waiting')
-  assert.equal(openAppIntelli(appIntelliCtas.heroJobSeeker, { host, pollMs: 5, waitMs: 500 }), 'waiting')
+  assert.equal(openAppIntelli(appIntelliCtas.heroDemo, { host, pollMs: 5, waitMs: 500 }), 'waiting')
+  assert.equal(openAppIntelli(appIntelliCtas.sectionDemo, { host, pollMs: 5, waitMs: 500 }), 'waiting')
   const { host: ready, calls } = fakeHost()
   await sleep(30)
   host.AppIntelli = ready.AppIntelli
   await sleep(60)
   assert.equal(calls.length, 1)
-  assert.deepEqual(calls[0], expectedContext(appIntelliCtas.heroJobSeeker))
+  assert.deepEqual(calls[0], expectedContext(appIntelliCtas.sectionDemo))
 })
 
 test('T14: widget never loading gives up quietly (no throw, no open)', async () => {
   const host: { AppIntelli?: AppIntelliApi } = {}
-  const warn = console.warn
-  const warnings: unknown[] = []
-  console.warn = (...args: unknown[]) => warnings.push(args)
+  const error = console.error
+  const errors: unknown[] = []
+  console.error = (...args: unknown[]) => errors.push(args)
   try {
-    assert.equal(openAppIntelli(appIntelliCtas.finalContact, { host, pollMs: 5, waitMs: 30 }), 'waiting')
+    assert.equal(openAppIntelli(appIntelliCtas.finalDemo, { host, pollMs: 5, waitMs: 30 }), 'waiting')
     await sleep(80)
   } finally {
-    console.warn = warn
+    console.error = error
   }
-  assert.equal(warnings.length, 1)
+  assert.equal(errors.length, 1)
 })
 
 test('a widget API that throws never breaks the page', () => {
@@ -142,7 +142,7 @@ test('a widget API that throws never breaks the page', () => {
       close: () => {},
     },
   }
-  assert.equal(openAppIntelli(appIntelliCtas.heroHiring, { host }), 'unavailable')
+  assert.equal(openAppIntelli(appIntelliCtas.heroDemo, { host }), 'unavailable')
 })
 
 test('recruitment screening opens AppIntelli with only the opaque application reference', () => {
@@ -184,10 +184,10 @@ test('CTAs are real buttons wired to the expected contexts; each landing CTA app
   const homePage = read('src/pages/HomePage.tsx')
   const header = read('src/components/Header.tsx')
   const count = (source: string, id: string) => (source.match(new RegExp(`cta="${id}"`, 'g')) ?? []).length
-  for (const id of ['heroHiring', 'heroJobSeeker', 'companySection', 'professionalSection', 'finalContact']) {
-    assert.equal(count(homePage, id), 1, id)
-  }
-  assert.equal(count(header, 'headerContact'), 1)
+  assert.equal(count(homePage, 'heroDemo'), 1)
+  assert.equal(count(homePage, 'finalDemo'), 1)
+  assert.equal(count(homePage, 'floatingChat'), 1)
+  assert.equal(count(header, 'headerContact'), 0)
 })
 
 test('T13: menu stays navigation (anchor links, no chat buttons inside the nav)', () => {
@@ -195,9 +195,19 @@ test('T13: menu stays navigation (anchor links, no chat buttons inside the nav)'
   const nav = header.slice(header.indexOf('<nav'), header.indexOf('</nav>'))
   assert.match(nav, /<a\s/)
   assert.doesNotMatch(nav, /AppIntelliButton|onClick/)
-  for (const href of ['#inicio', '#como-funciona', '#empresas', '#profissionais', '#sobre']) {
+  for (const href of ['/solucoes/recrutamento', '/#plataforma', '/vagas', '/#como-funciona', '/#sobre']) {
     assert.match(header, new RegExp(`href: '${href}'`))
   }
+  assert.match(header, /href="\/login"/)
+  assert.match(header, /Entrar/)
+})
+
+test('footer section links also work from non-home routes', () => {
+  const footer = read('src/components/Footer.tsx')
+  for (const href of ['/solucoes/recrutamento', '/#plataforma', '/vagas', '/#como-funciona', '/#sobre']) {
+    assert.match(footer, new RegExp(`href: '${href}'`))
+  }
+  assert.match(footer, /contato@aktalent\.com\.br/)
 })
 
 test('T15: AppIntelli widget is installed by runtime config, not a hardcoded HTML script', () => {
@@ -226,8 +236,9 @@ test('widget config accepts local URL and local public key from Vite env', () =>
 })
 
 test('widget installer writes script src and public key without backend secrets', () => {
-  const scripts: Array<{ src?: string; async?: boolean; dataset: Record<string, string> }> = []
+  const scripts: Array<{ id?: string; src?: string; async?: boolean; dataset: Record<string, string> }> = []
   const documentRef = {
+    getElementById: () => null,
     createElement: () => {
       const script = { dataset: {} as Record<string, string> }
       scripts.push(script)
@@ -243,8 +254,62 @@ test('widget installer writes script src and public key without backend secrets'
     VITE_APPINTELLI_WIDGET_KEY: 'local-test-key',
   } as ImportMetaEnv, documentRef)
 
+  assert.ok(script)
+  assert.equal(script.id, 'appintelli-widget-script')
   assert.equal(script.src, 'http://localhost:3000/widget.js')
   assert.equal(script.async, true)
   assert.equal(script.dataset.widgetKey, 'local-test-key')
   assert.doesNotMatch(JSON.stringify(script), /APPINTELLI_INTEGRATION_SECRET|AKTALENT_INTEGRATION_SECRET/)
+})
+
+test('widget installer is idempotent and reports missing public key', () => {
+  const error = console.error
+  const errors: unknown[] = []
+  console.error = (...args: unknown[]) => errors.push(args)
+  try {
+    const existing = { dataset: {} } as HTMLScriptElement
+    const existingDocument = {
+      getElementById: () => existing,
+      createElement: () => {
+        throw new Error('should not create another script')
+      },
+      body: { appendChild: () => undefined },
+    } as unknown as Document
+    assert.equal(installAppIntelliWidget({ VITE_APPINTELLI_WIDGET_KEY: 'local-key' } as ImportMetaEnv, existingDocument), existing)
+
+    const missingKeyDocument = {
+      getElementById: () => null,
+      createElement: () => ({ dataset: {} }),
+      body: { appendChild: () => undefined },
+    } as unknown as Document
+    assert.equal(installAppIntelliWidget({ VITE_APPINTELLI_WIDGET_KEY: '' } as ImportMetaEnv, missingKeyDocument), null)
+  } finally {
+    console.error = error
+  }
+  assert.equal(errors.length, 1)
+  assert.match(String(errors[0]), /VITE_APPINTELLI_WIDGET_KEY/)
+})
+
+test('browser CTA path tries to install the widget before waiting for AppIntelli.open', async () => {
+  const previousWindow = globalThis.window
+  const host: { AppIntelli?: AppIntelliApi } = {}
+  ;(globalThis as typeof globalThis & { window?: typeof host }).window = host
+  let installs = 0
+  try {
+    assert.equal(
+      openAppIntelli(appIntelliCtas.headerContact, {
+        installWidget: () => {
+          installs += 1
+          return { dataset: {} } as HTMLScriptElement
+        },
+        pollMs: 5,
+        waitMs: 20,
+      }),
+      'waiting',
+    )
+    await sleep(40)
+  } finally {
+    globalThis.window = previousWindow
+  }
+  assert.equal(installs, 1)
 })
