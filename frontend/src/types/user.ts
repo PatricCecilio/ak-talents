@@ -18,6 +18,7 @@ export interface RegisterPayload extends LoginPayload {
   name: string
   role: UserRole
   company_name?: string
+  privacy_accepted: boolean
 }
 
 export interface AuthResponse {

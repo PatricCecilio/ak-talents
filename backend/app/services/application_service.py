@@ -3,6 +3,7 @@ from datetime import datetime, timezone
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
+from app.core.privacy import PRIVACY_CONSENT_REQUIRED_MESSAGE, PRIVACY_POLICY_VERSION
 from app.models.application import Application
 from app.models.candidate import Candidate
 from app.models.company import Company
@@ -139,7 +140,7 @@ def create_public_application(
     payload: PublicApplicationCreate,
 ) -> PublicApplicationRead:
     if not payload.privacy_accepted:
-        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Privacy acceptance is required")
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=PRIVACY_CONSENT_REQUIRED_MESSAGE)
 
     normalized_email = normalize_email(str(payload.email))
     normalized_phone = normalize_phone(payload.phone)
@@ -168,6 +169,7 @@ def create_public_application(
         job_id=job.id,
         status=PUBLIC_APPLICATION_STATUS,
         privacy_accepted_at=datetime.now(timezone.utc),
+        privacy_policy_version=PRIVACY_POLICY_VERSION,
     )
     public_screening_token = generate_public_token()
     application.public_screening_token_hash = hash_public_token(public_screening_token)

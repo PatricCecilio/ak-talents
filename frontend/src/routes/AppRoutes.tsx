@@ -9,6 +9,7 @@ import { JobDetailPage } from '../pages/JobDetailPage'
 import { JobsPage } from '../pages/JobsPage'
 import { LoginPage } from '../pages/LoginPage'
 import { NotFoundPage } from '../pages/NotFoundPage'
+import { PrivacyPage } from '../pages/PrivacyPage'
 import { RegisterPage } from '../pages/RegisterPage'
 
 export function AppRoutes() {
@@ -20,6 +21,7 @@ export function AppRoutes() {
           <Route path="/solucoes/recrutamento" element={<RecruitmentSolutionPage />} />
           <Route path="/vagas" element={<JobsPage />} />
           <Route path="/vagas/:slug" element={<JobDetailPage />} />
+          <Route path="/privacidade" element={<PrivacyPage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
           <Route

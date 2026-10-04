@@ -79,7 +79,7 @@ class RateLimitTestCase(unittest.TestCase):
             10,
             lambda: self.client.post(
                 "/auth/register",
-                json={"name": "Pessoa", "email": f"p{next(counter)}@example.com", "password": "senha-forte-1", "role": "candidate"},
+                json={"name": "Pessoa", "email": f"p{next(counter)}@example.com", "password": "senha-forte-1", "role": "candidate", "privacy_accepted": True},
             ),
         )
 

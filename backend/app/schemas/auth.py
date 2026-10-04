@@ -10,6 +10,8 @@ class RegisterRequest(BaseModel):
     password: str = Field(min_length=8, max_length=128)
     role: UserRole
     company_name: str | None = Field(default=None, max_length=180)
+    # Must be true; checked in the service so the client gets a clear Portuguese message.
+    privacy_accepted: bool = False
 
 
 class LoginRequest(BaseModel):

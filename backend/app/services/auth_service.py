@@ -1,6 +1,9 @@
+from datetime import datetime, timezone
+
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
+from app.core.privacy import PRIVACY_CONSENT_REQUIRED_MESSAGE, PRIVACY_POLICY_VERSION
 from app.core.security import create_access_token, get_password_hash, verify_password
 from app.models.candidate import Candidate
 from app.models.company import Company
@@ -12,6 +15,9 @@ def register_user(db: Session, payload: RegisterRequest) -> TokenResponse:
     if payload.role == UserRole.admin:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin users cannot be created publicly")
 
+    if not payload.privacy_accepted:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=PRIVACY_CONSENT_REQUIRED_MESSAGE)
+
     existing_user = db.query(User).filter(User.email == payload.email).first()
 
     if existing_user:
@@ -22,6 +28,8 @@ def register_user(db: Session, payload: RegisterRequest) -> TokenResponse:
         email=str(payload.email),
         hashed_password=get_password_hash(payload.password),
         role=payload.role.value,
+        privacy_accepted_at=datetime.now(timezone.utc),
+        privacy_policy_version=PRIVACY_POLICY_VERSION,
     )
     db.add(user)
     db.flush()

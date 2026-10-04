@@ -34,6 +34,9 @@ export function Footer() {
             contato@aktalent.com.br
           </a>
           <p className="mt-5 text-sm text-ink-400">© 2026 AK Talent. Todos os direitos reservados.</p>
+          <a href="/privacidade" className="mt-2 inline-block text-sm font-semibold text-ink-600 transition hover:text-brand-700">
+            Política de Privacidade
+          </a>
         </div>
       </Container>
     </footer>

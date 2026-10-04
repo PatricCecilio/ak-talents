@@ -6,6 +6,7 @@ import { Alert, Button } from '../components/ui'
 import { useFormState } from '../hooks/useFormState'
 import { AuthLayout } from '../layouts/AuthLayout'
 import { registerUser } from '../services/authService'
+import { PRIVACY_POLICY_PATH } from '../services/privacyPolicy'
 import type { UserRole } from '../types/user'
 
 const roles: Array<{ value: UserRole; label: string; description: string }> = [
@@ -31,12 +32,18 @@ export function RegisterPage() {
   })
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
+  const [privacyAccepted, setPrivacyAccepted] = useState(false)
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
-    setIsLoading(true)
     setError('')
 
+    if (!privacyAccepted) {
+      setError('Para continuar, leia e aceite a Política de Privacidade.')
+      return
+    }
+
+    setIsLoading(true)
     try {
       await registerUser({
         name: values.name,
@@ -44,12 +51,13 @@ export function RegisterPage() {
         password: values.password,
         role: values.role as UserRole,
         company_name: values.role === 'company' ? values.name : undefined,
+        privacy_accepted: privacyAccepted,
       })
       navigate('/login', {
         state: { message: 'Cadastro realizado com sucesso. Entre com seu email e senha.' },
       })
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Nao foi possivel concluir o cadastro.')
+      setError(err instanceof Error ? err.message : 'Não foi possível concluir o cadastro.')
     } finally {
       setIsLoading(false)
     }
@@ -58,7 +66,7 @@ export function RegisterPage() {
   return (
     <AuthLayout
       title="Crie seu cadastro"
-      subtitle="Defina seu perfil para que a plataforma personalize sua experiencia desde a primeira etapa."
+      subtitle="Defina seu perfil para que a plataforma personalize sua experiência desde a primeira etapa."
     >
       <form onSubmit={handleSubmit} className="grid gap-5">
         {error ? (
@@ -93,7 +101,7 @@ export function RegisterPage() {
         />
 
         <fieldset className="grid gap-3">
-          <legend className="text-sm font-bold text-ink-800">Tipo de usuario</legend>
+          <legend className="text-sm font-bold text-ink-800">Tipo de usuário</legend>
           <div className="grid gap-3 sm:grid-cols-2">
             {roles.map((role) => (
               <label
@@ -118,6 +126,28 @@ export function RegisterPage() {
             ))}
           </div>
         </fieldset>
+
+        <label htmlFor="register_privacy" className="flex gap-3 text-sm font-semibold leading-6 text-ink-700">
+          <input
+            id="register_privacy"
+            type="checkbox"
+            checked={privacyAccepted}
+            onChange={(event) => setPrivacyAccepted(event.target.checked)}
+            className="mt-1 h-4 w-4 rounded border-slate-300 text-brand-700 focus:ring-gold-500"
+          />
+          <span>
+            Li e aceito a{' '}
+            <a
+              href={PRIVACY_POLICY_PATH}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-bold text-brand-700 underline underline-offset-2 hover:text-brand-600"
+            >
+              Política de Privacidade
+            </a>{' '}
+            e autorizo o tratamento dos meus dados para usar a plataforma.
+          </span>
+        </label>
 
         <Button
           type="submit"

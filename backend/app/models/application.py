@@ -17,6 +17,7 @@ class Application(Base):
     cover_letter: Mapped[str | None] = mapped_column(Text, nullable=True)
     status: Mapped[str] = mapped_column(String(50), default="submitted", nullable=False)
     privacy_accepted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    privacy_policy_version: Mapped[str | None] = mapped_column(String(20), nullable=True)
     appintelli_reference: Mapped[str] = mapped_column(
         String(64), default=generate_appintelli_reference, unique=True, index=True, nullable=False
     )

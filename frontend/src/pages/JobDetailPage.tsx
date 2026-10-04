@@ -6,6 +6,7 @@ import { Container } from '../components/Container'
 import { LoadErrorState } from '../components/LoadErrorState'
 import { ApiError } from '../services/api'
 import { formatSalary, formatWorkMode } from '../services/jobFormat'
+import { PRIVACY_POLICY_PATH } from '../services/privacyPolicy'
 import { getJobBySlug } from '../services/jobService'
 import { createPublicApplication, getPublicScreening, submitScreeningAnswers } from '../services/applicationService'
 import { openAppIntelliOptions, toRecruitmentScreeningOpenOptions } from '../services/appIntelliWidget'
@@ -347,7 +348,17 @@ export function JobDetailPage() {
                     className="mt-1 h-4 w-4 rounded border-slate-300 text-brand-700 focus:ring-gold-500"
                   />
                   <span>
-                    Li e concordo com o tratamento dos meus dados pela AK Talent para participação neste processo seletivo.
+                    Li e concordo com o tratamento dos meus dados pela AK Talent para participação neste processo seletivo,
+                    conforme a{' '}
+                    <a
+                      href={PRIVACY_POLICY_PATH}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="font-bold text-brand-700 underline underline-offset-2 hover:text-brand-600"
+                    >
+                      Política de Privacidade
+                    </a>
+                    .
                   </span>
                 </label>
 
