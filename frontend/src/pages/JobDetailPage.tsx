@@ -3,6 +3,9 @@ import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { Alert, Badge, Button, Card, LoadingSpinner, PageHeader } from '../components/ui'
 import { Container } from '../components/Container'
+import { LoadErrorState } from '../components/LoadErrorState'
+import { ApiError } from '../services/api'
+import { formatSalary, formatWorkMode } from '../services/jobFormat'
 import { getJobBySlug } from '../services/jobService'
 import { createPublicApplication, getPublicScreening, submitScreeningAnswers } from '../services/applicationService'
 import { openAppIntelliOptions, toRecruitmentScreeningOpenOptions } from '../services/appIntelliWidget'
@@ -13,21 +16,7 @@ import {
 } from '../services/publicApplicationForm'
 import type { Job, PublicScreeningQuestion, ScreeningSubmitResponse } from '../types/user'
 
-function formatSalary(job: Job) {
-  if (job.salary_min && job.salary_max) {
-    return `R$ ${job.salary_min.toLocaleString('pt-BR')} - R$ ${job.salary_max.toLocaleString('pt-BR')}`
-  }
-
-  if (job.salary_min) {
-    return `A partir de R$ ${job.salary_min.toLocaleString('pt-BR')}`
-  }
-
-  if (job.salary_max) {
-    return `Ate R$ ${job.salary_max.toLocaleString('pt-BR')}`
-  }
-
-  return ''
-}
+type JobLoadError = 'not-found' | 'network' | 'server' | null
 
 export function JobDetailPage() {
   const { slug = '' } = useParams()
@@ -35,7 +24,8 @@ export function JobDetailPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [showForm, setShowForm] = useState(false)
-  const [error, setError] = useState('')
+  const [loadError, setLoadError] = useState<JobLoadError>(null)
+  const [reloadKey, setReloadKey] = useState(0)
   const [formError, setFormError] = useState('')
   const [screeningError, setScreeningError] = useState('')
   const [isSubmittingScreening, setIsSubmittingScreening] = useState(false)
@@ -83,7 +73,7 @@ export function JobDetailPage() {
         openScreeningWidget(response.application_reference)
       }, 500)
     } catch (err) {
-      setFormError(err instanceof Error ? err.message : 'Nao foi possivel enviar sua candidatura.')
+      setFormError(err instanceof Error ? err.message : 'Não foi possível enviar sua candidatura.')
     } finally {
       setIsSubmitting(false)
     }
@@ -104,7 +94,7 @@ export function JobDetailPage() {
       const screening = await getPublicScreening(screeningToken)
       setScreeningQuestions(screening.questions)
     } catch (err) {
-      setScreeningError(err instanceof Error ? err.message : 'Nao foi possivel carregar a triagem.')
+      setScreeningError(err instanceof Error ? err.message : 'Não foi possível carregar a triagem.')
     } finally {
       setIsLoadingLegacyScreening(false)
     }
@@ -126,7 +116,7 @@ export function JobDetailPage() {
 
     const missingRequired = screeningQuestions.find((question) => question.required && isMissingScreeningAnswer(question))
     if (missingRequired) {
-      setScreeningError('Responda todas as perguntas obrigatorias da triagem.')
+      setScreeningError('Responda todas as perguntas obrigatórias da triagem.')
       return
     }
 
@@ -144,38 +134,49 @@ export function JobDetailPage() {
       })
       setScreeningResult(response)
     } catch (err) {
-      setScreeningError(err instanceof Error ? err.message : 'Nao foi possivel enviar a triagem.')
+      setScreeningError(err instanceof Error ? err.message : 'Não foi possível enviar a triagem.')
     } finally {
       setIsSubmittingScreening(false)
     }
   }
 
+  function retryLoadJob() {
+    setIsLoading(true)
+    setLoadError(null)
+    setReloadKey((key) => key + 1)
+  }
+
   useEffect(() => {
-    let isMounted = true
+    let active = true
 
     getJobBySlug(slug)
       .then((response) => {
-        if (isMounted) {
+        if (active) {
           setJob(response)
+          setLoadError(null)
         }
       })
       .catch((err: unknown) => {
-        if (isMounted) {
-          setError(err instanceof Error ? err.message : 'Nao foi possivel carregar a vaga.')
+        if (active) {
+          setJob(null)
+          if (err instanceof ApiError && err.isNotFound) setLoadError('not-found')
+          else if (err instanceof ApiError && err.isNetworkError) setLoadError('network')
+          else setLoadError('server')
         }
       })
       .finally(() => {
-        if (isMounted) {
+        if (active) {
           setIsLoading(false)
         }
       })
 
     return () => {
-      isMounted = false
+      active = false
     }
-  }, [slug])
+  }, [slug, reloadKey])
 
   const salary = job ? formatSalary(job) : ''
+  const workMode = job ? formatWorkMode(job.work_mode) : ''
 
   return (
     <Container className="py-12">
@@ -184,24 +185,46 @@ export function JobDetailPage() {
       </Link>
 
       {isLoading ? <Card className="mt-8 p-6"><LoadingSpinner label="Carregando vaga..." /></Card> : null}
-      {error ? <div className="mt-8"><Alert tone="error">{error}</Alert></div> : null}
+      {!isLoading && loadError === 'not-found' ? (
+        <div className="mt-8">
+          <LoadErrorState
+            title="Esta vaga não está mais disponível."
+            description="Ela pode ter sido preenchida ou encerrada. Veja as outras oportunidades abertas."
+            secondaryAction={{ to: '/vagas', label: 'Ver outras vagas' }}
+          />
+        </div>
+      ) : null}
+      {!isLoading && (loadError === 'network' || loadError === 'server') ? (
+        <div className="mt-8">
+          <LoadErrorState
+            title="Não conseguimos abrir esta vaga."
+            description={
+              loadError === 'network'
+                ? 'Confira sua conexão com a internet e toque em "Tentar novamente".'
+                : 'Pode ser uma instabilidade rápida. Toque em "Tentar novamente" em alguns instantes.'
+            }
+            onRetry={retryLoadJob}
+            secondaryAction={{ to: '/vagas', label: 'Ver outras vagas' }}
+          />
+        </div>
+      ) : null}
 
       {job ? (
         <div className="mt-8 grid gap-8">
           <PageHeader
             eyebrow="Detalhes da vaga"
             title={job.title}
-            description={job.location || 'Localizacao nao informada'}
+            description={job.location || 'Localização não informada'}
           />
 
           <Card className="p-6">
             <div className="flex flex-wrap gap-2">
-              {job.work_mode ? <Badge>{job.work_mode}</Badge> : null}
+              {workMode ? <Badge>{workMode}</Badge> : null}
               {salary ? <Badge>{salary}</Badge> : null}
             </div>
 
             <section className="mt-8">
-              <h2 className="text-xl font-black text-ink-950">Descricao</h2>
+              <h2 className="text-xl font-black text-ink-950">Descrição</h2>
               <p className="mt-3 whitespace-pre-line text-base leading-8 text-ink-700">{job.description}</p>
             </section>
 
@@ -324,7 +347,7 @@ export function JobDetailPage() {
                     className="mt-1 h-4 w-4 rounded border-slate-300 text-brand-700 focus:ring-gold-500"
                   />
                   <span>
-                    Li e concordo com o tratamento dos meus dados pela AK Talent para participacao neste processo seletivo.
+                    Li e concordo com o tratamento dos meus dados pela AK Talent para participação neste processo seletivo.
                   </span>
                 </label>
 
@@ -356,7 +379,7 @@ export function JobDetailPage() {
                       <div className="flex flex-wrap gap-3">
                         {[
                           { value: true, label: 'Sim' },
-                          { value: false, label: 'Nao' },
+                          { value: false, label: 'Não' },
                         ].map((option) => (
                           <label key={String(option.value)} className="flex items-center gap-2 text-sm font-semibold text-ink-700">
                             <input
@@ -405,7 +428,7 @@ export function JobDetailPage() {
             {screeningResult ? (
               <div className="mt-8">
                 <Alert tone="success">
-                  Triagem recebida. Status: {screeningResult.screening_status}.
+                  Triagem recebida. Obrigado! A equipe da AK Talent vai analisar suas respostas e entrará em contato.
                 </Alert>
               </div>
             ) : null}

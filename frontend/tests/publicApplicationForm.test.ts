@@ -108,10 +108,26 @@ test('jobs page handles unavailable API with a friendly retry state', () => {
   const root = new URL('../', import.meta.url)
   const source = readFileSync(new URL('src/pages/JobsPage.tsx', root), 'utf8')
 
-  assert.match(source, /Nao foi possivel carregar as vagas no momento\./)
-  assert.match(source, /Tente novamente em alguns instantes\./)
-  assert.match(source, /Tentar novamente/)
-  assert.match(source, /onClick=\{\(\) => void loadJobs\(\)\}/)
-  assert.match(source, /No momento nao temos vagas disponiveis\./)
-  assert.doesNotMatch(source, /Failed to fetch/)
+  const errorState = readFileSync(new URL('src/components/LoadErrorState.tsx', root), 'utf8')
+
+  assert.match(source, /Não conseguimos carregar as vagas agora\./)
+  assert.match(source, /Confira sua conexão com a internet/)
+  assert.match(source, /onRetry=\{\(\) => loadJobs\(\)\}/)
+  assert.match(errorState, /Tentar novamente/)
+  assert.match(errorState, /min-h-12/)
+  assert.match(source, /Nenhuma vaga aberta agora/)
+  assert.match(source, /<JobsUnavailableNotice/)
+  assert.doesNotMatch(source, /Failed to fetch|Alert tone="error"/)
+})
+
+test('job detail page shows friendly closed-job and connection states', () => {
+  const root = new URL('../', import.meta.url)
+  const source = readFileSync(new URL('src/pages/JobDetailPage.tsx', root), 'utf8')
+
+  assert.match(source, /Esta vaga não está mais disponível\./)
+  assert.match(source, /Não conseguimos abrir esta vaga\./)
+  assert.match(source, /Ver outras vagas/)
+  assert.match(source, /err\.isNotFound/)
+  assert.match(source, /err\.isNetworkError/)
+  assert.doesNotMatch(source, /Status: \{screeningResult\.screening_status\}/)
 })

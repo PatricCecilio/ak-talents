@@ -42,7 +42,7 @@ test('home uses the requested segment and platform structure', () => {
   expectText(source, ['50+', '1.200+', 'vagas simultâneas', 'candidatos por mês'])
 })
 
-test('commercial conversion is AppIntelli-first and avoids WhatsApp/form CTAs on the home', () => {
+test('commercial conversion is AppIntelli-first; WhatsApp only as fallback when there are no jobs', () => {
   const source = read('src/pages/HomePage.tsx')
   const ctas = read('src/services/appIntelliWidget.ts')
   const header = read('src/components/Header.tsx')
@@ -56,15 +56,25 @@ test('commercial conversion is AppIntelli-first and avoids WhatsApp/form CTAs on
   assert.doesNotMatch(header, /AppIntelliButton|headerContact/)
   assert.doesNotMatch(source, /WhatsApp|resolveWhatsappConfig|Prefiro deixar meus dados|<form/)
   assert.doesNotMatch(ctas, /candidateId|applicationId|jobId|workspaceId|email|phone|telefone|full_name/)
+
+  // The only WhatsApp entry point on the home is the "no jobs" notice, never a commercial CTA.
+  const notice = read('src/components/JobsUnavailableNotice.tsx')
+  assert.match(source, /<JobsUnavailableNotice \/>/)
+  assert.match(notice, /resolveWhatsappConfig/)
+  assert.match(notice, /whatsapp\.url \?/)
+  assert.doesNotMatch(notice, /AppIntelli|Falar com um especialista/)
 })
 
-test('featured jobs use the public jobs API with a friendly fallback', () => {
+test('featured jobs use the public API; sample jobs only in local development', () => {
   const source = read('src/pages/HomePage.tsx')
 
   assert.match(source, /getJobs\(\)/)
   assert.match(source, /fallbackJobs/)
   assert.match(source, /Exemplos de formatos de vagas/)
   assert.match(source, /Ver todas as vagas/)
+  assert.match(source, /useFeaturedJobs\(allowDemoJobs: boolean = import\.meta\.env\.DEV\)/)
+  assert.match(source, /resolveFeaturedJobsMode\(/)
+  assert.match(source, /nextMode === 'demo' \? fallbackJobs : \[\]/)
   assert.doesNotMatch(source, /Failed to fetch/)
 })
 

@@ -5,7 +5,9 @@ import heroOfficeImage from '../assets/ak-talent-hero-office.webp'
 import videoThumbnailImage from '../assets/ak-talent-video-thumbnail.webp'
 import { AppIntelliButton } from '../components/AppIntelliButton'
 import { Container } from '../components/Container'
+import { JobsUnavailableNotice } from '../components/JobsUnavailableNotice'
 import { useScrolledPast } from '../hooks/useScrolledPast'
+import { resolveFeaturedJobsMode, type FeaturedJobsMode } from '../services/featuredJobs'
 import { getJobs } from '../services/jobService'
 import type { Job } from '../types/user'
 
@@ -367,10 +369,11 @@ function VideoPlaceholder() {
   )
 }
 
-function useFeaturedJobs() {
+// Sample jobs are a local-development aid only; production builds never show them.
+function useFeaturedJobs(allowDemoJobs: boolean = import.meta.env.DEV) {
   const [jobs, setJobs] = useState<FeaturedJob[]>([])
   const [isLoading, setIsLoading] = useState(true)
-  const [hasApiFallback, setHasApiFallback] = useState(false)
+  const [mode, setMode] = useState<FeaturedJobsMode>('live')
 
   useEffect(() => {
     let isMounted = true
@@ -391,13 +394,15 @@ function useFeaturedJobs() {
           slug: job.slug,
         }))
 
-        setJobs(mapped.length ? mapped : fallbackJobs)
-        setHasApiFallback(mapped.length === 0)
+        const nextMode = resolveFeaturedJobsMode(mapped.length, allowDemoJobs)
+        setMode(nextMode)
+        setJobs(nextMode === 'live' ? mapped : nextMode === 'demo' ? fallbackJobs : [])
       })
       .catch(() => {
         if (isMounted) {
-          setJobs(fallbackJobs)
-          setHasApiFallback(true)
+          const nextMode = resolveFeaturedJobsMode(null, allowDemoJobs)
+          setMode(nextMode)
+          setJobs(nextMode === 'demo' ? fallbackJobs : [])
         }
       })
       .finally(() => {
@@ -409,9 +414,9 @@ function useFeaturedJobs() {
     return () => {
       isMounted = false
     }
-  }, [])
+  }, [allowDemoJobs])
 
-  return { jobs, isLoading, hasApiFallback }
+  return { jobs, isLoading, mode }
 }
 
 // True while the final CTA band or the footer is on screen.
@@ -463,7 +468,8 @@ function FloatingChatPrompt() {
 }
 
 function FeaturedJobsSection() {
-  const { jobs, isLoading, hasApiFallback } = useFeaturedJobs()
+  const { jobs, isLoading, mode } = useFeaturedJobs()
+  const showUnavailable = !isLoading && mode === 'unavailable'
 
   return (
     <section id="vagas-destaque" className="bg-slate-50 py-16 sm:py-20">
@@ -472,53 +478,63 @@ function FeaturedJobsSection() {
           <div>
             <h2 className={eyebrowPill}>Vagas em destaque</h2>
             <p className="mt-3 text-base text-ink-600">
-              {hasApiFallback
+              {mode === 'demo'
                 ? 'Exemplos de formatos de vagas que podem ser gerenciadas pela AK Talent.'
-                : 'Algumas das vagas que estão sendo gerenciadas pela AK Talent.'}
+                : mode === 'unavailable'
+                  ? 'Acompanhe por aqui as oportunidades gerenciadas pela AK Talent.'
+                  : 'Algumas das vagas que estão sendo gerenciadas pela AK Talent.'}
             </p>
           </div>
-          <Link
-            to="/vagas"
-            className="inline-flex items-center gap-2 text-sm font-semibold text-gold-800 transition hover:text-ink-950"
-          >
-            Ver todas as vagas <Icon name="arrow" className="h-4 w-4" />
-          </Link>
+          {showUnavailable ? null : (
+            <Link
+              to="/vagas"
+              className="inline-flex items-center gap-2 text-sm font-semibold text-gold-800 transition hover:text-ink-950"
+            >
+              Ver todas as vagas <Icon name="arrow" className="h-4 w-4" />
+            </Link>
+          )}
         </div>
 
-        <div className="mt-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          {isLoading
-            ? Array.from({ length: 4 }).map((_, index) => (
-                <div key={index} className="h-52 animate-pulse rounded-xl border border-slate-200 bg-white" />
-              ))
-            : jobs.map((job) => (
-                <article
-                  key={`${job.title}-${job.location}`}
-                  className="flex flex-col rounded-xl border border-slate-200 bg-white p-5 transition hover:-translate-y-0.5 hover:shadow-lg hover:shadow-slate-200"
-                >
-                  <div className="flex items-center gap-2.5">
-                    <span className="grid h-8 w-8 place-items-center rounded-lg bg-gold-50 text-gold-700">
-                      <Icon name={areaIcons[job.area] ?? 'briefcase'} className="h-4 w-4" />
-                    </span>
-                    <p className="text-xs font-semibold text-ink-800">{job.area}</p>
-                  </div>
-                  <h3 className="mt-4 font-display text-lg font-bold leading-snug text-ink-950">{job.title}</h3>
-                  <p className="mt-1.5 flex items-center gap-1.5 text-sm text-ink-600">
-                    <Icon name="pin" className="h-4 w-4 shrink-0 text-ink-400" />
-                    {job.location}
-                  </p>
-                  <div className="mt-4 flex flex-wrap gap-2 text-xs font-medium">
-                    <span className="rounded-md bg-emerald-50 px-2.5 py-1 text-emerald-700">{job.status}</span>
-                    <span className="rounded-md border border-slate-200 px-2.5 py-1 text-ink-600">{job.workMode}</span>
-                  </div>
-                  <Link
-                    to={job.slug ? `/vagas/${job.slug}` : '/vagas'}
-                    className="mt-auto inline-flex items-center gap-1.5 pt-5 text-sm font-semibold text-gold-800 transition hover:text-ink-950"
+        {showUnavailable ? (
+          <div className="mt-8">
+            <JobsUnavailableNotice />
+          </div>
+        ) : (
+          <div className="mt-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            {isLoading
+              ? Array.from({ length: 4 }).map((_, index) => (
+                  <div key={index} className="h-52 animate-pulse rounded-xl border border-slate-200 bg-white" />
+                ))
+              : jobs.map((job) => (
+                  <article
+                    key={`${job.title}-${job.location}`}
+                    className="flex flex-col rounded-xl border border-slate-200 bg-white p-5 transition hover:-translate-y-0.5 hover:shadow-lg hover:shadow-slate-200"
                   >
-                    Ver vaga <Icon name="arrow" className="h-4 w-4" />
-                  </Link>
-                </article>
-              ))}
-        </div>
+                    <div className="flex items-center gap-2.5">
+                      <span className="grid h-8 w-8 place-items-center rounded-lg bg-gold-50 text-gold-700">
+                        <Icon name={areaIcons[job.area] ?? 'briefcase'} className="h-4 w-4" />
+                      </span>
+                      <p className="text-xs font-semibold text-ink-800">{job.area}</p>
+                    </div>
+                    <h3 className="mt-4 font-display text-lg font-bold leading-snug text-ink-950">{job.title}</h3>
+                    <p className="mt-1.5 flex items-center gap-1.5 text-sm text-ink-600">
+                      <Icon name="pin" className="h-4 w-4 shrink-0 text-ink-400" />
+                      {job.location}
+                    </p>
+                    <div className="mt-4 flex flex-wrap gap-2 text-xs font-medium">
+                      <span className="rounded-md bg-emerald-50 px-2.5 py-1 text-emerald-700">{job.status}</span>
+                      <span className="rounded-md border border-slate-200 px-2.5 py-1 text-ink-600">{job.workMode}</span>
+                    </div>
+                    <Link
+                      to={job.slug ? `/vagas/${job.slug}` : '/vagas'}
+                      className="mt-auto inline-flex items-center gap-1.5 pt-5 text-sm font-semibold text-gold-800 transition hover:text-ink-950"
+                    >
+                      Ver vaga <Icon name="arrow" className="h-4 w-4" />
+                    </Link>
+                  </article>
+                ))}
+          </div>
+        )}
       </Container>
     </section>
   )
