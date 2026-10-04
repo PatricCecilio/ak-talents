@@ -1,4 +1,5 @@
-"""Bring the database schema up to date. Safe to run on every deploy (render.yaml runs it before uvicorn).
+"""Bring the database schema up to date. Safe to run repeatedly; in production run it from your machine
+against the database (see DEPLOY.md), never on function startup.
 
 - Empty database: create every table from the models and stamp Alembic at head. Migration 0001 is
   only a baseline marker for databases that were created with create_all, so `alembic upgrade head`

@@ -117,45 +117,15 @@ On an existing database this is the same as `alembic upgrade head`.
 
 `Base.metadata.create_all(bind=engine)` is still available for local startup by default, but it is disabled whenever `ENVIRONMENT="production"` or `AUTO_CREATE_TABLES_ON_STARTUP=false`.
 
-## Render preparation
+## Production (Vercel + Neon)
 
-Use the backend directory as the service root.
+The API runs on Vercel as a single Python function (project `ak-talent-api`, root directory `backend`,
+region `gru1` / São Paulo via `vercel.json`) with Postgres on Neon. Step by step: [`../DEPLOY.md`](../DEPLOY.md).
 
-Build command:
-
-```bash
-pip install -r requirements.txt
-```
-
-Start command:
-
-```bash
-uvicorn app.main:app --host 0.0.0.0 --port $PORT
-```
-
-Health check path:
-
-```text
-/health
-```
-
-Required environment variables should be configured in Render without committing real values:
-
-```env
-ENVIRONMENT="production"
-AUTO_CREATE_TABLES_ON_STARTUP=false
-DATABASE_URL="replace-with-render-postgres-url"
-JWT_SECRET_KEY="replace-with-secure-secret"
-BACKEND_CORS_ORIGINS="replace-with-frontend-origin"
-OPENAI_API_KEY="replace-if-ai-features-are-enabled"
-APPINTELLI_INTEGRATION_SECRET="replace-with-secure-shared-secret"
-```
-
-Run migrations against the production database as a separate release/setup step:
-
-```bash
-alembic upgrade head
-```
+- Entrypoint: `app/main.py` (`app = FastAPI(...)`), detected automatically by Vercel.
+- Migrations never run on startup: run `python -m app.database.migrate` once from your machine against
+  Neon's direct (unpooled) URL.
+- Secrets live only in the Vercel project settings, never in the repository.
 
 ## Run frontend
 
