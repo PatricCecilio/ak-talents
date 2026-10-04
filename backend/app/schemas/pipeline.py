@@ -59,3 +59,92 @@ class StageHistoryRead(BaseModel):
     changed_by_role: str
     note: str | None
     created_at: datetime
+
+
+class RecruiterJobSummary(BaseModel):
+    id: int
+    title: str
+    company_name: str
+    location: str | None
+    status: str
+    is_active: bool
+    recruiter_id: int | None
+    recruiter_name: str | None
+    # Visible (not hidden) applications per stage value; every stage is present, zero included.
+    stage_counts: dict[str, int]
+    active_count: int
+    finalists_waiting: int
+
+
+class RecruiterJobsResponse(BaseModel):
+    finalist_alert_days: int
+    jobs: list[RecruiterJobSummary]
+
+
+class ApplicationCard(BaseModel):
+    id: int
+    candidate_name: str
+    city: str | None
+    neighborhood: str | None
+    stage: str
+    stage_label: str
+    stage_updated_at: datetime
+    screening_status: str
+    screening_score: int | None
+    created_at: datetime
+    waiting_client_too_long: bool
+    allowed_next_stages: list[StageOption]
+
+
+class JobPipelineResponse(BaseModel):
+    finalist_alert_days: int
+    job: RecruiterJobSummary
+    applications: list[ApplicationCard]
+
+
+class CandidateContact(BaseModel):
+    name: str
+    email: str | None
+    phone: str | None
+    city: str | None
+    neighborhood: str | None
+    desired_role: str | None
+    experience_years: float | None
+    skills: str | None
+    linkedin_url: str | None
+    portfolio_url: str | None
+    has_account: bool
+
+
+class ScreeningAnswerView(BaseModel):
+    question: str
+    answer: str
+
+
+class ScreeningView(BaseModel):
+    status: str
+    score: int | None
+    summary: str | None
+    completed_at: datetime | None
+    answers: list[ScreeningAnswerView]
+
+
+class ApplicationDetail(BaseModel):
+    id: int
+    job_id: int
+    job_title: str
+    company_name: str
+    created_at: datetime
+    stage: str
+    stage_label: str
+    stage_updated_at: datetime
+    finalist_summary: str | None
+    cover_letter: str | None
+    is_hidden: bool
+    candidate: CandidateContact
+    screening: ScreeningView
+    history: list[StageHistoryRead]
+    notes: list[NoteRead]
+    allowed_next_stages: list[StageOption]
+    # Other active, visible applications of the same job (for the "vaga preenchida" prompt on hire).
+    other_active_count: int

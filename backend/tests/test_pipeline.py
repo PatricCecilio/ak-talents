@@ -214,7 +214,7 @@ class PipelineTestCase(unittest.TestCase):
         self.assertEqual(self.stage_of(application.id), "screening")
         last = self.history(application.id)[-1]
         self.assertEqual((last.from_stage, last.to_stage, last.changed_by_role), ("new", "screening", "system"))
-        self.assertIn("Triagem automática concluída", last.note)
+        self.assertEqual(last.note, "Triagem automática concluída: para análise da equipe.")
 
     def test_account_application_goes_straight_to_ak_review(self) -> None:
         response = self.client.post("/applications", json={"job_id": self.job.id}, headers=self.headers("candidate"))

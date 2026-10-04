@@ -12,7 +12,9 @@ import { LoginPage } from '../pages/LoginPage'
 import { NotFoundPage } from '../pages/NotFoundPage'
 import { PrivacyPage } from '../pages/PrivacyPage'
 import { RegisterPage } from '../pages/RegisterPage'
+import { RecruiterApplicationPage } from '../pages/recruiter/RecruiterApplicationPage'
 import { RecruiterHomePage } from '../pages/recruiter/RecruiterHomePage'
+import { RecruiterJobPage } from '../pages/recruiter/RecruiterJobPage'
 
 export function AppRoutes() {
   return (
@@ -27,6 +29,8 @@ export function AppRoutes() {
           }
         >
           <Route path="/recrutador" element={<RecruiterHomePage />} />
+          <Route path="/recrutador/vagas/:jobId" element={<RecruiterJobPage />} />
+          <Route path="/recrutador/candidaturas/:applicationId" element={<RecruiterApplicationPage />} />
         </Route>
 
         <Route element={<MainLayout />}>

@@ -1,13 +1,24 @@
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.orm import Session
 
 from app.api.deps import require_role
 from app.database.session import get_db
 from app.models.user import User, UserRole
 from app.schemas.admin import AdminJobRead, JobResponsibleUpdate, StaffMemberRead
-from app.schemas.pipeline import NoteCreate, NoteRead, StageMoveRequest, StageMoveResponse, stage_label, stage_options
+from app.schemas.pipeline import (
+    ApplicationDetail,
+    JobPipelineResponse,
+    NoteCreate,
+    NoteRead,
+    RecruiterJobsResponse,
+    StageMoveRequest,
+    StageMoveResponse,
+    stage_label,
+    stage_options,
+)
 from app.services.admin_service import job_to_admin_read
 from app.services.pipeline_service import add_note, allowed_next_stages, get_application_or_404, move_application
+from app.services.recruiter_read_service import get_application_detail, get_job_pipeline, list_recruiter_jobs
 from app.services.recruiter_service import set_job_responsible
 from app.services.staff_service import list_staff
 
@@ -68,3 +79,23 @@ def create_application_note(
 ):
     note = add_note(db, get_application_or_404(db, application_id), current_user, payload.body)
     return NoteRead(id=note.id, body=note.body, author_name=current_user.name, created_at=note.created_at)
+
+
+@router.get("/jobs", response_model=RecruiterJobsResponse)
+def get_recruiter_jobs(db: Session = Depends(get_db), current_user: User = Depends(staff)):
+    return list_recruiter_jobs(db)
+
+
+@router.get("/jobs/{job_id}/applications", response_model=JobPipelineResponse)
+def get_recruiter_job_pipeline(
+    job_id: int,
+    stage: str | None = Query(default=None, max_length=30),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(staff),
+):
+    return get_job_pipeline(db, job_id, current_user, stage)
+
+
+@router.get("/applications/{application_id}", response_model=ApplicationDetail)
+def get_recruiter_application(application_id: int, db: Session = Depends(get_db), current_user: User = Depends(staff)):
+    return get_application_detail(db, application_id, current_user)

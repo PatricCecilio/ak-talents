@@ -18,6 +18,11 @@ from app.models.pipeline import ApplicationNote, ApplicationStageHistory
 from app.models.user import STAFF_ROLES, User, UserRole
 
 MAX_NOTE_LENGTH = 2000
+SCREENING_RESULT_LABELS = {
+    "QUALIFIED": "atende aos requisitos",
+    "NOT_MATCHED": "não atende a algum requisito",
+    "REVIEW": "para análise da equipe",
+}
 FINALIST_SUMMARY_REQUIRED = "Escreva um parecer curto para a empresa antes de enviar o finalista."
 
 
@@ -70,7 +75,8 @@ def _apply(db: Session, application: Application, to_stage: Stage, actor: User |
 def advance_after_automated_screening(db: Session, application: Application, screening_status: str) -> None:
     """Automated screening finished: a "new" application moves to "screening" for the AK team (no commit)."""
     if application.stage == Stage.new.value:
-        _apply(db, application, Stage.screening, None, f"Triagem automática concluída: {screening_status}.")
+        result = SCREENING_RESULT_LABELS.get(screening_status, screening_status)
+        _apply(db, application, Stage.screening, None, f"Triagem automática concluída: {result}.")
 
 
 def move_application(

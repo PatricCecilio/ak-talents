@@ -3,7 +3,7 @@ import { setJobResponsible } from '../../services/recruiterService'
 import type { AdminJob, StaffMember } from '../../types/user'
 
 interface ResponsibleSelectProps {
-  job: AdminJob
+  job: { id: number; recruiter_id?: number | null }
   team: StaffMember[]
   onChanged: (job: AdminJob) => void
 }
