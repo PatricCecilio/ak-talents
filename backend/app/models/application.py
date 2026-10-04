@@ -1,6 +1,6 @@
 from datetime import datetime, timezone
 
-from sqlalchemy import DateTime, ForeignKey, String, Text, UniqueConstraint
+from sqlalchemy import Boolean, DateTime, ForeignKey, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database.session import Base
@@ -29,7 +29,28 @@ class Application(Base):
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False
     )
+    # Pipeline (app/core/pipeline.py). `stage` is the source of truth; `status` above is legacy.
+    stage: Mapped[str] = mapped_column(String(30), default="new", index=True, nullable=False)
+    stage_updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False
+    )
+    # Short AK opinion the client company reads when the candidate becomes a finalist.
+    finalist_summary: Mapped[str | None] = mapped_column(Text, nullable=True)
+    # Test/irrelevant applications hidden from every list and count by the admin.
+    is_hidden: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
 
     candidate = relationship("Candidate", back_populates="applications")
     job = relationship("Job", back_populates="applications")
     screening_answers = relationship("ScreeningAnswer", back_populates="application", cascade="all, delete-orphan")
+    stage_history = relationship(
+        "ApplicationStageHistory",
+        back_populates="application",
+        cascade="all, delete-orphan",
+        order_by="(ApplicationStageHistory.created_at, ApplicationStageHistory.id)",
+    )
+    notes = relationship(
+        "ApplicationNote",
+        back_populates="application",
+        cascade="all, delete-orphan",
+        order_by="(ApplicationNote.created_at, ApplicationNote.id)",
+    )

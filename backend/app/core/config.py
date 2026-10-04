@@ -26,6 +26,8 @@ class Settings(BaseSettings):
     OPENAI_MODEL: str = "gpt-5.5"
     APPINTELLI_INTEGRATION_SECRET: str = ""
     RATE_LIMIT_ENABLED: bool = True
+    # Recruiter home highlights finalists waiting longer than this for the client decision.
+    FINALIST_ALERT_DAYS: int = 3
 
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
 

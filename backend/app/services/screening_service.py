@@ -22,6 +22,7 @@ from app.schemas.screening import (
     ScreeningSubmitResponse,
 )
 from app.services.admin_service import require_staff
+from app.services.pipeline_service import advance_after_automated_screening
 from app.services.token_service import hash_public_token
 
 
@@ -262,6 +263,18 @@ def _evaluate_screening(
     )
 
 
+def _evaluate_and_advance(
+    db: Session,
+    application: Application,
+    questions: list[ScreeningQuestion],
+    answers_by_question_id: dict[int, ScreeningAnswer],
+) -> None:
+    """Evaluate the screening and, once it is complete, hand the application to the AK team."""
+    _evaluate_screening(application, questions, answers_by_question_id)
+    if application.screening_status != PENDING:
+        advance_after_automated_screening(db, application, application.screening_status)
+
+
 def get_public_screening(db: Session, token: str) -> PublicScreeningRead:
     application = get_application_by_public_token(db, token)
     job = application.job
@@ -310,7 +323,7 @@ def _submit_screening_answers_for_application(
         .all()
     )
     if not questions:
-        _evaluate_screening(application, questions, {})
+        _evaluate_and_advance(db, application, questions, {})
         db.commit()
         return ScreeningSubmitResponse(
             application_id=application.id,
@@ -338,7 +351,7 @@ def _submit_screening_answers_for_application(
         db.add(answer)
         answers_by_question_id[question.id] = answer
 
-    _evaluate_screening(application, questions, answers_by_question_id)
+    _evaluate_and_advance(db, application, questions, answers_by_question_id)
     db.commit()
 
     return ScreeningSubmitResponse(
@@ -415,7 +428,7 @@ def submit_appintelli_screening_answers(
             db.add(prepared_answer)
             existing_answers[question_id] = prepared_answer
 
-    _evaluate_screening(application, questions, existing_answers)
+    _evaluate_and_advance(db, application, questions, existing_answers)
     db.commit()
 
     return AppIntelliScreeningSubmitResponse(

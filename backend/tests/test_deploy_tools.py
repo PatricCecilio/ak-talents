@@ -26,7 +26,9 @@ def sqlite_settings(path: Path) -> Settings:
     return Settings(_env_file=None, DATABASE_URL=f"sqlite:///{path.as_posix()}")
 
 
-class MigrateTestCase(unittest.TestCase):
+class TempSqliteDatabaseTestCase(unittest.TestCase):
+    """Points settings at a throwaway SQLite file (no tests of its own)."""
+
     def setUp(self) -> None:
         self.tmp = tempfile.TemporaryDirectory()
         self.db_path = Path(self.tmp.name) / "ak.db"
@@ -47,6 +49,9 @@ class MigrateTestCase(unittest.TestCase):
 
     def columns(self, table: str) -> set[str]:
         return {row[1] for row in self.query(f"pragma table_info({table})")}
+
+
+class MigrateTestCase(TempSqliteDatabaseTestCase):
 
     def test_empty_database_is_created_and_stamped_at_head(self) -> None:
         self.assertEqual(migrate_module.migrate(), "created")
@@ -77,6 +82,51 @@ class MigrateTestCase(unittest.TestCase):
         self.assertIn("privacy_accepted_at", self.columns("users"))
         self.assertIn("privacy_policy_version", self.columns("applications"))
         self.assertEqual(self.query("select version_num from alembic_version"), [(HEAD_REVISION,)])
+
+
+class PipelineMigrationTestCase(TempSqliteDatabaseTestCase):
+    def test_existing_applications_get_a_stage_and_initial_history(self) -> None:
+        # A database at 0008: no pipeline columns or tables yet.
+        engine = create_engine(f"sqlite:///{self.db_path.as_posix()}")
+        Base.metadata.create_all(bind=engine)
+        engine.dispose()
+        with closing(sqlite3.connect(self.db_path)) as connection:
+            connection.execute("drop table application_notes")
+            connection.execute("drop table application_stage_history")
+            connection.execute("drop index ix_applications_stage")
+            for column in ("stage", "stage_updated_at", "finalist_summary", "is_hidden"):
+                connection.execute(f"alter table applications drop column {column}")
+            connection.execute("insert into users (id, name, email, hashed_password, role, is_active, created_at) values (1, 'E', 'e@x.com', 'x', 'company', 1, '2026-09-01 10:00:00')")
+            connection.execute("insert into companies (id, user_id, company_name, status, created_at) values (1, 1, 'E', 'approved', '2026-09-01 10:00:00')")
+            connection.execute("insert into jobs (id, company_id, title, slug, description, status, is_active, created_at) values (1, 1, 'V', 'v', 'Descrição', 'approved', 1, '2026-09-01 10:00:00')")
+            for candidate_id in (1, 2):
+                connection.execute(f"insert into candidates (id, full_name, created_at) values ({candidate_id}, 'C{candidate_id}', '2026-09-01 10:00:00')")
+            connection.execute(
+                "insert into applications (id, candidate_id, job_id, status, appintelli_reference, screening_status, screening_completed_at, created_at) "
+                "values (1, 1, 1, 'pending_screening', 'ref-1', 'QUALIFIED', '2026-09-03 12:00:00', '2026-09-02 09:00:00')"
+            )
+            connection.execute(
+                "insert into applications (id, candidate_id, job_id, status, appintelli_reference, screening_status, created_at) "
+                "values (2, 2, 1, 'submitted', 'ref-2', 'pending_screening', '2026-09-02 09:00:00')"
+            )
+            connection.execute("create table alembic_version (version_num varchar(32) not null primary key)")
+            connection.execute("insert into alembic_version values ('0008_job_recruiter')")
+            connection.commit()
+
+        self.assertEqual(migrate_module.migrate(), "upgraded")
+
+        rows = self.query("select id, stage, stage_updated_at, is_hidden from applications order by id")
+        self.assertEqual([(row[0], row[1], row[3]) for row in rows], [(1, "screening", 0), (2, "new", 0)])
+        self.assertTrue(rows[0][2].startswith("2026-09-03 12:00:00"))
+        self.assertTrue(rows[1][2].startswith("2026-09-02 09:00:00"))
+        history = self.query("select application_id, from_stage, to_stage, changed_by_role, note from application_stage_history order by application_id")
+        self.assertEqual(
+            history,
+            [
+                (1, None, "screening", "system", "Etapa inicial definida na migração."),
+                (2, None, "new", "system", "Etapa inicial definida na migração."),
+            ],
+        )
 
 
 class CreateAdminTestCase(unittest.TestCase):

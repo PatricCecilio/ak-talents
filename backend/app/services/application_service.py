@@ -11,6 +11,7 @@ from app.models.job import Job
 from app.models.user import User, UserRole
 from app.schemas.application import ApplicationCreate, PublicApplicationCreate, PublicApplicationRead
 from app.services.identity_service import normalize_email, normalize_phone
+from app.services.pipeline_service import record_initial_stage
 from app.services.token_service import generate_public_token, hash_public_token
 
 
@@ -40,8 +41,18 @@ def create_application(db: Session, current_user: User, payload: ApplicationCrea
     if existing_application:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Application already exists")
 
-    application = Application(candidate_id=candidate.id, **payload.model_dump())
+    # Account applications skip the automated screening and go straight to the AK team ("Nova").
+    application = Application(
+        candidate_id=candidate.id,
+        **payload.model_dump(),
+        screening_status="REVIEW",
+        screening_summary="Sem triagem automática (candidatura com conta). A equipe AK Talent vai analisar.",
+        privacy_accepted_at=current_user.privacy_accepted_at,
+        privacy_policy_version=current_user.privacy_policy_version,
+    )
     db.add(application)
+    db.flush()
+    record_initial_stage(db, application, note="Candidatura com conta.")
     db.commit()
     db.refresh(application)
     return application
@@ -174,6 +185,8 @@ def create_public_application(
     public_screening_token = generate_public_token()
     application.public_screening_token_hash = hash_public_token(public_screening_token)
     db.add(application)
+    db.flush()
+    record_initial_stage(db, application, note="Candidatura pelo site.")
     db.commit()
     db.refresh(application)
 
