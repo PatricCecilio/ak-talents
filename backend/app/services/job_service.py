@@ -28,6 +28,18 @@ def create_job(db: Session, current_user: User, payload: JobCreate) -> Job:
     return job
 
 
+def list_company_jobs(db: Session, current_user: User) -> list[Job]:
+    """All jobs of the signed-in company, in any status (pending, approved, hidden)."""
+    if current_user.role != UserRole.company.value:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Apenas empresas podem ver as próprias vagas.")
+
+    company = db.query(Company).filter(Company.user_id == current_user.id).first()
+    if not company:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Perfil da empresa não encontrado.")
+
+    return db.query(Job).filter(Job.company_id == company.id).order_by(Job.created_at.desc(), Job.id.desc()).all()
+
+
 def list_jobs(db: Session) -> list[Job]:
     return (
         db.query(Job)

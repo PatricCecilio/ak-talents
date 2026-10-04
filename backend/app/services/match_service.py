@@ -3,6 +3,7 @@ import re
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
+from app.models.application import Application
 from app.models.candidate import Candidate
 from app.models.company import Company
 from app.models.job import Job
@@ -105,7 +106,8 @@ def _candidate_score(candidate: Candidate, job: Job) -> CandidateMatchRead:
 
     return CandidateMatchRead(
         candidate_id=candidate.id,
-        name=candidate.user.name,
+        # Applicants without an account (public applications) have no user; use the name they sent.
+        name=candidate.full_name or (candidate.user.name if candidate.user else "Candidato"),
         score=min(score, 100),
         reasons=reasons,
     )
@@ -125,6 +127,12 @@ def get_job_matches(db: Session, current_user: User, job_id: int) -> list[Candid
     if not job:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Job not found")
 
-    candidates = db.query(Candidate).join(Candidate.user).all()
+    # Only people who applied to this job: a company must never see candidates who did not apply to it.
+    candidates = (
+        db.query(Candidate)
+        .join(Application, Application.candidate_id == Candidate.id)
+        .filter(Application.job_id == job.id)
+        .all()
+    )
     matches = [_candidate_score(candidate, job) for candidate in candidates]
     return sorted(matches, key=lambda match: match.score, reverse=True)

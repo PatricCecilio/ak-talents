@@ -6,7 +6,8 @@ import { Alert, Badge, Button, Card, EmptyState, LoadingSpinner, PageHeader, Sel
 import { useFormState } from '../hooks/useFormState'
 import { DashboardShell } from '../layouts/DashboardShell'
 import { getCurrentUser, logout } from '../services/authService'
-import { createJob, getJobMatches, getJobs } from '../services/jobService'
+import { formatJobStatus, formatWorkMode } from '../services/jobFormat'
+import { createJob, getJobMatches, getMyCompanyJobs } from '../services/jobService'
 import { getSalaryRangeError } from '../services/jobValidation'
 import { getCompanyProfile, updateCompanyProfile } from '../services/profileService'
 import type { CandidateMatch, Job } from '../types/user'
@@ -131,7 +132,7 @@ export function CompanyPage() {
     } catch (err) {
       setMatchErrorsByJobId((currentErrors) => ({
         ...currentErrors,
-        [jobId]: err instanceof Error ? err.message : 'Nao foi possivel carregar candidatos compativeis.',
+        [jobId]: err instanceof Error ? err.message : 'Não foi possível carregar os candidatos inscritos.',
       }))
     } finally {
       setLoadingMatchesJobId(null)
@@ -141,7 +142,7 @@ export function CompanyPage() {
   useEffect(() => {
     let isMounted = true
 
-    getJobs()
+    getMyCompanyJobs()
       .then((response) => {
         if (isMounted) {
           setJobs(response)
@@ -438,32 +439,34 @@ export function CompanyPage() {
         </div>
 
         <Card className="p-6">
-          <h2 className="text-2xl font-black text-ink-950">Vagas publicadas</h2>
-          <p className="mt-2 text-sm leading-6 text-ink-600">Acompanhe status, matches e aprovacao das suas vagas.</p>
+          <h2 className="text-2xl font-black text-ink-950">Suas vagas</h2>
+          <p className="mt-2 text-sm leading-6 text-ink-600">
+            Acompanhe a aprovação de cada vaga e os candidatos que se inscreveram nela.
+          </p>
 
           <div className="mt-6 grid gap-4">
             {isLoadingJobs ? <LoadingSpinner label="Carregando vagas..." /> : null}
 
             {!isLoadingJobs && jobs.length === 0 ? (
               <EmptyState
-                title="Nenhuma vaga publicada ainda."
-                description="Crie uma vaga com IA ou manualmente. Ela pode precisar de aprovacao do admin."
+                title="Você ainda não criou vagas."
+                description="Crie uma vaga com IA ou manualmente. Ela aparece para candidatos depois da aprovação da equipe AK Talent."
               />
             ) : null}
 
             {jobs.map((job) => (
               <article key={job.id} className="rounded-lg border border-slate-200 bg-slate-50 p-4">
                 <p className="text-xs font-black uppercase tracking-[0.18em] text-brand-700">
-                  {job.work_mode || 'Modelo nao informado'}
+                  {formatWorkMode(job.work_mode) || 'Modelo não informado'}
                 </p>
                 <div className="mt-2 flex flex-wrap items-center justify-between gap-3">
                   <h3 className="text-lg font-black text-ink-950">{job.title}</h3>
                   <Badge status={(job.status || 'approved') as 'pending' | 'approved' | 'blocked' | 'hidden'}>
-                    {job.status || 'approved'}
+                    {formatJobStatus(job.status || 'approved')}
                   </Badge>
                 </div>
                 <p className="mt-2 line-clamp-3 text-sm leading-6 text-ink-600">{job.description}</p>
-                <p className="mt-3 text-sm font-bold text-ink-700">{job.location || 'Cidade nao informada'}</p>
+                <p className="mt-3 text-sm font-bold text-ink-700">{job.location || 'Cidade não informada'}</p>
                 <Button
                   type="button"
                   variant="secondary"
@@ -471,7 +474,7 @@ export function CompanyPage() {
                   onClick={() => void handleViewMatches(job.id)}
                   className="mt-4"
                 >
-                  Ver candidatos compativeis
+                  Ver candidatos inscritos
                 </Button>
 
                 {matchErrorsByJobId[job.id] ? (
@@ -482,7 +485,7 @@ export function CompanyPage() {
 
                 {matchesByJobId[job.id] ? (
                   <div className="mt-4 grid gap-3">
-                    {matchesByJobId[job.id].length === 0 ? <EmptyState title="Nenhum candidato encontrado." /> : null}
+                    {matchesByJobId[job.id].length === 0 ? <EmptyState title="Ainda não há candidaturas para esta vaga." /> : null}
 
                     {matchesByJobId[job.id].map((match) => (
                       <div key={match.candidate_id} className="rounded-lg border border-slate-200 bg-white p-4">
