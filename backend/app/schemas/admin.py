@@ -56,6 +56,7 @@ class AdminJobRead(BaseModel):
     created_at: datetime
     recruiter_id: int | None = None
     recruiter_name: str | None = None
+    show_company_to_candidates: bool = False
 
 
 class StaffMemberRead(BaseModel):

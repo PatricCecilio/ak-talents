@@ -60,3 +60,19 @@ def parse_stage(value: str) -> Stage | None:
         return Stage(value)
     except ValueError:
         return None
+
+
+# What the candidate sees: friendly, never internal details (no screening result, notes or opinion).
+# step = position in the 4-step timeline (Recebida, Em análise, Entrevista, Na etapa final).
+CANDIDATE_VIEW: dict[Stage, tuple[str, int | None, str]] = {
+    Stage.new: ("Recebida", 1, "in_progress"),
+    Stage.screening: ("Em análise", 2, "in_progress"),
+    Stage.ak_interview: ("Entrevista", 3, "in_progress"),
+    Stage.finalist: ("Na etapa final", 4, "in_progress"),
+    Stage.client_approved: ("Na etapa final", 4, "in_progress"),
+    Stage.hired: ("Parabéns, você foi selecionado(a)!", 4, "hired"),
+    Stage.rejected: ("Processo encerrado", None, "closed"),
+    Stage.withdrawn: ("Processo encerrado", None, "closed"),
+}
+
+CANDIDATE_STEPS = ("Recebida", "Em análise", "Entrevista", "Na etapa final")

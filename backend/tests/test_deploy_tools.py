@@ -96,6 +96,7 @@ class PipelineMigrationTestCase(TempSqliteDatabaseTestCase):
             connection.execute("drop index ix_applications_stage")
             for column in ("stage", "stage_updated_at", "finalist_summary", "is_hidden"):
                 connection.execute(f"alter table applications drop column {column}")
+            connection.execute("alter table jobs drop column show_company_to_candidates")  # added in 0010
             connection.execute("insert into users (id, name, email, hashed_password, role, is_active, created_at) values (1, 'E', 'e@x.com', 'x', 'company', 1, '2026-09-01 10:00:00')")
             connection.execute("insert into companies (id, user_id, company_name, status, created_at) values (1, 1, 'E', 'approved', '2026-09-01 10:00:00')")
             connection.execute("insert into jobs (id, company_id, title, slug, description, status, is_active, created_at) values (1, 1, 'V', 'v', 'Descrição', 'approved', 1, '2026-09-01 10:00:00')")

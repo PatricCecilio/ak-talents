@@ -23,3 +23,13 @@ def set_job_responsible(db: Session, job_id: int, recruiter_id: int | None) -> J
     db.commit()
     db.refresh(job)
     return job
+
+
+def set_company_visibility(db: Session, job_id: int, show: bool) -> Job:
+    job = db.query(Job).filter(Job.id == job_id).first()
+    if not job:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Vaga não encontrada.")
+    job.show_company_to_candidates = show
+    db.commit()
+    db.refresh(job)
+    return job

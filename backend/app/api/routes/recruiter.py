@@ -19,7 +19,8 @@ from app.schemas.pipeline import (
 from app.services.admin_service import job_to_admin_read
 from app.services.pipeline_service import add_note, allowed_next_stages, get_application_or_404, move_application
 from app.services.recruiter_read_service import get_application_detail, get_job_pipeline, list_recruiter_jobs
-from app.services.recruiter_service import set_job_responsible
+from app.schemas.candidate_pipeline import CompanyVisibilityUpdate
+from app.services.recruiter_service import set_company_visibility, set_job_responsible
 from app.services.staff_service import list_staff
 
 router = APIRouter()
@@ -99,3 +100,14 @@ def get_recruiter_job_pipeline(
 @router.get("/applications/{application_id}", response_model=ApplicationDetail)
 def get_recruiter_application(application_id: int, db: Session = Depends(get_db), current_user: User = Depends(staff)):
     return get_application_detail(db, application_id, current_user)
+
+
+@router.put("/jobs/{job_id}/candidate-visibility", response_model=AdminJobRead)
+def update_job_company_visibility(
+    job_id: int,
+    payload: CompanyVisibilityUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(staff),
+):
+    """Show (or hide) the client company name to candidates in "Minhas candidaturas". Off by default."""
+    return job_to_admin_read(set_company_visibility(db, job_id, payload.show_company_to_candidates))

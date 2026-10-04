@@ -55,6 +55,7 @@ def job_to_admin_read(job: Job) -> AdminJobRead:
         created_at=job.created_at,
         recruiter_id=job.recruiter_id,
         recruiter_name=job.recruiter.name if job.recruiter else None,
+        show_company_to_candidates=job.show_company_to_candidates,
     )
 
 

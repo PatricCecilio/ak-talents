@@ -2,6 +2,7 @@ import type { FormEvent } from 'react'
 import { useEffect, useState } from 'react'
 import { AIResultList } from '../components/AIResultList'
 import { FormField } from '../components/FormField'
+import { MyApplicationsSection } from '../components/candidate/MyApplicationsSection'
 import { Alert, Button, Card, EmptyState, LoadingSpinner, PageHeader } from '../components/ui'
 import { useFormState } from '../hooks/useFormState'
 import { DashboardShell } from '../layouts/DashboardShell'
@@ -67,6 +68,8 @@ export function CandidatePage() {
     salary_expectation: '',
   })
 
+  const [applicationsRefreshKey, setApplicationsRefreshKey] = useState(0)
+
   async function handleApply(jobId: number) {
     setApplyingJobId(jobId)
     setError('')
@@ -75,6 +78,7 @@ export function CandidatePage() {
     try {
       await createApplication({ job_id: jobId })
       setSuccess('Candidatura enviada com sucesso.')
+      setApplicationsRefreshKey((key) => key + 1)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Nao foi possivel enviar a candidatura.')
     } finally {
@@ -218,6 +222,10 @@ export function CandidatePage() {
           {success ? (
             <Alert tone="success">{success}</Alert>
           ) : null}
+        </div>
+
+        <div className="mt-8">
+          <MyApplicationsSection refreshKey={applicationsRefreshKey} />
         </div>
 
         <Card className="mt-10 p-6">
