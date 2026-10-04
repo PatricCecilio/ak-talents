@@ -1,4 +1,7 @@
-export type UserRole = 'candidate' | 'company' | 'admin'
+export type UserRole = 'candidate' | 'company' | 'admin' | 'recruiter'
+
+/** Internal AK Talent team (operates jobs and applications). */
+export const STAFF_ROLES: UserRole[] = ['admin', 'recruiter']
 
 export interface User {
   id: number
@@ -262,6 +265,23 @@ export interface AdminJob {
   status: string
   is_active: boolean
   created_at: string
+  recruiter_id?: number | null
+  recruiter_name?: string | null
+}
+
+export interface StaffMember {
+  id: number
+  name: string
+  email: string
+  role: 'admin' | 'recruiter'
+  is_active: boolean
+  created_at: string
+}
+
+export interface RecruiterCreatePayload {
+  name: string
+  email: string
+  password: string
 }
 
 export interface AdminApplication {

@@ -5,7 +5,7 @@ from app.models.application import Application
 from app.models.candidate import Candidate
 from app.models.company import Company
 from app.models.job import Job
-from app.models.user import User, UserRole
+from app.models.user import STAFF_ROLES, User, UserRole
 from app.schemas.admin import (
     AdminApplicationRead,
     AdminCandidateRead,
@@ -17,6 +17,12 @@ from app.schemas.admin import (
 
 def require_admin(current_user: User) -> None:
     if current_user.role != UserRole.admin.value:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin access required")
+
+
+def require_staff(current_user: User) -> None:
+    """Admin or recruiter. Defense in depth: routes also enforce roles with require_role()."""
+    if current_user.role not in STAFF_ROLES:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin access required")
 
 
@@ -36,7 +42,7 @@ def _company_to_admin_read(company: Company) -> AdminCompanyRead:
     )
 
 
-def _job_to_admin_read(job: Job) -> AdminJobRead:
+def job_to_admin_read(job: Job) -> AdminJobRead:
     return AdminJobRead(
         id=job.id,
         company_id=job.company_id,
@@ -47,6 +53,8 @@ def _job_to_admin_read(job: Job) -> AdminJobRead:
         status=job.status,
         is_active=job.is_active,
         created_at=job.created_at,
+        recruiter_id=job.recruiter_id,
+        recruiter_name=job.recruiter.name if job.recruiter else None,
     )
 
 
@@ -85,9 +93,9 @@ def list_admin_companies(db: Session, current_user: User) -> list[AdminCompanyRe
 
 
 def list_admin_jobs(db: Session, current_user: User) -> list[AdminJobRead]:
-    require_admin(current_user)
+    require_staff(current_user)
     jobs = db.query(Job).join(Job.company).order_by(Job.created_at.desc()).all()
-    return [_job_to_admin_read(job) for job in jobs]
+    return [job_to_admin_read(job) for job in jobs]
 
 
 def list_admin_applications(db: Session, current_user: User) -> list[AdminApplicationRead]:
@@ -145,7 +153,7 @@ def block_company(db: Session, current_user: User, company_id: int) -> AdminComp
 
 
 def approve_job(db: Session, current_user: User, job_id: int) -> AdminJobRead:
-    require_admin(current_user)
+    require_staff(current_user)
     job = db.query(Job).filter(Job.id == job_id).first()
     if not job:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Job not found")
@@ -154,11 +162,11 @@ def approve_job(db: Session, current_user: User, job_id: int) -> AdminJobRead:
     job.is_active = True
     db.commit()
     db.refresh(job)
-    return _job_to_admin_read(job)
+    return job_to_admin_read(job)
 
 
 def hide_job(db: Session, current_user: User, job_id: int) -> AdminJobRead:
-    require_admin(current_user)
+    require_staff(current_user)
     job = db.query(Job).filter(Job.id == job_id).first()
     if not job:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Job not found")
@@ -167,4 +175,4 @@ def hide_job(db: Session, current_user: User, job_id: int) -> AdminJobRead:
     job.is_active = False
     db.commit()
     db.refresh(job)
-    return _job_to_admin_read(job)
+    return job_to_admin_read(job)

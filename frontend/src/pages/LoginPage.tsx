@@ -36,6 +36,11 @@ export function LoginPage() {
         return
       }
 
+      if (response.user.role === 'recruiter') {
+        navigate('/recrutador')
+        return
+      }
+
       navigate(response.user.role === 'company' ? '/company' : '/candidate')
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Nao foi possivel entrar.')

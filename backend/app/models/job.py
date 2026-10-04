@@ -11,6 +11,10 @@ class Job(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True, index=True)
     company_id: Mapped[int] = mapped_column(ForeignKey("companies.id", ondelete="CASCADE"), nullable=False)
+    # Optional AK recruiter responsible for this job (label/filter only; every recruiter can operate it).
+    recruiter_id: Mapped[int | None] = mapped_column(
+        ForeignKey("users.id", ondelete="SET NULL"), index=True, nullable=True
+    )
     title: Mapped[str] = mapped_column(String(180), nullable=False)
     slug: Mapped[str] = mapped_column(String(220), unique=True, index=True, nullable=False)
     description: Mapped[str] = mapped_column(Text, nullable=False)
@@ -26,6 +30,7 @@ class Job(Base):
     )
 
     company = relationship("Company", back_populates="jobs")
+    recruiter = relationship("User", foreign_keys=[recruiter_id])
     applications = relationship("Application", back_populates="job")
     screening_questions = relationship(
         "ScreeningQuestion",

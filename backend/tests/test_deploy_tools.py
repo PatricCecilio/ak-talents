@@ -6,6 +6,7 @@ import unittest
 from pathlib import Path
 from unittest import mock
 
+from alembic.script import ScriptDirectory
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
@@ -18,7 +19,7 @@ from app.database.base import Base
 from app.models.user import User
 from app.scripts import create_admin
 
-HEAD_REVISION = "0007_privacy_consent"
+HEAD_REVISION = ScriptDirectory.from_config(migrate_module._alembic_config()).get_current_head()
 
 
 def sqlite_settings(path: Path) -> Settings:

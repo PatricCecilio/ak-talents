@@ -1,5 +1,6 @@
 import { BrowserRouter, Route, Routes } from 'react-router-dom'
 import { MainLayout } from '../layouts/MainLayout'
+import { WorkspaceLayout } from '../layouts/WorkspaceLayout'
 import { PrivateRoute } from '../components/PrivateRoute'
 import { CandidatePage } from '../pages/CandidatePage'
 import { CompanyPage } from '../pages/CompanyPage'
@@ -11,11 +12,23 @@ import { LoginPage } from '../pages/LoginPage'
 import { NotFoundPage } from '../pages/NotFoundPage'
 import { PrivacyPage } from '../pages/PrivacyPage'
 import { RegisterPage } from '../pages/RegisterPage'
+import { RecruiterHomePage } from '../pages/recruiter/RecruiterHomePage'
 
 export function AppRoutes() {
   return (
     <BrowserRouter>
       <Routes>
+        {/* Internal AK Talent area: no public header/footer. */}
+        <Route
+          element={
+            <PrivateRoute allowedRoles={['admin', 'recruiter']}>
+              <WorkspaceLayout />
+            </PrivateRoute>
+          }
+        >
+          <Route path="/recrutador" element={<RecruiterHomePage />} />
+        </Route>
+
         <Route element={<MainLayout />}>
           <Route path="/" element={<HomePage />} />
           <Route path="/solucoes/recrutamento" element={<RecruitmentSolutionPage />} />

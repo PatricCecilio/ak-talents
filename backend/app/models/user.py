@@ -11,6 +11,13 @@ class UserRole(str, Enum):
     candidate = "candidate"
     company = "company"
     admin = "admin"
+    recruiter = "recruiter"
+
+
+# Internal AK Talent team: operates jobs and applications.
+STAFF_ROLES = (UserRole.admin.value, UserRole.recruiter.value)
+# The only roles anyone can pick on the public sign-up form.
+PUBLIC_SIGNUP_ROLES = (UserRole.candidate.value, UserRole.company.value)
 
 
 class User(Base):

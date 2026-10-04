@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { RecruiterTeamSection } from '../components/admin/RecruiterTeamSection'
 import { Alert, Badge, Button, Card, EmptyState, LoadingSpinner, PageHeader } from '../components/ui'
 import { DashboardShell } from '../layouts/DashboardShell'
 import {
@@ -191,6 +192,10 @@ export function AdminPage() {
               <p className="mt-3 text-3xl font-black text-ink-950">{summary.value}</p>
             </Card>
           ))}
+        </div>
+
+        <div className="mt-10">
+          <RecruiterTeamSection />
         </div>
 
         {isLoading ? (

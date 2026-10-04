@@ -21,7 +21,7 @@ from app.schemas.screening import (
     ScreeningSubmitRequest,
     ScreeningSubmitResponse,
 )
-from app.services.admin_service import require_admin
+from app.services.admin_service import require_staff
 from app.services.token_service import hash_public_token
 
 
@@ -83,7 +83,7 @@ def list_admin_screening_questions(
     current_user: User,
     job_id: int,
 ) -> list[ScreeningQuestionRead]:
-    require_admin(current_user)
+    require_staff(current_user)
     return [
         _question_to_read(question)
         for question in db.query(ScreeningQuestion)
@@ -99,7 +99,7 @@ def replace_admin_screening_questions(
     job_id: int,
     questions: list[ScreeningQuestionCreate],
 ) -> list[ScreeningQuestionRead]:
-    require_admin(current_user)
+    require_staff(current_user)
     job = db.query(Job).filter(Job.id == job_id).first()
     if not job:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Job not found")

@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 
 from app.core.config import settings
 from app.database.session import get_db
-from app.models.user import User
+from app.models.user import User, UserRole
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl=f"{settings.API_V1_PREFIX}/auth/login")
 
@@ -35,3 +35,18 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Usuário inativo.")
 
     return user
+
+
+FORBIDDEN_MESSAGE = "Você não tem permissão para acessar esta área."
+
+
+def require_role(*roles: UserRole | str):
+    """Route dependency: the signed-in user must have one of `roles` (403 otherwise)."""
+    allowed = {role.value if isinstance(role, UserRole) else role for role in roles}
+
+    def dependency(current_user: User = Depends(get_current_user)) -> User:
+        if current_user.role not in allowed:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=FORBIDDEN_MESSAGE)
+        return current_user
+
+    return dependency

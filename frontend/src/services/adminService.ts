@@ -1,4 +1,4 @@
-import type { AdminApplication, AdminCandidate, AdminCompany, AdminJob, AdminScreeningQuestion, AdminUser } from '../types/user'
+import type { AdminApplication, AdminCandidate, AdminCompany, AdminJob, AdminScreeningQuestion, AdminUser, RecruiterCreatePayload, StaffMember } from '../types/user'
 import { apiRequest } from './api'
 
 export function getAdminUsers(): Promise<AdminUser[]> {
@@ -56,5 +56,16 @@ export function approveJob(jobId: number): Promise<AdminJob> {
 export function hideJob(jobId: number): Promise<AdminJob> {
   return apiRequest<AdminJob>(`/admin/jobs/${jobId}/hide`, {
     method: 'PUT',
+  })
+}
+
+export function getRecruiters(): Promise<StaffMember[]> {
+  return apiRequest<StaffMember[]>('/admin/recruiters')
+}
+
+export function createRecruiter(payload: RecruiterCreatePayload): Promise<StaffMember> {
+  return apiRequest<StaffMember>('/admin/recruiters', {
+    method: 'POST',
+    body: payload,
   })
 }

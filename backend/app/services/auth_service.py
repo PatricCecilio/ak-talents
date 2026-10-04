@@ -7,13 +7,14 @@ from app.core.privacy import PRIVACY_CONSENT_REQUIRED_MESSAGE, PRIVACY_POLICY_VE
 from app.core.security import create_access_token, get_password_hash, verify_password
 from app.models.candidate import Candidate
 from app.models.company import Company
-from app.models.user import User, UserRole
+from app.models.user import PUBLIC_SIGNUP_ROLES, User, UserRole
 from app.schemas.auth import LoginRequest, RegisterRequest, TokenResponse
 
 
 def register_user(db: Session, payload: RegisterRequest) -> TokenResponse:
-    if payload.role == UserRole.admin:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin users cannot be created publicly")
+    # Staff accounts (admin, recruiter) are only created by an admin, never on the public form.
+    if payload.role.value not in PUBLIC_SIGNUP_ROLES:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Este tipo de conta não pode ser criado pelo cadastro.")
 
     if not payload.privacy_accepted:
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=PRIVACY_CONSENT_REQUIRED_MESSAGE)
