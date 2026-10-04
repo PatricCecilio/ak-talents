@@ -61,6 +61,10 @@ class AccountLinksPublicApplicationTestCase(unittest.TestCase):
 
         with self.SessionLocal() as db:
             self.assertEqual(db.query(Candidate).count(), 1)  # linked, not duplicated
+            candidate = db.query(Candidate).one()
+            self.assertEqual(candidate.full_name, "Júlia Lima")
+            # Missing contact data is completed from the form, so the AK team and the client can reach them.
+            self.assertEqual((candidate.phone, candidate.city, candidate.neighborhood), ("41988887777", "Curitiba", "Centro"))
         mine = self.client.get("/candidates/me/applications", headers={"Authorization": f"Bearer {token}"}).json()
         self.assertEqual([(item["job_title"], item["status_label"]) for item in mine["applications"]], [("Atendente", "Recebida")])
 

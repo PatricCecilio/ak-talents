@@ -126,12 +126,14 @@ def _resolve_public_candidate(
         )
 
     if candidate:
-        if candidate.user_id is None:
-            candidate.full_name = candidate.full_name or payload.full_name.strip()
-            candidate.email = candidate.email or normalized_email
-            candidate.phone = candidate.phone or normalized_phone
-            candidate.city = candidate.city or payload.city.strip()
-            candidate.neighborhood = candidate.neighborhood or payload.neighborhood.strip()
+        # Fill only what is still empty (never overwrite). This also completes the contact data of an
+        # account holder applying through the public form, so the AK team and, after approval, the
+        # client company can reach them.
+        candidate.full_name = candidate.full_name or payload.full_name.strip()
+        candidate.email = candidate.email or normalized_email
+        candidate.phone = candidate.phone or normalized_phone
+        candidate.city = candidate.city or payload.city.strip()
+        candidate.neighborhood = candidate.neighborhood or payload.neighborhood.strip()
         return candidate
 
     candidate = Candidate(
