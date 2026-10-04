@@ -54,36 +54,55 @@ A Vercel detecta o FastAPI sozinha: `app/main.py` com `app = FastAPI(...)`, depe
 
 Para ver o que já existe: `vercel env ls production --cwd backend`.
 
-### A4. Segredos (no SEU terminal, PowerShell, a partir da raiz do repositório)
+### A4. Segredos
 
-`JWT_SECRET_KEY` (gera e envia direto para a Vercel; não aparece na tela nem fica em arquivo):
+> **O que aprendemos no primeiro deploy**
+> - **Não use `... | vercel env add` para segredos.** O valor chega vazio ou o comando falha **sem mostrar erro claro**, e nada é gravado (foi o que aconteceu com o `JWT_SECRET_KEY`).
+> - A CLI (`vercel env add`) cria variáveis de **Production como Sensitive por padrão**.
+> - Variáveis **Sensitive não podem ser lidas de volta** (nem pelo painel, nem pela CLI, nem pela API; o `vercel env pull` traz o valor vazio). Não dá para "copiar" uma Sensitive de um ambiente para outro: é preciso ter o valor original.
+> - Depois de criar qualquer variável, **confira** com `vercel env ls production` (na pasta do projeto) antes de seguir.
 
-```powershell
-python -c "import secrets; print(secrets.token_urlsafe(48), end='')" | vercel env add JWT_SECRET_KEY production --cwd backend
-```
+**`JWT_SECRET_KEY` (recomendado: pelo painel)**
+1. No seu terminal, gere o valor: `python -c "import secrets; print(secrets.token_urlsafe(48))"`.
+2. **Vercel → ak-talent-api → Settings → Environment Variables → Add**: nome `JWT_SECRET_KEY`, ambiente **Production**, tipo **Sensitive/Secret**, cole o valor e salve.
+3. Feche o terminal (o valor não fica em arquivo nem no repositório).
 
-`APPINTELLI_INTEGRATION_SECRET` (mostra o valor **uma vez** para você guardar e configurar no AppIntelli, e envia para a Vercel):
-
-```powershell
-$s = python -c "import secrets; print(secrets.token_urlsafe(48), end='')"; Write-Host "Guarde este segredo do AppIntelli: $s"; $s | vercel env add APPINTELLI_INTEGRATION_SECRET production --cwd backend; Remove-Variable s
-```
-
-Depois de mudar variáveis, é preciso um **novo deploy** da API para valerem.
-
-### A5. Migrações (no SEU terminal, uma vez)
-
-Use a URL **direta** (`DATABASE_URL_UNPOOLED`) da Neon: em **Vercel → Storage → (seu banco) → .env.local / Quickstart**, ou no painel da Neon.
+Alternativa pela CLI, sem pipe (na pasta `backend`, que está ligada ao `ak-talent-api`):
 
 ```powershell
 cd C:\Projetos\ak-talent\backend
-.\.venv\Scripts\Activate.ps1          # ou: pip install -r requirements.txt num ambiente virtual
-$env:AKTALENT_ENV_FILE = ""           # ignora o .env local
-$env:DATABASE_URL = "COLE-AQUI-A-DATABASE_URL_UNPOOLED"
-python -m app.database.migrate
-Remove-Item Env:DATABASE_URL; Remove-Item Env:AKTALENT_ENV_FILE
+$s = python -c "import secrets; print(secrets.token_urlsafe(48), end='')"
+vercel env add JWT_SECRET_KEY production --value $s --yes
+Remove-Variable s
+vercel env ls production    # confira que JWT_SECRET_KEY aparece
 ```
 
+**`APPINTELLI_INTEGRATION_SECRET`**: o mesmo caminho (painel, tipo Sensitive/Secret, ou `--value`). Gere o valor, **guarde-o** e configure o mesmo valor no painel do AppIntelli.
+
+**Variáveis públicas do site (`VITE_*`)** vão para dentro do JavaScript do site; não faz sentido marcá-las como Sensitive. Para criá-las como `encrypted` (legíveis no painel), use o painel sem marcar Sensitive; a CLI as criaria como Sensitive por padrão.
+
+Depois de mudar variáveis, é preciso um **novo deploy** (ou redeploy) do projeto para valerem.
+
+### A5. Migrações (no SEU terminal, uma vez)
+
+Use a connection string **direta** da Neon: **console.neon.tech → (projeto) → Connect**, com **Connection pooling desligado** (o host **não** tem `-pooler`). Não tente lê-la na Vercel: lá ela é Sensitive.
+
+```powershell
+cd C:\Projetos\ak-talent\backend
+$env:DATABASE_URL = Read-Host "Cole a connection string DIRETA da Neon (sem -pooler)"
+
+# Confira o destino ANTES de migrar (deve ser o host da Neon, sem -pooler):
+.\.venv\Scripts\python.exe -c "from sqlalchemy.engine import make_url; from app.core.config import settings; u = make_url(settings.DATABASE_URL); print('Destino:', u.host, '/', u.database)"
+
+.\.venv\Scripts\python.exe -m app.database.migrate
+Remove-Item Env:DATABASE_URL
+```
+
+A variável do terminal tem prioridade sobre o `backend/.env` local; mesmo assim, só migre se o "Destino" for a Neon. `Read-Host` evita que a string fique no histórico do terminal.
+
 Banco vazio → "Banco criado do zero e marcado na versão mais recente." Banco existente → "Banco atualizado (alembic upgrade head)."
+
+Se a senha do banco for trocada na Neon, a integração da Vercel atualizou `DATABASE_URL` e `DATABASE_URL_UNPOOLED` sozinha no nosso caso (datas das variáveis mudaram junto); confirme com um `GET /jobs` depois do próximo deploy (200 = senha certa). Para migrações, copie a string direta **nova**.
 
 ### A6. Conferir
 `https://ak-talent-api.vercel.app/health` → `{"status":"ok","service":"AK Talent API"}`.
@@ -113,14 +132,12 @@ Previews da Vercel não falam com a API de produção (CORS fechado de propósit
 
 ```powershell
 cd C:\Projetos\ak-talent\backend
-.\.venv\Scripts\Activate.ps1
-$env:AKTALENT_ENV_FILE = ""
-$env:DATABASE_URL = "COLE-AQUI-A-DATABASE_URL_UNPOOLED"
-python -m app.scripts.create_admin
-Remove-Item Env:DATABASE_URL; Remove-Item Env:AKTALENT_ENV_FILE
+$env:DATABASE_URL = Read-Host "Cole a connection string DIRETA da Neon"
+.\.venv\Scripts\python.exe -m app.scripts.create_admin
+Remove-Item Env:DATABASE_URL
 ```
 
-O script pede nome, e-mail e senha (oculta, mínimo 12, digitada duas vezes), mostra o banco (sem a senha dele) e pede confirmação. Recrutadores: pelo `/admin` ("Equipe de recrutamento") ou `python -m app.scripts.create_recruiter`.
+O script mostra o banco de destino (sem a senha): confira que é a Neon antes de confirmar com `s`. Depois pede nome, e-mail e senha (oculta, mínimo 12, digitada duas vezes). Recrutadores: pelo `/admin` ("Equipe de recrutamento") ou `python -m app.scripts.create_recruiter`.
 
 ---
 
