@@ -1,11 +1,13 @@
 import type { FormEvent } from 'react'
 import { useEffect, useState } from 'react'
 import { AIOnboardingWizard } from '../components/company/AIOnboardingWizard'
+import { FinalistsSection } from '../components/company/FinalistsSection'
 import { FormField } from '../components/FormField'
 import { Alert, Badge, Button, Card, EmptyState, LoadingSpinner, PageHeader, Select, Textarea } from '../components/ui'
 import { useFormState } from '../hooks/useFormState'
 import { DashboardShell } from '../layouts/DashboardShell'
 import { getCurrentUser, logout } from '../services/authService'
+import { companyJobProgress } from '../services/companyProgress'
 import { formatJobStatus, formatWorkMode } from '../services/jobFormat'
 import { createJob, getJobMatches, getMyCompanyJobs } from '../services/jobService'
 import { getSalaryRangeError } from '../services/jobValidation'
@@ -219,7 +221,11 @@ export function CompanyPage() {
         }
       />
 
-      <div className="mt-8 grid gap-4 md:grid-cols-2">
+      <div className="mt-8">
+        <FinalistsSection />
+      </div>
+
+      <div className="mt-10 grid gap-4 md:grid-cols-2">
         <button
           type="button"
           onClick={() => setCreationMode('ai')}
@@ -467,6 +473,13 @@ export function CompanyPage() {
                 </div>
                 <p className="mt-2 line-clamp-3 text-sm leading-6 text-ink-600">{job.description}</p>
                 <p className="mt-3 text-sm font-bold text-ink-700">{job.location || 'Cidade não informada'}</p>
+                <ul className="mt-3 flex flex-wrap gap-2 text-xs font-semibold text-ink-700" aria-label="Andamento da vaga">
+                  {companyJobProgress(job.stage_counts).map((item) => (
+                    <li key={item.label} className="rounded-full bg-white px-2.5 py-1 ring-1 ring-slate-200">
+                      {item.label}: {item.value}
+                    </li>
+                  ))}
+                </ul>
                 <Button
                   type="button"
                   variant="secondary"

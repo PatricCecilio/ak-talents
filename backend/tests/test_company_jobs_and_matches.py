@@ -111,7 +111,7 @@ class CompanyJobsAndMatchesTestCase(unittest.TestCase):
         self.act_as(candidate_user)
         response = self.client.get("/companies/me/jobs")
         self.assertEqual(response.status_code, 403)
-        self.assertEqual(response.json()["detail"], "Apenas empresas podem ver as próprias vagas.")
+        self.assertEqual(response.json()["detail"], "Você não tem permissão para acessar esta área.")
 
 
 if __name__ == "__main__":

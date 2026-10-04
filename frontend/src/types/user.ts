@@ -45,6 +45,8 @@ export interface Job {
   is_active?: boolean
   created_at: string
   screening_questions?: PublicScreeningQuestion[]
+  /** Company view only: number of applications per pipeline stage (no names). */
+  stage_counts?: Record<string, number>
 }
 
 export interface JobPayload {
