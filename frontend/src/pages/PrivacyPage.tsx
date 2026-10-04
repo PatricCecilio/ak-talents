@@ -117,7 +117,7 @@ export function PrivacyPage() {
                 a sugestão. Os dados de candidatura enviados pelo site não são enviados à OpenAI.
               </>,
               <>
-                <strong>Hospedagem e infraestrutura:</strong> Render (servidor e banco de dados) e Vercel (site). O site também
+                <strong>Hospedagem e infraestrutura:</strong> Vercel (site e servidor da plataforma) e Neon (banco de dados). O site também
                 carrega fontes do Google Fonts, o que faz seu navegador se conectar aos servidores do Google.
               </>,
               <>
