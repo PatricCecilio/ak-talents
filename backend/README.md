@@ -106,11 +106,14 @@ client IP (`app/core/rate_limit.py`). Counters are in memory (single instance). 
 
 ## Database migrations
 
-Alembic is the schema authority for production databases:
+Alembic is the schema authority for production databases. Use the wrapper, which also handles a
+brand-new empty database (migration 0001 is only a baseline marker and creates no tables):
 
 ```bash
-alembic upgrade head
+python -m app.database.migrate
 ```
+
+On an existing database this is the same as `alembic upgrade head`.
 
 `Base.metadata.create_all(bind=engine)` is still available for local startup by default, but it is disabled whenever `ENVIRONMENT="production"` or `AUTO_CREATE_TABLES_ON_STARTUP=false`.
 

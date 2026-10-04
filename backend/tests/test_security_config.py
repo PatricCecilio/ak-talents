@@ -53,6 +53,16 @@ class ProductionJwtSecretTestCase(unittest.TestCase):
         self.assertEqual(make_settings(JWT_SECRET_KEY=DEFAULT_JWT_SECRET_KEY).JWT_SECRET_KEY, DEFAULT_JWT_SECRET_KEY)
 
 
+class DatabaseUrlTestCase(unittest.TestCase):
+    def test_postgres_scheme_is_normalized_for_sqlalchemy(self) -> None:
+        config = make_settings(DATABASE_URL=" postgres://user:pass@host:5432/ak ")
+        self.assertEqual(config.DATABASE_URL, "postgresql://user:pass@host:5432/ak")
+
+    def test_other_urls_are_kept(self) -> None:
+        url = "postgresql+psycopg2://user:pass@localhost:5432/ak"
+        self.assertEqual(make_settings(DATABASE_URL=url).DATABASE_URL, url)
+
+
 class LocalDatabaseGuardTestCase(unittest.TestCase):
     def test_refuses_production_environment(self) -> None:
         with self.assertRaises(RuntimeError):

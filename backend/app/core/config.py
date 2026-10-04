@@ -2,7 +2,7 @@ import os
 from functools import cached_property
 from typing import Literal
 
-from pydantic import model_validator
+from pydantic import field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 DEFAULT_JWT_SECRET_KEY = "change-this-secret-in-production"
@@ -28,6 +28,15 @@ class Settings(BaseSettings):
     RATE_LIMIT_ENABLED: bool = True
 
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
+
+    @field_validator("DATABASE_URL")
+    @classmethod
+    def _normalize_postgres_scheme(cls, value: str) -> str:
+        # Hosting panels often hand out "postgres://", which SQLAlchemy 2 no longer accepts.
+        value = value.strip()
+        if value.startswith("postgres://"):
+            return "postgresql://" + value.removeprefix("postgres://")
+        return value
 
     @model_validator(mode="after")
     def _require_strong_jwt_secret_in_production(self) -> "Settings":

@@ -4,10 +4,13 @@ services:
     runtime: python
     rootDir: backend
     buildCommand: pip install -r requirements.txt
-    # --proxy-headers: rate limiting needs the real client IP behind Render's proxy (X-Forwarded-For)
-    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT --proxy-headers --forwarded-allow-ips="*"
+    # 1) app.database.migrate: creates a fresh database or runs `alembic upgrade head` (safe on every deploy)
+    # 2) --proxy-headers: rate limiting needs the real client IP behind Render's proxy (X-Forwarded-For)
+    startCommand: python -m app.database.migrate && uvicorn app.main:app --host 0.0.0.0 --port $PORT --proxy-headers --forwarded-allow-ips="*"
     healthCheckPath: /health
     envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.10
       - key: ENVIRONMENT
         value: production
       - key: AUTO_CREATE_TABLES_ON_STARTUP
