@@ -8,6 +8,7 @@ from app.core.security import create_access_token, get_password_hash, verify_pas
 from app.models.candidate import Candidate
 from app.models.company import Company
 from app.models.user import PUBLIC_SIGNUP_ROLES, User, UserRole
+from app.services.identity_service import normalize_email
 from app.schemas.auth import LoginRequest, RegisterRequest, TokenResponse
 
 
@@ -38,7 +39,9 @@ def register_user(db: Session, payload: RegisterRequest) -> TokenResponse:
     if payload.role == UserRole.company:
         db.add(Company(user_id=user.id, company_name=payload.company_name or payload.name))
     elif payload.role == UserRole.candidate:
-        db.add(Candidate(user_id=user.id))
+        # Same e-mail on the candidate profile, so a later application through the public job form
+        # (same e-mail) is linked to this account and shows up in "Minhas candidaturas".
+        db.add(Candidate(user_id=user.id, full_name=payload.name, email=normalize_email(user.email)))
 
     db.commit()
     db.refresh(user)
