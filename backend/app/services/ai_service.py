@@ -1,3 +1,5 @@
+import logging
+
 from fastapi import HTTPException, status
 from openai import OpenAI, OpenAIError
 
@@ -10,13 +12,17 @@ from app.schemas.ai import (
     CompanyJobAIResponse,
 )
 
+logger = logging.getLogger(__name__)
+
+# Clients only ever see these generic messages; provider details stay in the server log.
+AI_UNAVAILABLE_MESSAGE = "O assistente de IA está indisponível no momento. Tente novamente mais tarde."
+AI_FAILED_MESSAGE = "Não foi possível gerar a sugestão agora. Tente novamente em instantes."
+
 
 def _get_client() -> OpenAI:
     if not settings.OPENAI_API_KEY:
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="OPENAI_API_KEY is not configured",
-        )
+        logger.error("OPENAI_API_KEY is not configured; AI endpoints are unavailable.")
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=AI_UNAVAILABLE_MESSAGE)
 
     return OpenAI(api_key=settings.OPENAI_API_KEY)
 
@@ -56,15 +62,14 @@ def generate_candidate_profile(
             response_format=CandidateProfileAIResponse,
         )
     except OpenAIError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_502_BAD_GATEWAY,
-            detail=f"OpenAI request failed: {exc}",
-        ) from exc
+        logger.exception("OpenAI request failed")
+        raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail=AI_FAILED_MESSAGE) from exc
 
     parsed = completion.choices[0].message.parsed
 
     if parsed is None:
-        raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail="OpenAI returned an empty response")
+        logger.error("OpenAI returned an empty parsed response")
+        raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail=AI_FAILED_MESSAGE)
 
     return parsed
 
@@ -104,14 +109,13 @@ def generate_company_job(
             response_format=CompanyJobAIResponse,
         )
     except OpenAIError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_502_BAD_GATEWAY,
-            detail=f"OpenAI request failed: {exc}",
-        ) from exc
+        logger.exception("OpenAI request failed")
+        raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail=AI_FAILED_MESSAGE) from exc
 
     parsed = completion.choices[0].message.parsed
 
     if parsed is None:
-        raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail="OpenAI returned an empty response")
+        logger.error("OpenAI returned an empty parsed response")
+        raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail=AI_FAILED_MESSAGE)
 
     return parsed

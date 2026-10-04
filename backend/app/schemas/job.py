@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 from app.schemas.screening import PublicScreeningQuestionRead
 
@@ -16,7 +16,11 @@ class JobBase(BaseModel):
 
 
 class JobCreate(JobBase):
-    pass
+    @model_validator(mode="after")
+    def _salary_range_is_ordered(self) -> "JobCreate":
+        if self.salary_min is not None and self.salary_max is not None and self.salary_min > self.salary_max:
+            raise ValueError("O salário mínimo não pode ser maior que o salário máximo.")
+        return self
 
 
 class JobRead(JobBase):

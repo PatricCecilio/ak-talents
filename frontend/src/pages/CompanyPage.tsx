@@ -7,6 +7,7 @@ import { useFormState } from '../hooks/useFormState'
 import { DashboardShell } from '../layouts/DashboardShell'
 import { getCurrentUser, logout } from '../services/authService'
 import { createJob, getJobMatches, getJobs } from '../services/jobService'
+import { getSalaryRangeError } from '../services/jobValidation'
 import { getCompanyProfile, updateCompanyProfile } from '../services/profileService'
 import type { CandidateMatch, Job } from '../types/user'
 
@@ -56,17 +57,25 @@ export function CompanyPage() {
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
-    setIsSubmitting(true)
     setError('')
     setSuccess('')
 
+    const salaryMin = toOptionalNumber(values.salary_min)
+    const salaryMax = toOptionalNumber(values.salary_max)
+    const salaryError = getSalaryRangeError(salaryMin, salaryMax)
+    if (salaryError) {
+      setError(salaryError)
+      return
+    }
+
+    setIsSubmitting(true)
     try {
       const createdJob = await createJob({
         title: values.title,
         description: values.description,
         requirements: values.requirements,
-        salary_min: toOptionalNumber(values.salary_min),
-        salary_max: toOptionalNumber(values.salary_max),
+        salary_min: salaryMin,
+        salary_max: salaryMax,
         location: values.location,
         work_mode: values.work_mode,
       })

@@ -4,6 +4,7 @@ import { Alert, Badge, Button, Card, Select, Textarea } from '../ui'
 import { useFormState } from '../../hooks/useFormState'
 import { generateCompanyJob } from '../../services/aiService'
 import { createJob } from '../../services/jobService'
+import { getSalaryRangeError } from '../../services/jobValidation'
 import { updateCompanyProfile } from '../../services/profileService'
 import type { CompanyJobAIResponse } from '../../types/ai'
 import type { Job } from '../../types/user'
@@ -83,9 +84,17 @@ export function AIOnboardingWizard({ onJobCreated }: AIOnboardingWizardProps) {
       return
     }
 
-    setIsSaving(true)
     setError('')
     setSuccess('')
+
+    const salary = parseSalaryRange(jobValues.salary)
+    const salaryError = getSalaryRangeError(salary.salary_min, salary.salary_max)
+    if (salaryError) {
+      setError(salaryError)
+      return
+    }
+
+    setIsSaving(true)
 
     try {
       await updateCompanyProfile({
@@ -96,7 +105,6 @@ export function AIOnboardingWizard({ onJobCreated }: AIOnboardingWizardProps) {
         description: companyValues.description,
       })
 
-      const salary = parseSalaryRange(jobValues.salary)
       const createdJob = await createJob({
         title: aiResult.optimized_title,
         description: aiResult.job_description,

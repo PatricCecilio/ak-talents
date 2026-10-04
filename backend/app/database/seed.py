@@ -2,6 +2,7 @@ from sqlalchemy.orm import Session
 
 from app.core.security import get_password_hash
 from app.database.base import Base
+from app.database.guards import ensure_local_database
 from app.database.session import SessionLocal, engine
 from app.models.application import Application
 from app.models.candidate import Candidate
@@ -162,6 +163,8 @@ def seed_application(db: Session, candidate: Candidate, job: Job) -> Application
 
 
 def run_seed() -> None:
+    # Seeds fixed, weak test credentials: never allowed against a non-local or production database.
+    ensure_local_database()
     Base.metadata.create_all(bind=engine)
 
     with SessionLocal() as db:
