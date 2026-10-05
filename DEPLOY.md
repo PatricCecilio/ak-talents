@@ -130,6 +130,14 @@ Previews da Vercel não falam com a API de produção (CORS fechado de propósit
 
 ## C) Primeiro admin (no SEU terminal)
 
+Atalho (recomendado): o script `backend/scripts/criar-admin.ps1` pede a connection string, limpa aspas, `-pooler` e `channel_binding`, mostra o destino, pede confirmação, roda o `create_admin` e apaga a variável no final:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File C:\Projetos\ak-talent\backend\scripts\criar-admin.ps1
+```
+
+Ou, manualmente:
+
 ```powershell
 cd C:\Projetos\ak-talent\backend
 $env:DATABASE_URL = Read-Host "Cole a connection string DIRETA da Neon"

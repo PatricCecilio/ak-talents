@@ -6,3 +6,4 @@ alembic.ini
 requirements-dev.txt
 .env
 .env.*
+/scripts/

@@ -71,6 +71,14 @@ class VercelProjectFilesTestCase(unittest.TestCase):
         for pattern in (".venv/", "tests/", ".env"):
             self.assertIn(pattern, ignored)
 
+    def test_local_admin_script_stays_out_of_the_deploy_but_app_scripts_do_not(self) -> None:
+        ignored = (BACKEND_DIR / ".vercelignore").read_text(encoding="utf-8").split()
+        # Anchored: excludes backend/scripts (PowerShell helpers), not app/scripts (Python package).
+        self.assertIn("/scripts/", ignored)
+        self.assertNotIn("scripts/", ignored)
+        self.assertTrue((BACKEND_DIR / "scripts" / "criar-admin.ps1").exists())
+        self.assertTrue((BACKEND_DIR / "app" / "scripts" / "create_admin.py").exists())
+
 
 if __name__ == "__main__":
     unittest.main()
