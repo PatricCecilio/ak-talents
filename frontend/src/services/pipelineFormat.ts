@@ -49,6 +49,7 @@ const SCREENING_LABELS: Record<string, string> = {
   REVIEW: 'Para análise da equipe',
   PENDING: 'Triagem incompleta',
   pending_screening: 'Triagem não respondida',
+  NO_QUESTIONS: 'Sem perguntas de triagem',
 }
 
 export function formatScreeningStatus(status: string): string {

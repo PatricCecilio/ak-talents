@@ -27,6 +27,7 @@ test('friendly date, screening and WhatsApp helpers', () => {
   assert.equal(formatDaysAgo(new Date(2026, 9, 5, 9, 0).toISOString(), now), 'há 5 dias')
   assert.equal(formatScreeningStatus('QUALIFIED'), 'Atende aos requisitos')
   assert.equal(formatScreeningStatus('pending_screening'), 'Triagem não respondida')
+  assert.equal(formatScreeningStatus('NO_QUESTIONS'), 'Sem perguntas de triagem')
   assert.equal(whatsappLink('(41) 99111-0002'), 'https://wa.me/5541991110002')
   assert.equal(whatsappLink('5541991110002'), 'https://wa.me/5541991110002')
   assert.equal(whatsappLink('123'), '')

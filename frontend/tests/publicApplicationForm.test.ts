@@ -6,6 +6,12 @@ import {
   validatePublicApplicationForm,
   type PublicApplicationFormValues,
 } from '../src/services/publicApplicationForm.ts'
+import {
+  APPLICATION_CONFIRMATION_MESSAGE,
+  firstMissingRequiredAnswer,
+  stepAfterApplication,
+  toScreeningAnswers,
+} from '../src/services/applicationFlow.ts'
 
 const validValues: PublicApplicationFormValues = {
   full_name: 'Ana Silva',
@@ -47,35 +53,90 @@ test('public application payload trims values before sending', () => {
   assert.equal(payload.email, 'ANA@EXAMPLE.COM')
 })
 
-test('job detail page wires submit loading, success and error states', () => {
+test('job detail page wires submit loading and error states', () => {
   const root = new URL('../', import.meta.url)
   const source = readFileSync(new URL('src/pages/JobDetailPage.tsx', root), 'utf8')
 
   assert.match(source, /createPublicApplication/)
   assert.match(source, /public_screening_token/)
-  assert.match(source, /application_reference/)
-  assert.match(source, /toRecruitmentScreeningOpenOptions/)
-  assert.match(source, /openAppIntelliOptions/)
-  assert.match(source, /getPublicScreening/)
   assert.match(source, /isSubmitting/)
-  assert.match(source, /if \(isSubmitting \|\| applicationReference\) return/)
-  assert.match(source, /setSuccess\('Candidatura recebida com sucesso/)
+  assert.match(source, /if \(isSubmitting \|\| screeningToken\) return/)
   assert.match(source, /setFormError/)
   assert.match(source, /disabled=\{isSubmitting\}/)
 })
 
-test('job detail page keeps legacy screening as a fallback after AppIntelli handoff', () => {
+test('job detail page ends with a clear confirmation and never opens the chat by itself', () => {
   const root = new URL('../', import.meta.url)
   const source = readFileSync(new URL('src/pages/JobDetailPage.tsx', root), 'utf8')
 
-  assert.match(source, /handleLegacyScreeningStart/)
-  assert.match(source, /screeningQuestions/)
+  assert.match(source, /screening_completed/)
+  assert.match(source, /stepAfterApplication\(response\.screening_completed, questions\)/)
+  assert.match(source, /APPLICATION_CONFIRMATION_TITLE/)
+  assert.match(source, /APPLICATION_CONFIRMATION_MESSAGE/)
+  assert.match(source, /step === 'done'/)
+  assert.match(source, /Ver outras vagas/)
+  assert.doesNotMatch(source, /setTimeout/)
+  assert.doesNotMatch(source, /Continuar triagem|Responder triagem estruturada/)
+})
+
+test('job detail page asks the screening questions on the page when the job has them', () => {
+  const root = new URL('../', import.meta.url)
+  const source = readFileSync(new URL('src/pages/JobDetailPage.tsx', root), 'utf8')
+
+  assert.match(source, /getPublicScreening/)
+  assert.match(source, /job\?\.screening_questions/)
+  assert.match(source, /step === 'questions'/)
   assert.match(source, /submitScreeningAnswers/)
-  assert.match(source, /screeningToken/)
+  assert.match(source, /firstMissingRequiredAnswer/)
   assert.match(source, /YES_NO/)
   assert.match(source, /SINGLE_SELECT/)
   assert.match(source, /TEXT/)
-  assert.match(source, /Responder triagem estruturada/)
+  assert.match(source, /Concluir candidatura/)
+})
+
+test('apply button scrolls to the form and focuses the first field', () => {
+  const root = new URL('../', import.meta.url)
+  const source = readFileSync(new URL('src/pages/JobDetailPage.tsx', root), 'utf8')
+
+  assert.match(source, /onClick=\{openApplicationForm\}/)
+  assert.match(source, /formRef\.current\?\.scrollIntoView/)
+  assert.match(source, /firstFieldRef\.current\?\.focus/)
+  assert.match(source, /ref=\{firstFieldRef\}/)
+  assert.ok(source.indexOf('ref={firstFieldRef}') > source.indexOf('id="application_full_name"'))
+})
+
+test('the next step after applying depends on screening_completed and the questions', () => {
+  const question = { id: 1, key: 'sabado', label: 'Sábado?', question_type: 'YES_NO', required: true, sort_order: 0 } as const
+
+  assert.equal(stepAfterApplication(true, []), 'done')
+  assert.equal(stepAfterApplication(true, [question]), 'done')
+  assert.equal(stepAfterApplication(false, []), 'done')
+  assert.equal(stepAfterApplication(false, [question]), 'questions')
+  assert.match(APPLICATION_CONFIRMATION_MESSAGE, /WhatsApp ou telefone informado/)
+})
+
+test('screening answers: required check and payload', () => {
+  const questions = [
+    { id: 1, key: 'sabado', label: 'Sábado?', question_type: 'YES_NO', required: true, sort_order: 0 },
+    { id: 2, key: 'turno', label: 'Turno', question_type: 'SINGLE_SELECT', required: true, sort_order: 1 },
+    { id: 3, key: 'obs', label: 'Observações', question_type: 'TEXT', required: false, sort_order: 2 },
+  ] as const
+
+  assert.equal(firstMissingRequiredAnswer([...questions], {})?.id, 1)
+  // "Não" is a valid answer for a yes/no question.
+  assert.equal(firstMissingRequiredAnswer([...questions], { 1: false })?.id, 2)
+  assert.equal(firstMissingRequiredAnswer([...questions], { 1: false, 2: '  ' })?.id, 2)
+  assert.equal(firstMissingRequiredAnswer([...questions], { 1: false, 2: 'manha' }), undefined)
+
+  assert.deepEqual(toScreeningAnswers([...questions], { 1: false, 2: 'manha', 3: '  posso começar já  ' }), [
+    { question_id: 1, value: false },
+    { question_id: 2, value: 'manha' },
+    { question_id: 3, value: 'posso começar já' },
+  ])
+  assert.deepEqual(toScreeningAnswers([...questions], { 1: true, 2: 'tarde', 3: '' }), [
+    { question_id: 1, value: true },
+    { question_id: 2, value: 'tarde' },
+  ])
 })
 
 test('job detail page does not send candidate PII to the widget context', () => {

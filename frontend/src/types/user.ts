@@ -89,6 +89,7 @@ export interface PublicApplicationResponse {
   public_screening_token: string
   application_reference: string
   message: string
+  screening_completed: boolean
 }
 
 export type ScreeningQuestionType = 'YES_NO' | 'SINGLE_SELECT' | 'TEXT'
@@ -132,8 +133,8 @@ export interface ScreeningSubmitPayload {
 
 export interface ScreeningSubmitResponse {
   application_id: number
-  screening_status: 'QUALIFIED' | 'REVIEW' | 'NOT_MATCHED' | 'PENDING'
-  screening_score: number
+  screening_status: 'QUALIFIED' | 'REVIEW' | 'NOT_MATCHED' | 'PENDING' | 'NO_QUESTIONS'
+  screening_score: number | null
   screening_summary: string
 }
 
