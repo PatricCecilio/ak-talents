@@ -119,6 +119,7 @@ Variáveis em **Production** (as `VITE_*` são gravadas no build: depois de muda
 | `VITE_APPINTELLI_WIDGET_URL` | `https://www.appintelli.com.br/widget.js` |
 | `VITE_APPINTELLI_WIDGET_KEY` | chave do widget no painel do AppIntelli |
 | `VITE_WHATSAPP_URL` | opcional, `https://wa.me/55DDDNUMERO` |
+| `VITE_APPINTELLI_SCREENING_ENABLED` | `false` (ou ausente). Só mude para `true` depois da verificação da seção F |
 
 Domínio: `aktalent.com.br` redireciona para `www.aktalent.com.br`. Ambos estão em `BACKEND_CORS_ORIGINS`.
 
@@ -173,9 +174,41 @@ Use dados claramente de teste ("TESTE AK"). Celular para a parte pública e para
 10. **Recrutadora**: no detalhe, o histórico mostra "Aprovado pelo cliente (empresa)". **Mover para… → Contratado**.
 11. **Candidato**: vê **"Parabéns, você foi selecionado(a)!"**.
 12. Público: `/vagas/vaga-que-nao-existe` → "Esta vaga não está mais disponível". `/privacidade` abre.
+    Numa vaga aberta, **deslogado** (celular): **Candidatar-se** rola até o formulário com o cursor no "Nome completo". Enviar → vaga sem perguntas: "Candidatura enviada!" na hora; vaga com perguntas: as perguntas aparecem na página e, depois de "Concluir candidatura", a mesma confirmação. Nenhum chat abre sozinho. Em `/recrutador`, a candidatura aparece em **Nova** (sem perguntas: "Sem perguntas de triagem").
 13. **Limpeza**: `/admin` → **Desativar** a empresa e o candidato de teste (a vaga some do site; nada é apagado).
 
 Se algo falhar: anote o passo e o horário, e veja **Vercel → ak-talent-api → Logs**.
+
+---
+
+## F) Chat de triagem do AppIntelli (opcional, desligado)
+
+Hoje as perguntas da vaga são respondidas **na própria página**. Com `VITE_APPINTELLI_SCREENING_ENABLED=true`, a etapa de perguntas ganha o link "Prefere responder conversando? Abrir o chat". O chat nunca abre sozinho. Ele recebe só a referência da candidatura (sem nome, e-mail ou telefone) e precisa buscar as perguntas e devolver as respostas na nossa API:
+
+- `GET https://ak-talent-api.vercel.app/integrations/appintelli/applications/{referencia}/screening`
+- `POST https://ak-talent-api.vercel.app/integrations/appintelli/applications/{referencia}/screening/answers`
+- ambos com o cabeçalho `Authorization: Bearer <APPINTELLI_INTEGRATION_SECRET>` (o mesmo valor na API e no painel do AppIntelli; sem ele, 401).
+
+**Ligue a flag só depois de ver o AppIntelli chamando a nossa API.** Se o chat não fizer essas chamadas, o candidato conversa, mas nada chega à AK, e a candidatura fica com "Triagem não respondida".
+
+1. Crie (ou use) uma vaga de teste **com** perguntas. Candidate-se pelo site, deslogado, com o DevTools aberto (aba **Network**). Na resposta do `POST /jobs/.../applications`, copie o `application_reference`. Não precisa responder as perguntas.
+2. Confira o nosso lado (no SEU terminal; o segredo não fica no histórico):
+   ```powershell
+   $s = Read-Host "APPINTELLI_INTEGRATION_SECRET" -AsSecureString
+   $t = [Runtime.InteropServices.Marshal]::PtrToStringAuto([Runtime.InteropServices.Marshal]::SecureStringToBSTR($s))
+   curl.exe -s -H "Authorization: Bearer $t" https://ak-talent-api.vercel.app/integrations/appintelli/applications/REFERENCIA/screening
+   Remove-Variable s, t
+   ```
+   Deve voltar JSON com a vaga e as perguntas. `401`: o segredo da API não é esse (ou não está configurado).
+3. No painel do AppIntelli, teste a triagem com essa referência (ou peça ao suporte deles). Em seguida, olhe os logs:
+   ```powershell
+   vercel logs --project ak-talent-api --environment production --no-branch --since 30m
+   ```
+   O que precisa aparecer: `GET /integrations/appintelli/applications/<ref>/screening` **200** e, depois das respostas, `POST .../screening/answers` **200**. Em `/recrutador`, a candidatura mostra o resultado da triagem.
+   - Nenhuma linha `/integrations/...`: o AppIntelli não está chamando a nossa API. **Não ligue a flag.**
+   - `401`: segredo diferente dos dois lados. `404`: referência errada.
+4. Só então: no projeto **ak-talents** (site), Production, `VITE_APPINTELLI_SCREENING_ENABLED=true` (não é segredo, pode ser tipo normal) e **redeploy**. Repita o teste pelo celular, agora tocando em "Abrir o chat", e confira os mesmos logs.
+5. Para desligar: volte para `false` (ou apague a variável) e faça redeploy. As perguntas na página continuam funcionando com a flag ligada ou desligada.
 
 ---
 
@@ -187,4 +220,5 @@ Se algo falhar: anote o passo e o horário, e veja **Vercel → ak-talent-api �
 - [ ] Site com `VITE_API_BASE_URL` e AppIntelli em Production, redeploy feito; `/vagas` sem erro.
 - [ ] Política de Privacidade com `[RAZÃO SOCIAL]`, `[CNPJ]`, `[E-MAIL DE CONTATO DE PRIVACIDADE]` e `[PRAZO DE RETENÇÃO]` preenchidos.
 - [ ] Mensagem de boas-vindas do chat ajustada no painel do AppIntelli.
+- [ ] `VITE_APPINTELLI_SCREENING_ENABLED` desligada, a não ser que a verificação F tenha mostrado as chamadas `/integrations/appintelli/...` com 200.
 - [ ] Teste de 15 minutos (E) concluído.

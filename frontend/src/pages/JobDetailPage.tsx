@@ -19,6 +19,8 @@ import {
   type ApplicationStep,
   type ScreeningAnswers,
 } from '../services/applicationFlow'
+import { openAppIntelliOptions, toRecruitmentScreeningOpenOptions } from '../services/appIntelliWidget'
+import { SCREENING_CHAT_UNAVAILABLE_MESSAGE, isScreeningChatEnabled } from '../services/screeningChat'
 import {
   toPublicApplicationPayload,
   validatePublicApplicationForm,
@@ -27,6 +29,8 @@ import {
 import type { Job, PublicScreeningQuestion } from '../types/user'
 
 type JobLoadError = 'not-found' | 'network' | 'server' | null
+
+const screeningChatEnabled = isScreeningChatEnabled()
 
 export function JobDetailPage() {
   const { slug = '' } = useParams()
@@ -40,6 +44,8 @@ export function JobDetailPage() {
   const [formError, setFormError] = useState('')
   const [step, setStep] = useState<ApplicationStep>('form')
   const [screeningToken, setScreeningToken] = useState('')
+  const [applicationReference, setApplicationReference] = useState('')
+  const [chatUnavailable, setChatUnavailable] = useState(false)
   const [screeningQuestions, setScreeningQuestions] = useState<PublicScreeningQuestion[]>([])
   const [screeningAnswers, setScreeningAnswers] = useState<ScreeningAnswers>({})
   const [screeningError, setScreeningError] = useState('')
@@ -89,6 +95,7 @@ export function JobDetailPage() {
     try {
       const response = await createPublicApplication(slug, toPublicApplicationPayload(formValues))
       setScreeningToken(response.public_screening_token)
+      setApplicationReference(response.application_reference)
       const questions = response.screening_completed ? [] : await loadScreeningQuestions(response.public_screening_token)
       setScreeningQuestions(questions)
       setStep(stepAfterApplication(response.screening_completed, questions))
@@ -122,6 +129,13 @@ export function JobDetailPage() {
     } finally {
       setIsSubmittingScreening(false)
     }
+  }
+
+  // Only on request (never automatically), and only with the flag on. The chat gets the reference, no personal data.
+  function openScreeningChat() {
+    if (!applicationReference) return
+    const result = openAppIntelliOptions(toRecruitmentScreeningOpenOptions(applicationReference))
+    setChatUnavailable(result === 'unavailable')
   }
 
   function retryLoadJob() {
@@ -405,6 +419,20 @@ export function JobDetailPage() {
                   <Button type="submit" isLoading={isSubmittingScreening} disabled={isSubmittingScreening}>
                     Concluir candidatura
                   </Button>
+
+                  {screeningChatEnabled && applicationReference ? (
+                    <p className="text-sm leading-6 text-ink-600">
+                      Prefere responder conversando?{' '}
+                      <button
+                        type="button"
+                        onClick={openScreeningChat}
+                        className="font-bold text-brand-700 underline underline-offset-2 hover:text-brand-600"
+                      >
+                        Abrir o chat
+                      </button>
+                      {chatUnavailable ? <span className="block text-red-700">{SCREENING_CHAT_UNAVAILABLE_MESSAGE}</span> : null}
+                    </p>
+                  ) : null}
                 </form>
               </div>
             ) : null}

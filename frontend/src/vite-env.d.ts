@@ -4,6 +4,7 @@ interface ImportMetaEnv {
   readonly VITE_API_BASE_URL?: string
   readonly VITE_APPINTELLI_WIDGET_URL?: string
   readonly VITE_APPINTELLI_WIDGET_KEY?: string
+  readonly VITE_APPINTELLI_SCREENING_ENABLED?: string
   readonly VITE_WHATSAPP_URL?: string
 }
 

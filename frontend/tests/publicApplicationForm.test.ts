@@ -12,6 +12,7 @@ import {
   stepAfterApplication,
   toScreeningAnswers,
 } from '../src/services/applicationFlow.ts'
+import { isScreeningChatEnabled } from '../src/services/screeningChat.ts'
 
 const validValues: PublicApplicationFormValues = {
   full_name: 'Ana Silva',
@@ -191,4 +192,29 @@ test('job detail page shows friendly closed-job and connection states', () => {
   assert.match(source, /err\.isNotFound/)
   assert.match(source, /err\.isNetworkError/)
   assert.doesNotMatch(source, /Status: \{screeningResult\.screening_status\}/)
+})
+
+test('AppIntelli screening chat flag is off unless explicitly "true"', () => {
+  assert.equal(isScreeningChatEnabled({}), false)
+  assert.equal(isScreeningChatEnabled({ VITE_APPINTELLI_SCREENING_ENABLED: '' }), false)
+  assert.equal(isScreeningChatEnabled({ VITE_APPINTELLI_SCREENING_ENABLED: 'false' }), false)
+  assert.equal(isScreeningChatEnabled({ VITE_APPINTELLI_SCREENING_ENABLED: '1' }), false)
+  assert.equal(isScreeningChatEnabled({ VITE_APPINTELLI_SCREENING_ENABLED: 'true' }), true)
+  assert.equal(isScreeningChatEnabled({ VITE_APPINTELLI_SCREENING_ENABLED: ' TRUE ' }), true)
+
+  const root = new URL('../', import.meta.url)
+  const example = readFileSync(new URL('.env.example', root), 'utf8')
+  assert.match(example, /VITE_APPINTELLI_SCREENING_ENABLED="false"/)
+})
+
+test('the screening chat is an opt-in link behind the flag, never opened automatically', () => {
+  const root = new URL('../', import.meta.url)
+  const source = readFileSync(new URL('src/pages/JobDetailPage.tsx', root), 'utf8')
+
+  assert.match(source, /\{screeningChatEnabled && applicationReference \? \(/)
+  assert.match(source, /Prefere responder conversando\?/)
+  assert.match(source, /onClick=\{openScreeningChat\}/)
+  // The only call to the widget is the click handler.
+  assert.equal(source.match(/openAppIntelliOptions\(/g)?.length, 1)
+  assert.ok(source.indexOf('openAppIntelliOptions(') > source.indexOf('function openScreeningChat()'))
 })
