@@ -5,7 +5,7 @@ from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 QuestionType = Literal["YES_NO", "SINGLE_SELECT", "TEXT"]
 RuleOperator = Literal["EQUALS", "IN"]
-ScreeningStatus = Literal["QUALIFIED", "REVIEW", "NOT_MATCHED", "PENDING", "pending_screening"]
+ScreeningStatus = Literal["QUALIFIED", "REVIEW", "NOT_MATCHED", "PENDING", "pending_screening", "NO_QUESTIONS"]
 
 
 class ScreeningOption(BaseModel):

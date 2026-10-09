@@ -37,6 +37,8 @@ class PublicApplicationCreate(BaseModel):
 class PublicApplicationRead(BaseModel):
     status: str
     screening_status: str
+    # True when there is nothing left for the candidate to answer (e.g. job without questions).
+    screening_completed: bool = False
     public_screening_token: str
     application_reference: str
     message: str

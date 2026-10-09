@@ -17,6 +17,7 @@ from app.models.candidate import Candidate
 from app.models.company import Company
 from app.models.job import Job
 from app.models.pipeline import ApplicationNote, ApplicationStageHistory
+from app.models.screening import ScreeningQuestion
 from app.models.user import User
 
 
@@ -196,25 +197,59 @@ class PipelineTestCase(unittest.TestCase):
 
     # --- entry points ---
 
-    def test_public_application_starts_new_and_screening_hands_it_to_ak(self) -> None:
-        response = self.client.post(
-            "/jobs/atendente/applications",
-            json={"full_name": "Júlia", "email": "julia@example.com", "phone": "41988887777", "city": "Curitiba", "neighborhood": "Centro", "privacy_accepted": True},
-        )
+    APPLICANT = {"full_name": "Júlia", "email": "julia@example.com", "phone": "41988887777", "city": "Curitiba", "neighborhood": "Centro", "privacy_accepted": True}
+
+    def add_question(self, rule: dict | None = None) -> int:
+        with self.SessionLocal() as db:
+            question = ScreeningQuestion(
+                job_id=self.job.id, key="sabado", label="Pode trabalhar aos sábados?", question_type="YES_NO",
+                required=True, rule=rule, sort_order=0, is_active=True,
+            )
+            db.add(question)
+            db.commit()
+            return question.id
+
+    def test_job_without_questions_completes_screening_and_stays_in_new(self) -> None:
+        response = self.client.post("/jobs/atendente/applications", json=self.APPLICANT)
         self.assertEqual(response.status_code, 201, response.text)
+        self.assertTrue(response.json()["screening_completed"])
+        self.assertEqual(response.json()["screening_status"], "NO_QUESTIONS")
+
+        with self.SessionLocal() as db:
+            application = db.query(Application).one()
+        self.assertEqual(application.stage, "new")  # the recruiter's inbox
+        self.assertEqual(application.screening_summary, "Sem perguntas de triagem.")
+        self.assertIsNotNone(application.screening_completed_at)
+        self.assertEqual(
+            [(entry.from_stage, entry.to_stage, entry.changed_by_role) for entry in self.history(application.id)],
+            [(None, "new", "system")],
+        )
+
+        # Submitting the (empty) screening later does not move it either.
+        token = response.json()["public_screening_token"]
+        self.assertEqual(self.client.post(f"/public/applications/{token}/screening", json={"answers": []}).status_code, 200)
+        self.assertEqual(self.stage_of(application.id), "new")
+        self.assertEqual(len(self.history(application.id)), 1)
+
+    def test_job_with_questions_waits_for_answers_then_hands_it_to_ak(self) -> None:
+        question_id = self.add_question(rule={"operator": "EQUALS", "value": True})
+        response = self.client.post("/jobs/atendente/applications", json=self.APPLICANT)
+        self.assertEqual(response.status_code, 201, response.text)
+        self.assertFalse(response.json()["screening_completed"])
+        self.assertEqual(response.json()["screening_status"], "pending_screening")
+
         with self.SessionLocal() as db:
             application = db.query(Application).one()
         self.assertEqual(application.stage, "new")
-        first = self.history(application.id)
-        self.assertEqual([(entry.from_stage, entry.to_stage, entry.changed_by_role) for entry in first], [(None, "new", "system")])
 
-        # No screening questions on this job: submitting completes the screening (REVIEW).
         token = response.json()["public_screening_token"]
-        self.assertEqual(self.client.post(f"/public/applications/{token}/screening", json={"answers": []}).status_code, 200)
+        answered = self.client.post(f"/public/applications/{token}/screening", json={"answers": [{"question_id": question_id, "value": True}]})
+        self.assertEqual(answered.status_code, 200, answered.text)
+        self.assertEqual(answered.json()["screening_status"], "QUALIFIED")
         self.assertEqual(self.stage_of(application.id), "screening")
         last = self.history(application.id)[-1]
         self.assertEqual((last.from_stage, last.to_stage, last.changed_by_role), ("new", "screening", "system"))
-        self.assertEqual(last.note, "Triagem automática concluída: para análise da equipe.")
+        self.assertEqual(last.note, "Triagem automática concluída: atende aos requisitos.")
 
     def test_account_application_goes_straight_to_ak_review(self) -> None:
         response = self.client.post("/applications", json={"job_id": self.job.id}, headers=self.headers("candidate"))

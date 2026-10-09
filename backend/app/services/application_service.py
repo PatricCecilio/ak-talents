@@ -14,6 +14,7 @@ from app.schemas.application import ApplicationCreate, PublicApplicationCreate, 
 from app.services.identity_service import normalize_email, normalize_phone
 from app.services.job_service import publishable_jobs
 from app.services.pipeline_service import record_initial_stage
+from app.services.screening_service import complete_screening_if_job_has_no_questions
 from app.services.token_service import generate_public_token, hash_public_token
 
 
@@ -198,12 +199,14 @@ def create_public_application(
     db.add(application)
     db.flush()
     record_initial_stage(db, application, note="Candidatura pelo site.")
+    complete_screening_if_job_has_no_questions(db, application)
     db.commit()
     db.refresh(application)
 
     return PublicApplicationRead(
         status=application.status,
         screening_status=application.screening_status,
+        screening_completed=application.screening_completed_at is not None,
         public_screening_token=public_screening_token,
         application_reference=application.appintelli_reference,
         message="Candidatura recebida com sucesso.",

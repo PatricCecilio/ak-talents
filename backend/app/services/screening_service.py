@@ -30,6 +30,11 @@ QUALIFIED = "QUALIFIED"
 REVIEW = "REVIEW"
 NOT_MATCHED = "NOT_MATCHED"
 PENDING = "PENDING"
+# The job has no active screening questions: nothing to answer, the application waits in "Nova".
+NO_QUESTIONS = "NO_QUESTIONS"
+NO_QUESTIONS_SUMMARY = "Sem perguntas de triagem."
+# Results that hand a "Nova" application to the AK team ("Em triagem").
+SCREENING_RESULTS_THAT_ADVANCE = (QUALIFIED, NOT_MATCHED, REVIEW)
 
 
 def _question_to_read(question: ScreeningQuestion) -> ScreeningQuestionRead:
@@ -216,9 +221,9 @@ def _evaluate_screening(
     answers_by_question_id: dict[int, ScreeningAnswer],
 ) -> None:
     if not questions:
-        application.screening_status = REVIEW
-        application.screening_score = 0
-        application.screening_summary = "Nenhuma pergunta de triagem configurada para esta vaga."
+        application.screening_status = NO_QUESTIONS
+        application.screening_score = None
+        application.screening_summary = NO_QUESTIONS_SUMMARY
         application.screening_completed_at = datetime.now(timezone.utc)
         return
 
@@ -269,10 +274,20 @@ def _evaluate_and_advance(
     questions: list[ScreeningQuestion],
     answers_by_question_id: dict[int, ScreeningAnswer],
 ) -> None:
-    """Evaluate the screening and, once it is complete, hand the application to the AK team."""
+    """Evaluate the screening; once questions were actually answered, hand the application to the AK team.
+    Jobs without questions keep the application in "Nova" (the recruiter's inbox)."""
     _evaluate_screening(application, questions, answers_by_question_id)
-    if application.screening_status != PENDING:
+    if application.screening_status in SCREENING_RESULTS_THAT_ADVANCE:
         advance_after_automated_screening(db, application, application.screening_status)
+
+
+def complete_screening_if_job_has_no_questions(db: Session, application: Application) -> bool:
+    """On a new application: when the job has no active questions, mark the screening as done
+    ("Sem perguntas de triagem") without moving the stage. Returns True when it did (no commit)."""
+    if _active_questions_for_job(db, application.job_id):
+        return False
+    _evaluate_screening(application, [], {})
+    return True
 
 
 def get_public_screening(db: Session, token: str) -> PublicScreeningRead:
