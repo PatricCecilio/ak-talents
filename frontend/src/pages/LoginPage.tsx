@@ -1,6 +1,6 @@
 import type { FormEvent } from 'react'
 import { useState } from 'react'
-import { useLocation, useNavigate } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { FormField } from '../components/FormField'
 import { Alert, Button } from '../components/ui'
 import { useFormState } from '../hooks/useFormState'
@@ -34,7 +34,7 @@ export function LoginPage() {
       })
       navigate(roleHome(response.user.role))
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Nao foi possivel entrar.')
+      setError(err instanceof Error ? err.message : 'Não foi possível entrar.')
     } finally {
       setIsLoading(false)
     }
@@ -43,7 +43,7 @@ export function LoginPage() {
   return (
     <AuthLayout
       title="Acesse sua conta"
-      subtitle="Entre para acompanhar oportunidades, candidatos, processos e recomendacoes inteligentes."
+      subtitle="Entre para acompanhar oportunidades, candidatos, processos e recomendações inteligentes."
     >
       <form onSubmit={handleSubmit} className="grid gap-5">
         {successMessage ? (
@@ -55,7 +55,7 @@ export function LoginPage() {
 
         <FormField
           id="email"
-          label="Email"
+          label="E-mail"
           type="email"
           value={values.email}
           placeholder="voce@email.com"
@@ -79,6 +79,13 @@ export function LoginPage() {
         >
           Entrar
         </Button>
+
+        <p className="text-center text-sm text-ink-600">
+          Não tem conta?{' '}
+          <Link to="/register" className="font-bold text-brand-700 underline underline-offset-2 hover:text-brand-600">
+            Criar conta
+          </Link>
+        </p>
       </form>
     </AuthLayout>
   )

@@ -3,6 +3,7 @@ import { MainLayout } from '../layouts/MainLayout'
 import { WorkspaceLayout } from '../layouts/WorkspaceLayout'
 import { PrivateRoute } from '../components/PrivateRoute'
 import { AppIntelliRouteGate } from '../components/AppIntelliRouteGate'
+import { ScrollToTop } from '../components/ScrollToTop'
 import { CandidatePage } from '../pages/CandidatePage'
 import { CompanyPage } from '../pages/CompanyPage'
 import { AdminPage } from '../pages/AdminPage'
@@ -21,6 +22,7 @@ export function AppRoutes() {
   return (
     <BrowserRouter>
       <AppIntelliRouteGate />
+      <ScrollToTop />
       <Routes>
         {/* Internal AK Talent area: no public header/footer. */}
         <Route

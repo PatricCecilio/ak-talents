@@ -1,12 +1,13 @@
 import type { FormEvent } from 'react'
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { FormField } from '../components/FormField'
 import { Alert, Button } from '../components/ui'
 import { useFormState } from '../hooks/useFormState'
 import { AuthLayout } from '../layouts/AuthLayout'
 import { registerUser } from '../services/authService'
 import { PRIVACY_POLICY_PATH } from '../services/privacyPolicy'
+import { roleHome } from '../services/roleHome'
 import type { UserRole } from '../types/user'
 
 const roles: Array<{ value: UserRole; label: string; description: string }> = [
@@ -45,7 +46,7 @@ export function RegisterPage() {
 
     setIsLoading(true)
     try {
-      await registerUser({
+      const response = await registerUser({
         name: values.name,
         email: values.email,
         password: values.password,
@@ -53,9 +54,7 @@ export function RegisterPage() {
         company_name: values.role === 'company' ? values.name : undefined,
         privacy_accepted: privacyAccepted,
       })
-      navigate('/login', {
-        state: { message: 'Cadastro realizado com sucesso. Entre com seu email e senha.' },
-      })
+      navigate(roleHome(response.user.role))
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Não foi possível concluir o cadastro.')
     } finally {
@@ -83,7 +82,7 @@ export function RegisterPage() {
         />
         <FormField
           id="email"
-          label="Email"
+          label="E-mail"
           type="email"
           value={values.email}
           placeholder="voce@email.com"
@@ -156,6 +155,13 @@ export function RegisterPage() {
         >
           Cadastrar
         </Button>
+
+        <p className="text-center text-sm text-ink-600">
+          Já tem conta?{' '}
+          <Link to="/login" className="font-bold text-brand-700 underline underline-offset-2 hover:text-brand-600">
+            Entrar
+          </Link>
+        </p>
       </form>
     </AuthLayout>
   )

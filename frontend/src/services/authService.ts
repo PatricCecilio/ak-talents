@@ -9,12 +9,16 @@ function persistSession(response: AuthResponse) {
   localStorage.setItem(USER_KEY, JSON.stringify(response.user))
 }
 
+// The API answers sign-up with a session, so the new account is signed in right away.
 export async function registerUser(payload: RegisterPayload): Promise<AuthResponse> {
-  return apiRequest<AuthResponse>('/auth/register', {
+  const response = await apiRequest<AuthResponse>('/auth/register', {
     method: 'POST',
     body: payload,
     auth: false,
   })
+
+  persistSession(response)
+  return response
 }
 
 export async function loginUser(payload: LoginPayload): Promise<AuthResponse> {

@@ -43,3 +43,23 @@ test('signed in: name, link to the right panel and "Sair" instead of "Entrar"', 
     assert.ok(before.lastIndexOf(') : (') > before.lastIndexOf('{user ? ('), 'Entrar fora do ramo deslogado')
   }
 })
+
+test('login and sign-up link to each other; sign-up signs in and opens the right panel', () => {
+  const login = read('src/pages/LoginPage.tsx')
+  const register = read('src/pages/RegisterPage.tsx')
+  const auth = read('src/services/authService.ts')
+
+  assert.match(login, /Não tem conta\?\{' '\}\s*<Link to="\/register"[^>]*>\s*Criar conta/)
+  assert.match(register, /Já tem conta\?\{' '\}\s*<Link to="\/login"[^>]*>\s*Entrar/)
+  const registerFn = auth.slice(auth.indexOf('export async function registerUser'), auth.indexOf('export async function loginUser'))
+  assert.match(registerFn, /persistSession\(response\)/)
+  assert.match(register, /const response = await registerUser\(/)
+  assert.match(register, /navigate\(roleHome\(response\.user\.role\)\)/)
+  assert.doesNotMatch(register, /navigate\('\/login'/)
+})
+
+test('every new page opens at the top, section links keep their own scrolling', () => {
+  const scroll = read('src/components/ScrollToTop.tsx')
+  assert.match(scroll, /if \(!hash\) window\.scrollTo\(0, 0\)/)
+  assert.match(read('src/routes/AppRoutes.tsx'), /<ScrollToTop \/>/)
+})
