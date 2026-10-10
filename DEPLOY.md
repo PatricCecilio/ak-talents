@@ -87,18 +87,31 @@ Depois de mudar variáveis, é preciso um **novo deploy** (ou redeploy) do proje
 
 Use a connection string **direta** da Neon: **console.neon.tech → (projeto) → Connect**, com **Connection pooling desligado** (o host **não** tem `-pooler`). Não tente lê-la na Vercel: lá ela é Sensitive.
 
+> **A connection string contém a senha do banco. Ela nunca pode aparecer na tela.** Não use `Read-Host` comum (ele mostra o que você cola), não cole a string direto num comando, não tire print do terminal enquanto ela estiver na área de transferência. Se ela vazar, troque a senha na Neon (a Vercel recebe a nova sozinha) e faça um **redeploy** do `ak-talent-api`.
+
+Use o script (pede a string **oculta**, mostra só host e banco, pede confirmação e apaga a variável no final):
+
+```powershell
+powershell -ExecutionPolicy Bypass -File C:\Projetos\ak-talent\backend\scripts\migrar-producao.ps1
+```
+
+Ou, manualmente, com a entrada oculta (`-AsSecureString`) e convertendo para texto só em memória:
+
 ```powershell
 cd C:\Projetos\ak-talent\backend
-$env:DATABASE_URL = Read-Host "Cole a connection string DIRETA da Neon (sem -pooler)"
+$s = Read-Host "Cole a connection string DIRETA da Neon (fica oculta)" -AsSecureString
+$b = [Runtime.InteropServices.Marshal]::SecureStringToBSTR($s)
+$env:DATABASE_URL = [Runtime.InteropServices.Marshal]::PtrToStringBSTR($b)
+[Runtime.InteropServices.Marshal]::ZeroFreeBSTR($b); Remove-Variable s, b
 
-# Confira o destino ANTES de migrar (deve ser o host da Neon, sem -pooler):
+# Confira o destino ANTES de migrar (só host e banco; deve ser a Neon, sem -pooler):
 .\.venv\Scripts\python.exe -c "from sqlalchemy.engine import make_url; from app.core.config import settings; u = make_url(settings.DATABASE_URL); print('Destino:', u.host, '/', u.database)"
 
 .\.venv\Scripts\python.exe -m app.database.migrate
 Remove-Item Env:DATABASE_URL
 ```
 
-A variável do terminal tem prioridade sobre o `backend/.env` local; mesmo assim, só migre se o "Destino" for a Neon. `Read-Host` evita que a string fique no histórico do terminal.
+A variável do terminal tem prioridade sobre o `backend/.env` local; mesmo assim, só migre se o "Destino" for a Neon.
 
 Banco vazio → "Banco criado do zero e marcado na versão mais recente." Banco existente → "Banco atualizado (alembic upgrade head)."
 
@@ -137,16 +150,19 @@ Atalho (recomendado): o script `backend/scripts/criar-admin.ps1` pede a connecti
 powershell -ExecutionPolicy Bypass -File C:\Projetos\ak-talent\backend\scripts\criar-admin.ps1
 ```
 
-Ou, manualmente:
+Ou, manualmente (entrada oculta, como na A5; nunca `Read-Host` comum):
 
 ```powershell
 cd C:\Projetos\ak-talent\backend
-$env:DATABASE_URL = Read-Host "Cole a connection string DIRETA da Neon"
+$s = Read-Host "Cole a connection string DIRETA da Neon (fica oculta)" -AsSecureString
+$b = [Runtime.InteropServices.Marshal]::SecureStringToBSTR($s)
+$env:DATABASE_URL = [Runtime.InteropServices.Marshal]::PtrToStringBSTR($b)
+[Runtime.InteropServices.Marshal]::ZeroFreeBSTR($b); Remove-Variable s, b
 .\.venv\Scripts\python.exe -m app.scripts.create_admin
 Remove-Item Env:DATABASE_URL
 ```
 
-O script mostra o banco de destino (sem a senha): confira que é a Neon antes de confirmar com `s`. Depois pede nome, e-mail e senha (oculta, mínimo 12, digitada duas vezes). Recrutadores: pelo `/admin` ("Equipe de recrutamento") ou `python -m app.scripts.create_recruiter`.
+O script pede a connection string oculta e mostra só o banco de destino (sem a senha): confira que é a Neon antes de confirmar com `s`. Depois pede nome, e-mail e senha (oculta, mínimo 12, digitada duas vezes). Recrutadores: pelo `/admin` ("Equipe de recrutamento") ou `python -m app.scripts.create_recruiter`.
 
 ---
 
@@ -195,9 +211,11 @@ Hoje as perguntas da vaga são respondidas **na própria página**. Com `VITE_AP
 2. Confira o nosso lado (no SEU terminal; o segredo não fica no histórico):
    ```powershell
    $s = Read-Host "APPINTELLI_INTEGRATION_SECRET" -AsSecureString
-   $t = [Runtime.InteropServices.Marshal]::PtrToStringAuto([Runtime.InteropServices.Marshal]::SecureStringToBSTR($s))
+   $b = [Runtime.InteropServices.Marshal]::SecureStringToBSTR($s)
+   $t = [Runtime.InteropServices.Marshal]::PtrToStringBSTR($b)
+   [Runtime.InteropServices.Marshal]::ZeroFreeBSTR($b)
    curl.exe -s -H "Authorization: Bearer $t" https://ak-talent-api.vercel.app/integrations/appintelli/applications/REFERENCIA/screening
-   Remove-Variable s, t
+   Remove-Variable s, b, t
    ```
    Deve voltar JSON com a vaga e as perguntas. `401`: o segredo da API não é esse (ou não está configurado).
 3. No painel do AppIntelli, teste a triagem com essa referência (ou peça ao suporte deles). Em seguida, olhe os logs:
