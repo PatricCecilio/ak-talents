@@ -6,6 +6,7 @@ import { BrandNotice } from '../../components/brand/BrandNotice'
 import { brandCard, brandHeading, brandInput } from '../../components/brand/styles'
 import { MoveStageDialog } from '../../components/recruiter/MoveStageDialog'
 import { StageBadge } from '../../components/recruiter/StageBadge'
+import { moveResultNote } from '../../services/hireDefaults'
 import { formatDateTime, formatDaysAgo, formatScreeningStatus, whatsappLink } from '../../services/pipelineFormat'
 import { addApplicationNote, getApplicationDetail } from '../../services/pipelineService'
 import type { ApplicationDetail } from '../../types/pipeline'
@@ -230,11 +231,12 @@ export function RecruiterApplicationPage() {
           currentLabel={detail.stage_label}
           options={detail.allowed_next_stages}
           otherActiveCount={detail.other_active_count}
+          openings={detail.job_openings}
           onClose={() => setIsMoving(false)}
           onMoved={(response) => {
             setFlash(
               `Movido para "${response.stage_label}".` +
-                (response.closed_others_count ? ` ${response.closed_others_count} outros candidatos foram encerrados (Vaga preenchida).` : ''),
+                moveResultNote(response.closed_others_count, response.job_closed),
             )
             setIsMoving(false)
             setReloadKey((key) => key + 1)

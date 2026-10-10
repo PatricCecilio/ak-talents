@@ -18,6 +18,7 @@ from app.models.pipeline import ApplicationNote, ApplicationStageHistory
 from app.models.user import STAFF_ROLES, User, UserRole
 
 MAX_NOTE_LENGTH = 2000
+JOB_CLOSED_STATUS = "closed"
 SCREENING_RESULT_LABELS = {
     "QUALIFIED": "atende aos requisitos",
     "NOT_MATCHED": "não atende a algum requisito",
@@ -87,6 +88,7 @@ def move_application(
     note: str | None = None,
     finalist_summary: str | None = None,
     close_other_active: bool = False,
+    close_job: bool = False,
 ) -> int:
     """Move one application, enforcing who may do what. Returns how many other applications were closed."""
     to_stage = parse_stage(to_stage_value)
@@ -116,6 +118,11 @@ def move_application(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail="Só é possível encerrar os demais candidatos ao marcar alguém como contratado.",
         )
+    if close_job and to_stage != Stage.hired:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Só é possível encerrar a vaga ao marcar alguém como contratado.",
+        )
 
     _apply(db, application, to_stage, actor, note)
 
@@ -134,6 +141,10 @@ def move_application(
         for other in others:
             _apply(db, other, Stage.rejected, actor, FILLED_JOB_NOTE)
         closed = len(others)
+
+    if close_job:
+        # Leaves the public site (only "approved" jobs are listed); staff can publish it again.
+        application.job.status = JOB_CLOSED_STATUS
 
     db.commit()
     db.refresh(application)

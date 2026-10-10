@@ -1,5 +1,6 @@
 import type { FormEvent } from 'react'
 import { useEffect, useRef, useState } from 'react'
+import { hireDefaults, otherActivePhrase } from '../../services/hireDefaults'
 import { moveApplication } from '../../services/pipelineService'
 import type { StageMoveResponse, StageOption, StageValue } from '../../types/pipeline'
 import { BrandButton } from '../brand/BrandButton'
@@ -13,6 +14,8 @@ interface MoveStageDialogProps {
   options: StageOption[]
   /** Other active candidates of the same job; offered to close as "Vaga preenchida" when hiring. */
   otherActiveCount: number
+  /** Positions of the job (optional): one or none → the hire fills the job; more → keep it open. */
+  openings?: number | null
   onMoved: (response: StageMoveResponse) => void
   onClose: () => void
 }
@@ -24,13 +27,16 @@ export function MoveStageDialog({
   currentLabel,
   options,
   otherActiveCount,
+  openings,
   onMoved,
   onClose,
 }: MoveStageDialogProps) {
+  const defaults = hireDefaults(openings)
   const [toStage, setToStage] = useState<StageValue | ''>('')
   const [note, setNote] = useState('')
   const [finalistSummary, setFinalistSummary] = useState('')
-  const [closeOthers, setCloseOthers] = useState(false)
+  const [closeOthers, setCloseOthers] = useState(defaults.closeOthers)
+  const [closeJob, setCloseJob] = useState(defaults.closeJob)
   const [confirming, setConfirming] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [error, setError] = useState('')
@@ -46,7 +52,10 @@ export function MoveStageDialog({
   }, [onClose])
 
   const isFinalist = toStage === 'finalist'
-  const canCloseOthers = toStage === 'hired' && otherActiveCount > 0
+  const isHiring = toStage === 'hired'
+  const canCloseOthers = isHiring && otherActiveCount > 0
+  const willCloseOthers = canCloseOthers && closeOthers
+  const willCloseJob = isHiring && closeJob
 
   async function submit() {
     if (!toStage) return
@@ -57,7 +66,8 @@ export function MoveStageDialog({
         to_stage: toStage,
         note: note.trim() || undefined,
         finalist_summary: isFinalist ? finalistSummary : undefined,
-        close_other_active: canCloseOthers && closeOthers ? true : undefined,
+        close_other_active: willCloseOthers ? true : undefined,
+        close_job: willCloseJob ? true : undefined,
       })
       onMoved(response)
     } catch (err) {
@@ -79,7 +89,7 @@ export function MoveStageDialog({
       setError('Escreva um parecer curto para a empresa antes de enviar o finalista.')
       return
     }
-    if (canCloseOthers && closeOthers && !confirming) {
+    if ((willCloseOthers || willCloseJob) && !confirming) {
       setConfirming(true)
       return
     }
@@ -104,9 +114,20 @@ export function MoveStageDialog({
         {confirming ? (
           <div className="mt-5 grid gap-4">
             <BrandNotice tone="warning">
-              Confirme: além de marcar {candidateName} como contratado, os outros{' '}
-              <strong>{otherActiveCount}</strong> candidatos ativos desta vaga vão para <strong>Reprovado</strong> com a observação
-              “Vaga preenchida”. Cada um terá esse registro no histórico.
+              Confirme: além de marcar {candidateName} como contratado,
+              <ul className="mt-2 list-disc pl-5">
+                {willCloseOthers ? (
+                  <li>
+                    {otherActivePhrase(otherActiveCount)} {otherActiveCount === 1 ? 'vai' : 'vão'} para <strong>Reprovado</strong> com
+                    a observação “Vaga preenchida” (fica no histórico);
+                  </li>
+                ) : null}
+                {willCloseJob ? (
+                  <li>
+                    a vaga será <strong>encerrada</strong> e sai do site (dá para publicar de novo pelo admin).
+                  </li>
+                ) : null}
+              </ul>
             </BrandNotice>
             {error ? <BrandNotice tone="error">{error}</BrandNotice> : null}
             <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
@@ -114,7 +135,7 @@ export function MoveStageDialog({
                 Voltar
               </BrandButton>
               <BrandButton variant="primary" isLoading={isSaving} onClick={() => void submit()}>
-                Sim, mover todos
+                Sim, confirmar
               </BrandButton>
             </div>
           </div>
@@ -159,10 +180,26 @@ export function MoveStageDialog({
               <label className="flex gap-3 rounded-lg border border-slate-200 p-4 text-sm leading-6 text-ink-700">
                 <input type="checkbox" checked={closeOthers} onChange={(event) => setCloseOthers(event.target.checked)} className="mt-1 h-4 w-4" />
                 <span>
-                  Mover também os outros <strong>{otherActiveCount}</strong> candidatos ativos desta vaga para “Reprovado”, com a
-                  observação “Vaga preenchida”.
+                  <strong>Vaga preenchida:</strong> mover também {otherActivePhrase(otherActiveCount)} desta vaga para “Reprovado”.
                 </span>
               </label>
+            ) : null}
+
+            {isHiring ? (
+              <fieldset className="grid gap-2 rounded-lg border border-slate-200 p-4">
+                <legend className="px-1 text-sm font-semibold text-ink-800">E a vaga?</legend>
+                <label className="flex min-h-11 cursor-pointer items-center gap-3 text-sm text-ink-700">
+                  <input type="radio" name="job_after_hire" checked={closeJob} onChange={() => setCloseJob(true)} className="h-4 w-4" />
+                  Encerrar a vaga (sai do site)
+                </label>
+                <label className="flex min-h-11 cursor-pointer items-center gap-3 text-sm text-ink-700">
+                  <input type="radio" name="job_after_hire" checked={!closeJob} onChange={() => setCloseJob(false)} className="h-4 w-4" />
+                  Manter aberta (há mais posições)
+                </label>
+                {openings && openings > 1 ? (
+                  <p className="text-xs text-ink-600">Esta vaga tem {openings} posições.</p>
+                ) : null}
+              </fieldset>
             ) : null}
 
             <label className={brandLabel}>

@@ -91,6 +91,7 @@ def _summaries(db: Session, jobs: list[Job]) -> list[RecruiterJobSummary]:
             stage_counts=counts[job.id],
             active_count=sum(counts[job.id][stage] for stage in ACTIVE_STAGE_VALUES),
             finalists_waiting=waiting[job.id],
+            openings=job.openings,
         )
         for job in jobs
     ]
@@ -223,4 +224,5 @@ def get_application_detail(db: Session, application_id: int, actor: User) -> App
         ],
         allowed_next_stages=stage_options(allowed_next_stages(application, actor.role)),
         other_active_count=other_active,
+        job_openings=application.job.openings,
     )

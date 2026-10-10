@@ -167,6 +167,40 @@ class PipelineTestCase(unittest.TestCase):
         response = self.move(self.make_application("new"), "rejected", close_other_active=True)
         self.assertEqual(response.status_code, 422)
 
+    def test_hiring_can_close_the_job_and_it_leaves_the_site(self) -> None:
+        hired = self.make_application("client_approved", "Ana")
+        response = self.move(hired, "hired", close_job=True)
+        self.assertEqual(response.status_code, 200, response.text)
+        self.assertTrue(response.json()["job_closed"])
+        with self.SessionLocal() as db:
+            self.assertEqual(db.get(Job, self.job.id).status, "closed")
+        self.assertEqual(self.client.get("/jobs").json(), [])
+        self.assertEqual(self.client.get("/jobs/atendente").status_code, 404)
+        self.assertEqual(self.stage_of(hired), "hired")
+
+    def test_hiring_can_keep_the_job_open_for_more_positions(self) -> None:
+        response = self.move(self.make_application("client_approved", "Ana"), "hired")
+        self.assertFalse(response.json()["job_closed"])
+        with self.SessionLocal() as db:
+            self.assertEqual(db.get(Job, self.job.id).status, "approved")
+        self.assertEqual(len(self.client.get("/jobs").json()), 1)
+
+    def test_close_job_only_when_hiring(self) -> None:
+        response = self.move(self.make_application("new"), "rejected", close_job=True)
+        self.assertEqual(response.status_code, 422)
+        with self.SessionLocal() as db:
+            self.assertEqual(db.get(Job, self.job.id).status, "approved")
+
+    def test_recruiter_screens_know_how_many_positions_the_job_has(self) -> None:
+        with self.SessionLocal() as db:
+            db.get(Job, self.job.id).openings = 3
+            db.commit()
+        application_id = self.make_application("client_approved")
+        pipeline = self.client.get(f"/recruiter/jobs/{self.job.id}/applications", headers=self.headers("recruiter")).json()
+        self.assertEqual(pipeline["job"]["openings"], 3)
+        detail = self.client.get(f"/recruiter/applications/{application_id}", headers=self.headers("recruiter")).json()
+        self.assertEqual(detail["job_openings"], 3)
+
     # --- notes ---
 
     def test_internal_notes(self) -> None:

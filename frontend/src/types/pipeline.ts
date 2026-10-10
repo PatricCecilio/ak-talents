@@ -25,6 +25,7 @@ export interface RecruiterJobSummary {
   stage_counts: Record<StageValue, number>
   active_count: number
   finalists_waiting: number
+  openings?: number | null
 }
 
 export interface RecruiterJobsResponse {
@@ -107,6 +108,7 @@ export interface ApplicationDetail {
   notes: ApplicationNote[]
   allowed_next_stages: StageOption[]
   other_active_count: number
+  job_openings?: number | null
 }
 
 export interface StageMovePayload {
@@ -114,6 +116,7 @@ export interface StageMovePayload {
   note?: string
   finalist_summary?: string
   close_other_active?: boolean
+  close_job?: boolean
 }
 
 export interface StageMoveResponse {
@@ -123,4 +126,5 @@ export interface StageMoveResponse {
   stage_updated_at: string
   allowed_next_stages: StageOption[]
   closed_others_count: number
+  job_closed?: boolean
 }

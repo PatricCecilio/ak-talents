@@ -28,6 +28,8 @@ class StageMoveRequest(BaseModel):
     finalist_summary: str | None = Field(default=None, max_length=4000)
     # Only with to_stage="hired": move every other active candidate of the job to "rejected" ("Vaga preenchida").
     close_other_active: bool = False
+    # Only with to_stage="hired": close the job (it leaves the site). Keep it open when there are more openings.
+    close_job: bool = False
 
 
 class StageMoveResponse(BaseModel):
@@ -37,6 +39,7 @@ class StageMoveResponse(BaseModel):
     stage_updated_at: datetime
     allowed_next_stages: list[StageOption]
     closed_others_count: int = 0
+    job_closed: bool = False
 
 
 class NoteCreate(BaseModel):
@@ -74,6 +77,8 @@ class RecruiterJobSummary(BaseModel):
     stage_counts: dict[str, int]
     active_count: int
     finalists_waiting: int
+    # Positions the company wants to fill (optional); drives the defaults when hiring.
+    openings: int | None = None
 
 
 class RecruiterJobsResponse(BaseModel):
@@ -148,3 +153,4 @@ class ApplicationDetail(BaseModel):
     allowed_next_stages: list[StageOption]
     # Other active, visible applications of the same job (for the "vaga preenchida" prompt on hire).
     other_active_count: int
+    job_openings: int | None = None

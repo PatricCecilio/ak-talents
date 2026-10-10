@@ -6,6 +6,7 @@ import { BrandPageTitle } from '../../components/brand/BrandPageTitle'
 import { brandCard } from '../../components/brand/styles'
 import { MoveStageDialog } from '../../components/recruiter/MoveStageDialog'
 import { StageBadge } from '../../components/recruiter/StageBadge'
+import { moveResultNote } from '../../services/hireDefaults'
 import { formatJobStatus } from '../../services/jobFormat'
 import {
   CLOSED_STAGES,
@@ -191,11 +192,12 @@ export function RecruiterJobPage() {
           currentLabel={moving.stage_label}
           options={moving.allowed_next_stages}
           otherActiveCount={otherActiveFor(moving)}
+          openings={job.openings}
           onClose={() => setMoving(null)}
           onMoved={(response) => {
             setFlash(
               `${moving.candidate_name} foi para "${response.stage_label}".` +
-                (response.closed_others_count ? ` ${response.closed_others_count} outros candidatos foram encerrados (Vaga preenchida).` : ''),
+                moveResultNote(response.closed_others_count, response.job_closed),
             )
             setMoving(null)
             setReloadKey((key) => key + 1)

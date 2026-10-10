@@ -60,6 +60,7 @@ def move_application_stage(
         note=payload.note,
         finalist_summary=payload.finalist_summary,
         close_other_active=payload.close_other_active,
+        close_job=payload.close_job,
     )
     return StageMoveResponse(
         application_id=application.id,
@@ -68,6 +69,7 @@ def move_application_stage(
         stage_updated_at=application.stage_updated_at,
         allowed_next_stages=stage_options(allowed_next_stages(application, current_user.role)),
         closed_others_count=closed,
+        job_closed=payload.close_job,
     )
 
 

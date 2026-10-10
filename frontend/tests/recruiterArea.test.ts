@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import { test } from 'node:test'
+import { hireDefaults, moveResultNote, otherActivePhrase } from '../src/services/hireDefaults.ts'
 import {
   AK_STAGE_LABELS,
   CLOSED_STAGES,
@@ -59,8 +60,9 @@ test('move dialog: finalist needs a summary, hiring can close the others after c
   const dialog = read('src/components/recruiter/MoveStageDialog.tsx')
   assert.match(dialog, /finalist_summary: isFinalist \? finalistSummary : undefined/)
   assert.match(dialog, /Parecer para a empresa \(obrigatório\)/)
-  assert.match(dialog, /toStage === 'hired' && otherActiveCount > 0/)
-  assert.match(dialog, /Sim, mover todos/)
+  assert.match(dialog, /const isHiring = toStage === 'hired'/)
+  assert.match(dialog, /isHiring && otherActiveCount > 0/)
+  assert.match(dialog, /Sim, confirmar/)
   assert.match(dialog, /Vaga preenchida/)
   assert.match(dialog, /role="dialog"/)
 })
@@ -81,4 +83,30 @@ test('recruiter screens use the landing look', () => {
   ]) {
     assert.doesNotMatch(read(path), /components\/ui'/, path)
   }
+})
+
+test('hiring defaults follow the number of positions', () => {
+  assert.deepEqual(hireDefaults(null), { closeOthers: true, closeJob: true })
+  assert.deepEqual(hireDefaults(undefined), { closeOthers: true, closeJob: true })
+  assert.deepEqual(hireDefaults(1), { closeOthers: true, closeJob: true })
+  assert.deepEqual(hireDefaults(2), { closeOthers: false, closeJob: false })
+  assert.deepEqual(hireDefaults(10), { closeOthers: false, closeJob: false })
+  assert.equal(otherActivePhrase(1), 'o outro candidato ativo')
+  assert.equal(otherActivePhrase(3), 'os outros 3 candidatos ativos')
+  assert.equal(moveResultNote(0, false), '')
+  assert.equal(moveResultNote(1, true), ' 1 outro candidato foi encerrado (Vaga preenchida). A vaga foi encerrada e saiu do site.')
+  assert.equal(moveResultNote(2, false), ' 2 outros candidatos foram encerrados (Vaga preenchida).')
+})
+
+test('the hire dialog uses those defaults and asks what to do with the job', () => {
+  const dialog = read('src/components/recruiter/MoveStageDialog.tsx')
+  assert.match(dialog, /const defaults = hireDefaults\(openings\)/)
+  assert.match(dialog, /useState\(defaults\.closeOthers\)/)
+  assert.match(dialog, /useState\(defaults\.closeJob\)/)
+  assert.match(dialog, /E a vaga\?/)
+  assert.match(dialog, /Encerrar a vaga \(sai do site\)/)
+  assert.match(dialog, /Manter aberta \(há mais posições\)/)
+  assert.match(dialog, /close_job: willCloseJob \? true : undefined/)
+  assert.match(read('src/pages/recruiter/RecruiterJobPage.tsx'), /openings=\{job\.openings\}/)
+  assert.match(read('src/pages/recruiter/RecruiterApplicationPage.tsx'), /openings=\{detail\.job_openings\}/)
 })
