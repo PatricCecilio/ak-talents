@@ -7,6 +7,7 @@ interface FormFieldProps {
   value: string
   placeholder: string
   autoComplete?: string
+  required?: boolean
   onChange: (value: string) => void
 }
 
@@ -17,6 +18,7 @@ export function FormField({
   value,
   placeholder,
   autoComplete,
+  required = true,
   onChange,
 }: FormFieldProps) {
   return (
@@ -29,7 +31,7 @@ export function FormField({
       placeholder={placeholder}
       autoComplete={autoComplete}
       onChange={(event) => onChange(event.target.value)}
-      required
+      required={required}
     />
   )
 }

@@ -125,13 +125,14 @@ def update_company_profile(
         db.add(company)
 
     update_data = payload.model_dump(exclude_unset=True)
+    website_sent = "website_url" in update_data
     website_url = update_data.pop("website_url", None)
 
     for field, value in update_data.items():
         if value is not None or field != "company_name":
             setattr(company, field, value)
 
-    if website_url is not None:
+    if website_sent:
         company.website = website_url
 
     current_user.name = company.responsible_name or current_user.name

@@ -8,7 +8,7 @@ export function Textarea({ label, id, className = '', ...props }: TextareaProps)
   const textarea = (
     <textarea
       id={id}
-      className={`rounded-lg border border-slate-300 bg-white px-4 py-3 text-base font-medium text-ink-950 outline-none transition placeholder:text-ink-400 focus:border-gold-500 focus:ring-4 focus:ring-amber-100 ${className}`}
+      className={`w-full min-w-0 rounded-lg border border-slate-300 bg-white px-4 py-3 text-base font-medium text-ink-950 outline-none transition placeholder:text-ink-400 focus:border-gold-500 focus:ring-4 focus:ring-amber-100 ${className}`}
       {...props}
     />
   )

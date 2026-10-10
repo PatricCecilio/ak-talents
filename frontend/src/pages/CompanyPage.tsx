@@ -10,6 +10,7 @@ import { useFormState } from '../hooks/useFormState'
 import { DashboardShell } from '../layouts/DashboardShell'
 import { getCurrentUser, logout } from '../services/authService'
 import { companyJobProgress } from '../services/companyProgress'
+import { companySizeOptions, toCompanyProfilePayload, validateCompanyProfile } from '../services/companyProfileForm'
 import { formatJobStatus, formatWorkMode } from '../services/jobFormat'
 import { createJob, getJobMatches, getMyCompanyJobs } from '../services/jobService'
 import { getSalaryRangeError } from '../services/jobValidation'
@@ -97,22 +98,18 @@ export function CompanyPage() {
 
   async function handleCompanyProfileSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
-    setIsSavingCompanyProfile(true)
     setCompanyProfileError('')
     setCompanyProfileSuccess('')
 
+    const validation = validateCompanyProfile(companyProfileValues)
+    if (!validation.isValid) {
+      setCompanyProfileError(validation.message)
+      return
+    }
+
+    setIsSavingCompanyProfile(true)
     try {
-      await updateCompanyProfile({
-        company_name: companyProfileValues.company_name,
-        responsible_name: companyProfileValues.responsible_name,
-        phone: companyProfileValues.phone,
-        city: companyProfileValues.city,
-        state: companyProfileValues.state,
-        industry: companyProfileValues.industry,
-        company_size: companyProfileValues.company_size,
-        description: companyProfileValues.description,
-        website_url: companyProfileValues.website_url,
-      })
+      await updateCompanyProfile(toCompanyProfilePayload(companyProfileValues))
       setCompanyProfileSuccess('Perfil da empresa salvo com sucesso.')
     } catch (err) {
       setCompanyProfileError(err instanceof Error ? err.message : 'Não foi possível salvar o perfil da empresa.')
@@ -270,7 +267,7 @@ export function CompanyPage() {
         )}
       </div>
 
-      <div className="mt-8 grid gap-8 lg:grid-cols-[1fr_0.9fr]">
+      <div className="mt-8 grid grid-cols-[minmax(0,1fr)] gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,0.9fr)]">
         <div className="grid gap-8">
           {creationMode === 'ai' && aiAvailable ? (
             <AIOnboardingWizard onJobCreated={(job) => setJobs((currentJobs) => [job, ...currentJobs])} />
@@ -292,76 +289,85 @@ export function CompanyPage() {
                   {companyProfileError ? <Alert tone="error">{companyProfileError}</Alert> : null}
                   {companyProfileSuccess ? <Alert tone="success">{companyProfileSuccess}</Alert> : null}
 
-                  <div className="grid gap-4 md:grid-cols-2">
+                  <p className="text-sm text-ink-600">Campos com * são obrigatórios.</p>
+
+                  <div className="grid gap-4 sm:grid-cols-2">
                     <FormField
                       id="company_name"
-                      label="Nome da empresa"
+                      label="Nome da empresa *"
                       value={companyProfileValues.company_name}
-                      placeholder="AK Talent"
+                      placeholder="Mercado Bom Preço"
+                      autoComplete="organization"
                       onChange={(value) => updateCompanyProfileField('company_name', value)}
                     />
                     <FormField
                       id="responsible_name"
-                      label="Responsável"
+                      label="Responsável *"
                       value={companyProfileValues.responsible_name}
                       placeholder="Ana Costa"
+                      autoComplete="name"
                       onChange={(value) => updateCompanyProfileField('responsible_name', value)}
                     />
-                  </div>
-
-                  <div className="grid gap-4 md:grid-cols-3">
                     <FormField
                       id="company_phone"
-                      label="Telefone"
+                      label="Telefone *"
+                      type="tel"
                       value={companyProfileValues.phone}
-                      placeholder="(11) 99999-9999"
+                      placeholder="(41) 99999-9999"
+                      autoComplete="tel"
                       onChange={(value) => updateCompanyProfileField('phone', value)}
                     />
                     <FormField
                       id="company_city"
-                      label="Cidade"
+                      label="Cidade *"
                       value={companyProfileValues.city}
-                      placeholder="São Paulo"
+                      placeholder="Curitiba"
                       onChange={(value) => updateCompanyProfileField('city', value)}
                     />
                     <FormField
                       id="company_state"
-                      label="Estado"
+                      label="Estado *"
                       value={companyProfileValues.state}
-                      placeholder="SP"
+                      placeholder="PR"
                       onChange={(value) => updateCompanyProfileField('state', value)}
                     />
-                  </div>
-
-                  <div className="grid gap-4 md:grid-cols-3">
                     <FormField
                       id="industry"
-                      label="Segmento"
+                      label="Segmento (opcional)"
                       value={companyProfileValues.industry}
-                      placeholder="Tecnologia"
+                      placeholder="Comércio, restaurante, serviços..."
+                      required={false}
                       onChange={(value) => updateCompanyProfileField('industry', value)}
                     />
-                    <FormField
+                    <Select
                       id="company_size"
-                      label="Tamanho"
+                      label="Tamanho (opcional)"
                       value={companyProfileValues.company_size}
-                      placeholder="51-200 colaboradores"
-                      onChange={(value) => updateCompanyProfileField('company_size', value)}
-                    />
+                      onChange={(event) => updateCompanyProfileField('company_size', event.target.value)}
+                    >
+                      <option value="">Selecione</option>
+                      {companySizeOptions(companyProfileValues.company_size).map((option) => (
+                        <option key={option} value={option}>
+                          {option}
+                        </option>
+                      ))}
+                    </Select>
                     <FormField
                       id="website_url"
-                      label="Website"
+                      label="Site (opcional)"
+                      type="url"
                       value={companyProfileValues.website_url}
-                      placeholder="https://empresa.com"
+                      placeholder="https://suaempresa.com.br"
+                      required={false}
                       onChange={(value) => updateCompanyProfileField('website_url', value)}
                     />
                   </div>
 
                   <Textarea
                     id="company_description"
-                    label="Descrição"
+                    label="Descrição (opcional)"
                     value={companyProfileValues.description}
-                    placeholder="Conte sobre a empresa, cultura, produto e momento de crescimento"
+                    placeholder="Conte em poucas linhas o que a empresa faz e como é trabalhar nela."
                     onChange={(event) => updateCompanyProfileField('description', event.target.value)}
                     rows={4}
                   />

@@ -8,7 +8,7 @@ export function Select({ label, id, className = '', children, ...props }: Select
   const select = (
     <select
       id={id}
-      className={`h-12 rounded-lg border border-slate-300 bg-white px-4 text-base font-medium text-ink-950 outline-none transition focus:border-gold-500 focus:ring-4 focus:ring-amber-100 ${className}`}
+      className={`h-12 w-full min-w-0 rounded-lg border border-slate-300 bg-white px-4 text-base font-medium text-ink-950 outline-none transition focus:border-gold-500 focus:ring-4 focus:ring-amber-100 ${className}`}
       {...props}
     >
       {children}
