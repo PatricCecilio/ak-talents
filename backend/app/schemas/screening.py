@@ -3,6 +3,8 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
+from app.core import messages
+
 QuestionType = Literal["YES_NO", "SINGLE_SELECT", "TEXT"]
 RuleOperator = Literal["EQUALS", "IN"]
 ScreeningStatus = Literal["QUALIFIED", "REVIEW", "NOT_MATCHED", "PENDING", "pending_screening", "NO_QUESTIONS"]
@@ -25,9 +27,9 @@ class ScreeningRule(BaseModel):
     @model_validator(mode="after")
     def validate_rule_shape(self):
         if self.operator == "EQUALS" and self.value is None:
-            raise ValueError("EQUALS requires value")
+            raise ValueError(messages.RULE_EQUALS_NEEDS_VALUE)
         if self.operator == "IN" and not self.values:
-            raise ValueError("IN requires values")
+            raise ValueError(messages.RULE_IN_NEEDS_VALUES)
         return self
 
 
@@ -46,11 +48,11 @@ class ScreeningQuestionBase(BaseModel):
     @model_validator(mode="after")
     def validate_question_shape(self):
         if self.question_type == "SINGLE_SELECT" and not self.options:
-            raise ValueError("SINGLE_SELECT requires options")
+            raise ValueError(messages.SINGLE_SELECT_NEEDS_OPTIONS)
         if self.question_type != "SINGLE_SELECT" and self.options:
-            raise ValueError("Only SINGLE_SELECT accepts options")
+            raise ValueError(messages.ONLY_SINGLE_SELECT_HAS_OPTIONS)
         if self.question_type == "TEXT" and self.rule:
-            raise ValueError("TEXT rules are not supported in this MVP")
+            raise ValueError(messages.TEXT_RULES_NOT_SUPPORTED)
         return self
 
 

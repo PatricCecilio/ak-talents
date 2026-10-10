@@ -3,6 +3,7 @@ import logging
 from fastapi import HTTPException, status
 from openai import OpenAI, OpenAIError
 
+from app.core import messages
 from app.core.config import settings
 from app.models.user import User, UserRole
 from app.schemas.ai import (
@@ -32,7 +33,7 @@ def generate_candidate_profile(
     payload: CandidateProfileAIRequest,
 ) -> CandidateProfileAIResponse:
     if current_user.role != UserRole.candidate.value:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Only candidates can use Career AI")
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=messages.CANDIDATES_ONLY)
 
     client = _get_client()
 
@@ -79,7 +80,7 @@ def generate_company_job(
     payload: CompanyJobAIRequest,
 ) -> CompanyJobAIResponse:
     if current_user.role != UserRole.company.value:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Only companies can use Recruiter AI")
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=messages.COMPANIES_ONLY)
 
     client = _get_client()
 

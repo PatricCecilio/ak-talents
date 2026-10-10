@@ -218,3 +218,11 @@ test('the screening chat is an opt-in link behind the flag, never opened automat
   assert.equal(source.match(/openAppIntelliOptions\(/g)?.length, 1)
   assert.ok(source.indexOf('openAppIntelliOptions(') > source.indexOf('function openScreeningChat()'))
 })
+
+test('applying twice shows the API reassurance as a neutral notice, not an error', () => {
+  const root = new URL('../', import.meta.url)
+  const source = readFileSync(new URL('src/pages/JobDetailPage.tsx', root), 'utf8')
+
+  assert.match(source, /err instanceof ApiError && err\.status === 409\) setFormNotice\(err\.message\)/)
+  assert.match(source, /\{formNotice \? <Alert tone="info">\{formNotice\}<\/Alert> : null\}/)
+})

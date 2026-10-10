@@ -1,6 +1,7 @@
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
+from app.core import messages
 from app.models.company import Company
 from app.models.job import Job
 from app.models.user import User, UserRole
@@ -11,15 +12,15 @@ from app.services.slug_service import generate_unique_job_slug
 
 def create_job(db: Session, current_user: User, payload: JobCreate) -> Job:
     if current_user.role != UserRole.company.value:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Only companies can create jobs")
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=messages.COMPANIES_ONLY)
 
     company = db.query(Company).filter(Company.user_id == current_user.id).first()
 
     if not company:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Company profile not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=messages.COMPANY_PROFILE_NOT_FOUND)
 
     if company.status == "blocked":
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Blocked companies cannot create jobs")
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=messages.BLOCKED_COMPANY)
 
     job = Job(company_id=company.id, slug=generate_unique_job_slug(db, payload.title), **payload.model_dump())
     db.add(job)
@@ -58,7 +59,7 @@ def get_public_job_by_slug(db: Session, slug: str) -> Job:
     job = publishable_jobs(db).filter(Job.slug == slug).first()
 
     if not job:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Job not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=messages.JOB_NOT_FOUND)
 
     return job
 

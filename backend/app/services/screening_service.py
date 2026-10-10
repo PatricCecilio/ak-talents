@@ -3,6 +3,7 @@ from datetime import datetime, timezone
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
+from app.core import messages
 from app.models.application import Application
 from app.models.job import Job
 from app.models.screening import ScreeningAnswer, ScreeningQuestion
@@ -108,7 +109,7 @@ def replace_admin_screening_questions(
     require_staff(current_user)
     job = db.query(Job).filter(Job.id == job_id).first()
     if not job:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Job not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=messages.JOB_NOT_FOUND)
 
     existing = db.query(ScreeningQuestion).filter(ScreeningQuestion.job_id == job_id).all()
     for question in existing:
@@ -184,14 +185,14 @@ def get_application_by_public_token(db: Session, token: str) -> Application:
         .first()
     )
     if not application:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Screening not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=messages.SCREENING_NOT_FOUND)
     return application
 
 
 def get_application_by_appintelli_reference(db: Session, reference: str) -> Application:
     application = db.query(Application).filter(Application.appintelli_reference == reference).first()
     if not application:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Screening not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=messages.SCREENING_NOT_FOUND)
     return application
 
 
@@ -310,19 +311,19 @@ def get_public_screening(db: Session, token: str) -> PublicScreeningRead:
 def _make_answer(question: ScreeningQuestion, raw_value: bool | str) -> ScreeningAnswer:
     if question.question_type == "YES_NO":
         if not isinstance(raw_value, bool):
-            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Invalid YES_NO answer")
+            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=messages.INVALID_ANSWER)
         return ScreeningAnswer(question_id=question.id, value_bool=raw_value)
 
     if question.question_type == "SINGLE_SELECT":
         if not isinstance(raw_value, str):
-            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Invalid SINGLE_SELECT answer")
+            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=messages.INVALID_ANSWER)
         option_values = {option["value"] for option in (question.options or [])}
         if raw_value not in option_values:
-            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Invalid option")
+            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=messages.INVALID_OPTION)
         return ScreeningAnswer(question_id=question.id, value_select=raw_value)
 
     if not isinstance(raw_value, str):
-        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Invalid TEXT answer")
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=messages.INVALID_ANSWER)
     return ScreeningAnswer(question_id=question.id, value_text=raw_value.strip())
 
 
@@ -351,7 +352,7 @@ def _submit_screening_answers_for_application(
     submitted_question_ids = [answer.question_id for answer in payload.answers]
     unknown_ids = set(submitted_question_ids).difference(question_by_id)
     if unknown_ids:
-        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Invalid question")
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=messages.INVALID_QUESTION)
 
     existing_answers = db.query(ScreeningAnswer).filter(ScreeningAnswer.application_id == application.id).all()
     for answer in existing_answers:
@@ -413,18 +414,18 @@ def submit_appintelli_screening_answers(
     questions = _active_questions_for_job(db, application.job_id)
     question_keys = [question.key for question in questions]
     if len(set(question_keys)) != len(question_keys):
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Invalid screening configuration")
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=messages.INVALID_SCREENING_CONFIGURATION)
 
     submitted_keys = [answer.question_key for answer in payload.answers]
     if len(set(submitted_keys)) != len(submitted_keys):
-        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Duplicate question")
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=messages.DUPLICATE_QUESTION)
 
     question_by_key = {question.key: question for question in questions}
     prepared_answers: dict[int, ScreeningAnswer] = {}
     for submitted_answer in payload.answers:
         question = question_by_key.get(submitted_answer.question_key)
         if not question:
-            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Invalid question")
+            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=messages.INVALID_QUESTION)
         prepared_answers[question.id] = _make_answer(question, submitted_answer.value)
 
     existing_answers = {

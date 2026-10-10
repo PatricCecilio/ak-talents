@@ -1,6 +1,7 @@
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
+from app.core import messages
 from app.models.application import Application
 from app.models.candidate import Candidate
 from app.models.company import Company
@@ -18,13 +19,13 @@ from app.schemas.admin import (
 
 def require_admin(current_user: User) -> None:
     if current_user.role != UserRole.admin.value:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin access required")
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=messages.ADMIN_ONLY)
 
 
 def require_staff(current_user: User) -> None:
     """Admin or recruiter. Defense in depth: routes also enforce roles with require_role()."""
     if current_user.role not in STAFF_ROLES:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin access required")
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=messages.ADMIN_ONLY)
 
 
 def _company_to_admin_read(company: Company) -> AdminCompanyRead:
@@ -144,7 +145,7 @@ def approve_company(db: Session, current_user: User, company_id: int) -> AdminCo
     require_admin(current_user)
     company = db.query(Company).filter(Company.id == company_id).first()
     if not company:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Company not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=messages.COMPANY_NOT_FOUND)
 
     company.status = "approved"
     db.commit()
@@ -156,7 +157,7 @@ def block_company(db: Session, current_user: User, company_id: int) -> AdminComp
     require_admin(current_user)
     company = db.query(Company).filter(Company.id == company_id).first()
     if not company:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Company not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=messages.COMPANY_NOT_FOUND)
 
     company.status = "blocked"
     db.commit()
@@ -168,7 +169,7 @@ def approve_job(db: Session, current_user: User, job_id: int) -> AdminJobRead:
     require_staff(current_user)
     job = db.query(Job).filter(Job.id == job_id).first()
     if not job:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Job not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=messages.JOB_NOT_FOUND)
 
     job.status = "approved"
     job.is_active = True
@@ -181,7 +182,7 @@ def hide_job(db: Session, current_user: User, job_id: int) -> AdminJobRead:
     require_staff(current_user)
     job = db.query(Job).filter(Job.id == job_id).first()
     if not job:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Job not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=messages.JOB_NOT_FOUND)
 
     job.status = "hidden"
     job.is_active = False

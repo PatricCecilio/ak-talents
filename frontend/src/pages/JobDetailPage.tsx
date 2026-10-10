@@ -43,6 +43,7 @@ export function JobDetailPage() {
   const [loadError, setLoadError] = useState<JobLoadError>(null)
   const [reloadKey, setReloadKey] = useState(0)
   const [formError, setFormError] = useState('')
+  const [formNotice, setFormNotice] = useState('')
   const [step, setStep] = useState<ApplicationStep>('form')
   const [screeningToken, setScreeningToken] = useState('')
   const [applicationReference, setApplicationReference] = useState('')
@@ -85,6 +86,7 @@ export function JobDetailPage() {
     event.preventDefault()
     if (isSubmitting || screeningToken) return
     setFormError('')
+    setFormNotice('')
 
     const validation = validatePublicApplicationForm(formValues)
     if (!validation.isValid) {
@@ -101,7 +103,9 @@ export function JobDetailPage() {
       setScreeningQuestions(questions)
       setStep(stepAfterApplication(response.screening_completed, questions))
     } catch (err) {
-      setFormError(err instanceof Error ? err.message : 'Não foi possível enviar sua candidatura.')
+      // Already applied (409): not an error for the person, just reassurance.
+      if (err instanceof ApiError && err.status === 409) setFormNotice(err.message)
+      else setFormError(err instanceof Error ? err.message : 'Não foi possível enviar sua candidatura.')
     } finally {
       setIsSubmitting(false)
     }
@@ -271,6 +275,7 @@ export function JobDetailPage() {
                 </div>
 
                 {formError ? <Alert tone="error">{formError}</Alert> : null}
+                {formNotice ? <Alert tone="info">{formNotice}</Alert> : null}
 
                 <div className="grid gap-4 md:grid-cols-2">
                   <label htmlFor="application_full_name" className="grid gap-2 text-sm font-bold text-ink-800">

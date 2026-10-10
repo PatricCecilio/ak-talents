@@ -4,6 +4,7 @@ from slowapi.errors import RateLimitExceeded
 
 from app.api.router import api_router
 from app.core.config import settings
+from app.core.errors import install_error_handlers
 from app.core.rate_limit import limiter, rate_limit_exceeded_handler
 from app.database.base import Base
 from app.database.session import engine
@@ -18,6 +19,8 @@ app = FastAPI(
 
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, rate_limit_exceeded_handler)
+
+install_error_handlers(app)
 
 app.add_middleware(
     CORSMiddleware,

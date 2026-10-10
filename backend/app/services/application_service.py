@@ -3,6 +3,7 @@ from datetime import datetime, timezone
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
+from app.core import messages
 from app.core.config import settings
 from app.core.privacy import PRIVACY_CONSENT_REQUIRED_MESSAGE, PRIVACY_POLICY_VERSION
 from app.models.application import Application
@@ -23,17 +24,17 @@ PUBLIC_APPLICATION_STATUS = "pending_screening"
 
 def create_application(db: Session, current_user: User, payload: ApplicationCreate) -> Application:
     if current_user.role != UserRole.candidate.value:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Only candidates can apply to jobs")
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=messages.CANDIDATES_ONLY)
 
     candidate = db.query(Candidate).filter(Candidate.user_id == current_user.id).first()
 
     if not candidate:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Candidate profile not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=messages.CANDIDATE_PROFILE_NOT_FOUND)
 
     job = publishable_jobs(db).filter(Job.id == payload.job_id).first()
 
     if not job:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Job not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=messages.JOB_NOT_FOUND)
 
     existing_application = (
         db.query(Application)
@@ -42,7 +43,7 @@ def create_application(db: Session, current_user: User, payload: ApplicationCrea
     )
 
     if existing_application:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Application already exists")
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=messages.APPLICATION_ALREADY_EXISTS)
 
     # Account applications skip the automated screening and go straight to the AK team ("Nova").
     application = Application(
@@ -65,7 +66,7 @@ def list_applications(db: Session, current_user: User) -> list[Application]:
     if current_user.role == UserRole.candidate.value:
         candidate = db.query(Candidate).filter(Candidate.user_id == current_user.id).first()
         if not candidate:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Candidate profile not found")
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=messages.CANDIDATE_PROFILE_NOT_FOUND)
 
         return (
             db.query(Application)
@@ -77,7 +78,7 @@ def list_applications(db: Session, current_user: User) -> list[Application]:
     if current_user.role == UserRole.company.value:
         company = db.query(Company).filter(Company.user_id == current_user.id).first()
         if not company:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Company profile not found")
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=messages.COMPANY_PROFILE_NOT_FOUND)
 
         return (
             db.query(Application)
@@ -87,7 +88,7 @@ def list_applications(db: Session, current_user: User) -> list[Application]:
             .all()
         )
 
-    raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Unsupported user role")
+    raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=messages.UNSUPPORTED_ROLE)
 
 
 def _linkable_candidates(db: Session):
@@ -118,7 +119,7 @@ def _resolve_public_candidate(
     if candidate_by_email and candidate_by_phone and candidate_by_email.id != candidate_by_phone.id:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail="Nao foi possivel confirmar sua identidade com os dados informados.",
+            detail=messages.IDENTITY_NOT_CONFIRMED,
         )
 
     candidate = candidate_by_email or candidate_by_phone
@@ -126,13 +127,13 @@ def _resolve_public_candidate(
     if candidate and candidate.email and candidate.email != normalized_email:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail="Nao foi possivel confirmar sua identidade com os dados informados.",
+            detail=messages.IDENTITY_NOT_CONFIRMED,
         )
 
     if candidate and candidate.phone and normalize_phone(candidate.phone) != normalized_phone:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail="Nao foi possivel confirmar sua identidade com os dados informados.",
+            detail=messages.IDENTITY_NOT_CONFIRMED,
         )
 
     if candidate:
@@ -169,12 +170,12 @@ def create_public_application(
     normalized_phone = normalize_phone(payload.phone)
 
     if len(normalized_phone) < 8 or len(normalized_phone) > 15:
-        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Invalid phone")
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=messages.INVALID_PHONE)
 
     job = publishable_jobs(db).filter(Job.slug == slug).first()
 
     if not job:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Job not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=messages.JOB_NOT_FOUND)
 
     candidate = _resolve_public_candidate(db, payload, normalized_email, normalized_phone)
 
@@ -185,7 +186,7 @@ def create_public_application(
     )
 
     if existing_application:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Application already exists")
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=messages.APPLICATION_ALREADY_EXISTS)
 
     application = Application(
         candidate_id=candidate.id,

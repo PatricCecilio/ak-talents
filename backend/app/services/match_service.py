@@ -3,6 +3,7 @@ import re
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
+from app.core import messages
 from app.models.application import Application
 from app.models.candidate import Candidate
 from app.models.company import Company
@@ -115,17 +116,17 @@ def _candidate_score(candidate: Candidate, job: Job) -> CandidateMatchRead:
 
 def get_job_matches(db: Session, current_user: User, job_id: int) -> list[CandidateMatchRead]:
     if current_user.role != UserRole.company.value:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Only companies can view job matches")
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=messages.COMPANIES_ONLY)
 
     company = db.query(Company).filter(Company.user_id == current_user.id).first()
 
     if not company:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Company profile not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=messages.COMPANY_PROFILE_NOT_FOUND)
 
     job = db.query(Job).filter(Job.id == job_id, Job.company_id == company.id).first()
 
     if not job:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Job not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=messages.JOB_NOT_FOUND)
 
     # Only people who applied to this job: a company must never see candidates who did not apply to it.
     candidates = (

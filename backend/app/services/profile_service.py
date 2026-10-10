@@ -1,6 +1,7 @@
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
+from app.core import messages
 from app.models.candidate import Candidate
 from app.models.company import Company
 from app.models.user import User, UserRole
@@ -10,12 +11,12 @@ from app.schemas.company import CompanyProfileRead, CompanyProfileUpdate
 
 def _require_candidate(current_user: User) -> None:
     if current_user.role != UserRole.candidate.value:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Only candidates can access this profile")
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=messages.CANDIDATES_ONLY)
 
 
 def _require_company(current_user: User) -> None:
     if current_user.role != UserRole.company.value:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Only companies can access this profile")
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=messages.COMPANIES_ONLY)
 
 
 def _candidate_to_read(candidate: Candidate) -> CandidateProfileRead:

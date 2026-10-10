@@ -3,6 +3,7 @@ from datetime import datetime, timezone
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
+from app.core import messages
 from app.core.privacy import PRIVACY_CONSENT_REQUIRED_MESSAGE, PRIVACY_POLICY_VERSION
 from app.core.security import create_access_token, get_password_hash, verify_password
 from app.models.candidate import Candidate
@@ -23,7 +24,7 @@ def register_user(db: Session, payload: RegisterRequest) -> TokenResponse:
     existing_user = db.query(User).filter(User.email == payload.email).first()
 
     if existing_user:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Email already registered")
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=messages.EMAIL_ALREADY_REGISTERED)
 
     user = User(
         name=payload.name,
