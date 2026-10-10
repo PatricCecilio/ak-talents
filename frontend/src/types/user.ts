@@ -30,6 +30,8 @@ export interface AuthResponse {
   user: User
 }
 
+export type ContractType = 'clt' | 'temporary' | 'internship' | 'pj'
+
 export interface Job {
   id: number
   company_id?: number
@@ -41,6 +43,10 @@ export interface Job {
   salary_max: number | null
   location: string | null
   work_mode: string | null
+  schedule?: string | null
+  benefits?: string | null
+  contract_type?: ContractType | null
+  openings?: number | null
   status?: string
   is_active?: boolean
   created_at: string
@@ -57,6 +63,10 @@ export interface JobPayload {
   salary_max?: number | null
   location?: string
   work_mode?: string
+  schedule?: string | null
+  benefits?: string | null
+  contract_type?: ContractType | null
+  openings?: number | null
 }
 
 export interface Application {

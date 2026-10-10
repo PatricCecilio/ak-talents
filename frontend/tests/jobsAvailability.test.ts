@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs'
 import { test } from 'node:test'
 import { ApiError, extractErrorMessage, NETWORK_ERROR_MESSAGE } from '../src/services/api.ts'
 import { resolveFeaturedJobsMode } from '../src/services/featuredJobs.ts'
-import { formatSalary, formatWorkMode } from '../src/services/jobFormat.ts'
+import { formatContractType, formatOpenings, formatSalary, formatWorkMode, jobHighlights } from '../src/services/jobFormat.ts'
 import { resolveWhatsappConfig } from '../src/services/whatsapp.ts'
 
 test('featured jobs: real jobs always win', () => {
@@ -68,4 +68,43 @@ test('job lists show a visible loading state and explain a slow first load', () 
   assert.match(read('src/pages/JobsPage.tsx'), /loadState === 'loading' \? <JobsLoading \/> : null/)
   assert.match(read('src/pages/JobDetailPage.tsx'), /<JobsLoading label="Carregando vaga\.\.\." count=\{1\} \/>/)
   assert.match(read('src/pages/HomePage.tsx'), /<LoadingHint label="Carregando vagas\.\.\." \/>/)
+})
+
+test('job highlights: what candidates want first, only what was filled in', () => {
+  const full = {
+    salary_min: 1800,
+    salary_max: 2200,
+    contract_type: 'clt' as const,
+    schedule: 'Seg a sáb, 6x1',
+    work_mode: 'onsite',
+    openings: 2,
+    benefits: 'Vale-transporte',
+  }
+  assert.deepEqual(
+    jobHighlights(full).map((item) => item.label),
+    ['Salário', 'Contrato', 'Horário ou escala', 'Modelo', 'Vagas', 'Benefícios'],
+  )
+  assert.equal(jobHighlights(full)[1].value, 'CLT')
+  assert.equal(jobHighlights(full)[4].value, '2 vagas')
+  assert.equal(formatOpenings(1), '1 vaga')
+  assert.equal(formatContractType('internship'), 'Estágio')
+  assert.equal(formatContractType('temporary'), 'Temporário')
+
+  const bare = { salary_min: null, salary_max: null, contract_type: null, schedule: '  ', work_mode: null, openings: null, benefits: null }
+  assert.deepEqual(jobHighlights(bare), [])
+})
+
+test('the job page shows the highlights first and the company form collects them', () => {
+  const root = new URL('../', import.meta.url)
+  const read = (path: string) => readFileSync(new URL(path, root), 'utf8')
+  const page = read('src/pages/JobDetailPage.tsx')
+  assert.match(page, /aria-label="Resumo da vaga"/)
+  assert.ok(page.indexOf('Resumo da vaga') < page.indexOf('>Descrição</h2>'))
+
+  const company = read('src/pages/CompanyPage.tsx')
+  for (const id of ['contract_type', 'openings', 'schedule', 'benefits']) {
+    assert.match(company, new RegExp(`id="${id}"`), id)
+  }
+  assert.match(company, /openings: toOptionalNumber\(values\.openings\)/)
+  assert.match(read('src/pages/JobsPage.tsx'), /formatContractType\(job\.contract_type\)/)
 })

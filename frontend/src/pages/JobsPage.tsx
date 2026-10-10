@@ -6,7 +6,7 @@ import { JobsLoading } from '../components/JobsLoading'
 import { JobsUnavailableNotice } from '../components/JobsUnavailableNotice'
 import { LoadErrorState } from '../components/LoadErrorState'
 import { ApiError } from '../services/api'
-import { formatSalary, formatWorkMode } from '../services/jobFormat'
+import { formatContractType, formatSalary, formatWorkMode } from '../services/jobFormat'
 import { getJobs } from '../services/jobService'
 import type { Job } from '../types/user'
 
@@ -79,6 +79,7 @@ export function JobsPage() {
         {jobs.map((job) => {
           const salary = formatSalary(job)
           const workMode = formatWorkMode(job.work_mode)
+          const contract = formatContractType(job.contract_type)
 
           return (
             <Card key={job.id} className="p-6">
@@ -90,6 +91,8 @@ export function JobsPage() {
                   <div className="mt-5 flex flex-wrap gap-2 text-xs font-black uppercase tracking-[0.14em] text-ink-600">
                     {job.location ? <span className="rounded-lg bg-slate-100 px-3 py-2">{job.location}</span> : null}
                     {salary ? <span className="rounded-lg bg-slate-100 px-3 py-2">{salary}</span> : null}
+                    {contract ? <span className="rounded-lg bg-slate-100 px-3 py-2">{contract}</span> : null}
+                    {job.schedule ? <span className="rounded-lg bg-slate-100 px-3 py-2 normal-case tracking-normal">{job.schedule}</span> : null}
                   </div>
                 </div>
 

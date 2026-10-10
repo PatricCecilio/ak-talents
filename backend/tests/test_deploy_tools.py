@@ -84,6 +84,32 @@ class MigrateTestCase(TempSqliteDatabaseTestCase):
         self.assertEqual(self.query("select version_num from alembic_version"), [(HEAD_REVISION,)])
 
 
+class JobDetailsMigrationTestCase(TempSqliteDatabaseTestCase):
+    def test_database_at_0010_gets_the_new_job_columns_without_touching_jobs(self) -> None:
+        # Production before this change: at 0010, with jobs already published.
+        engine = create_engine(f"sqlite:///{self.db_path.as_posix()}")
+        Base.metadata.create_all(bind=engine)
+        engine.dispose()
+        with closing(sqlite3.connect(self.db_path)) as connection:
+            for column in ("schedule", "benefits", "contract_type", "openings"):
+                connection.execute(f"alter table jobs drop column {column}")
+            connection.execute("insert into users (id, name, email, hashed_password, role, is_active, created_at) values (1, 'E', 'e@x.com', 'x', 'company', 1, '2026-09-01 10:00:00')")
+            connection.execute("insert into companies (id, user_id, company_name, status, created_at) values (1, 1, 'E', 'approved', '2026-09-01 10:00:00')")
+            connection.execute("insert into jobs (id, company_id, title, slug, description, status, is_active, show_company_to_candidates, created_at) values (1, 1, 'Atendente', 'atendente', 'Descrição', 'approved', 1, 0, '2026-09-01 10:00:00')")
+            connection.execute("create table alembic_version (version_num varchar(32) not null primary key)")
+            connection.execute("insert into alembic_version values ('0010_job_company_visibility')")
+            connection.commit()
+
+        self.assertEqual(migrate_module.migrate(), "upgraded")
+        self.assertTrue({"schedule", "benefits", "contract_type", "openings"} <= self.columns("jobs"))
+        self.assertEqual(
+            self.query("select title, status, schedule, benefits, contract_type, openings from jobs"),
+            [("Atendente", "approved", None, None, None, None)],
+        )
+        self.assertEqual(self.query("select version_num from alembic_version"), [("0011_job_details",)])
+        self.assertEqual(HEAD_REVISION, "0011_job_details")
+
+
 class PipelineMigrationTestCase(TempSqliteDatabaseTestCase):
     def test_existing_applications_get_a_stage_and_initial_history(self) -> None:
         # A database at 0008: no pipeline columns or tables yet.

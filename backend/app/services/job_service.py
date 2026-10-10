@@ -75,6 +75,10 @@ def public_job_to_read(db: Session, job: Job) -> dict:
         "salary_max": job.salary_max,
         "location": job.location,
         "work_mode": job.work_mode,
+        "schedule": job.schedule,
+        "benefits": job.benefits,
+        "contract_type": job.contract_type,
+        "openings": job.openings,
         "created_at": job.created_at,
         "screening_questions": list_public_screening_questions(db, job.id),
     }

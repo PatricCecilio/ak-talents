@@ -12,6 +12,23 @@ export function formatWorkMode(workMode: string | null | undefined): string {
   return WORK_MODE_LABELS[workMode.toLowerCase()] ?? workMode
 }
 
+export const CONTRACT_TYPE_OPTIONS = [
+  { value: 'clt', label: 'CLT' },
+  { value: 'temporary', label: 'Temporário' },
+  { value: 'internship', label: 'Estágio' },
+  { value: 'pj', label: 'PJ' },
+] as const
+
+export function formatContractType(contractType: string | null | undefined): string {
+  if (!contractType) return ''
+  return CONTRACT_TYPE_OPTIONS.find((option) => option.value === contractType)?.label ?? contractType
+}
+
+export function formatOpenings(openings: number | null | undefined): string {
+  if (!openings) return ''
+  return openings === 1 ? '1 vaga' : `${openings} vagas`
+}
+
 const JOB_STATUS_LABELS: Record<string, string> = {
   pending: 'Aguardando aprovação',
   approved: 'Publicada',
@@ -51,4 +68,24 @@ export function formatSalary(job: Pick<Job, 'salary_min' | 'salary_max'>): strin
   }
 
   return ''
+}
+
+export interface JobHighlight {
+  label: string
+  value: string
+}
+
+/** What candidates want to know first, in this order; only the fields the company filled in. */
+export function jobHighlights(
+  job: Pick<Job, 'salary_min' | 'salary_max' | 'contract_type' | 'schedule' | 'work_mode' | 'openings' | 'benefits'>,
+): JobHighlight[] {
+  const items: JobHighlight[] = [
+    { label: 'Salário', value: formatSalary(job) },
+    { label: 'Contrato', value: formatContractType(job.contract_type) },
+    { label: 'Horário ou escala', value: job.schedule?.trim() ?? '' },
+    { label: 'Modelo', value: formatWorkMode(job.work_mode) },
+    { label: 'Vagas', value: formatOpenings(job.openings) },
+    { label: 'Benefícios', value: job.benefits?.trim() ?? '' },
+  ]
+  return items.filter((item) => item.value)
 }

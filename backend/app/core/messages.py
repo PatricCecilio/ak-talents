@@ -101,6 +101,10 @@ FIELD_LABELS = {
     "value": "Resposta",
     "website_url": "Site",
     "work_mode": "Modelo de trabalho",
+    "schedule": "Horário ou escala",
+    "benefits": "Benefícios",
+    "contract_type": "Tipo de contrato",
+    "openings": "Quantidade de vagas",
 }
 
 VALUE_ERROR_PREFIX = "Value error, "

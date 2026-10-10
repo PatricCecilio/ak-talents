@@ -11,11 +11,11 @@ import { DashboardShell } from '../layouts/DashboardShell'
 import { getCurrentUser, logout } from '../services/authService'
 import { companyJobProgress } from '../services/companyProgress'
 import { companySizeOptions, toCompanyProfilePayload, validateCompanyProfile } from '../services/companyProfileForm'
-import { formatJobStatus, formatWorkMode } from '../services/jobFormat'
+import { CONTRACT_TYPE_OPTIONS, formatJobStatus, formatWorkMode } from '../services/jobFormat'
 import { createJob, getJobMatches, getMyCompanyJobs } from '../services/jobService'
 import { getSalaryRangeError, JOB_SENT_MESSAGE } from '../services/jobValidation'
 import { getCompanyProfile, updateCompanyProfile } from '../services/profileService'
-import type { CandidateMatch, Job } from '../types/user'
+import type { CandidateMatch, ContractType, Job } from '../types/user'
 
 function toOptionalNumber(value: string) {
   return value.trim() ? Number(value) : null
@@ -60,6 +60,10 @@ export function CompanyPage() {
     salary_max: '',
     location: '',
     work_mode: 'onsite',
+    schedule: '',
+    benefits: '',
+    contract_type: '',
+    openings: '',
   })
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -85,6 +89,10 @@ export function CompanyPage() {
         salary_max: salaryMax,
         location: values.location,
         work_mode: values.work_mode,
+        schedule: values.schedule.trim() || null,
+        benefits: values.benefits.trim() || null,
+        contract_type: (values.contract_type || null) as ContractType | null,
+        openings: toOptionalNumber(values.openings),
       })
       setJobs((currentJobs) => [createdJob, ...currentJobs])
       reset()
@@ -450,6 +458,52 @@ export function CompanyPage() {
                       <option value="hybrid">Híbrido</option>
                       <option value="remote">Remoto</option>
                     </Select>
+                  </div>
+
+                  <div className="grid gap-4 border-t border-slate-200 pt-5">
+                    <p className="text-sm leading-6 text-ink-600">
+                      Opcional, mas é o que o candidato mais quer saber: aparece em destaque na página da vaga.
+                    </p>
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      <Select
+                        id="contract_type"
+                        label="Tipo de contrato"
+                        value={values.contract_type}
+                        onChange={(event) => updateField('contract_type', event.target.value)}
+                      >
+                        <option value="">Selecione</option>
+                        {CONTRACT_TYPE_OPTIONS.map((option) => (
+                          <option key={option.value} value={option.value}>
+                            {option.label}
+                          </option>
+                        ))}
+                      </Select>
+                      <FormField
+                        id="openings"
+                        label="Quantidade de vagas"
+                        type="number"
+                        value={values.openings}
+                        placeholder="1"
+                        required={false}
+                        onChange={(value) => updateField('openings', value)}
+                      />
+                    </div>
+                    <FormField
+                      id="schedule"
+                      label="Horário ou escala"
+                      value={values.schedule}
+                      placeholder="Seg a sáb, 8h às 16h20 (escala 6x1)"
+                      required={false}
+                      onChange={(value) => updateField('schedule', value)}
+                    />
+                    <Textarea
+                      id="benefits"
+                      label="Benefícios"
+                      value={values.benefits}
+                      placeholder="Vale-transporte, vale-refeição, plano de saúde..."
+                      onChange={(event) => updateField('benefits', event.target.value)}
+                      rows={3}
+                    />
                   </div>
 
                   <Button type="submit" isLoading={isSubmitting}>

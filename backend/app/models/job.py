@@ -1,6 +1,6 @@
 from datetime import datetime, timezone
 
-from sqlalchemy import Boolean, DateTime, Float, ForeignKey, String, Text, false
+from sqlalchemy import Boolean, DateTime, Float, ForeignKey, Integer, String, Text, false
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database.session import Base
@@ -23,6 +23,11 @@ class Job(Base):
     salary_max: Mapped[float | None] = mapped_column(Float, nullable=True)
     location: Mapped[str | None] = mapped_column(String(180), nullable=True)
     work_mode: Mapped[str | None] = mapped_column(String(80), nullable=True)
+    # What candidates ask first (migration 0011). All optional.
+    schedule: Mapped[str | None] = mapped_column(String(180), nullable=True)
+    benefits: Mapped[str | None] = mapped_column(Text, nullable=True)
+    contract_type: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    openings: Mapped[int | None] = mapped_column(Integer, nullable=True)
     status: Mapped[str] = mapped_column(String(40), default="pending", nullable=False)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     # Off by default: AK recruits on behalf of the client, so candidates do not see the company name.

@@ -1,8 +1,13 @@
 from datetime import datetime
+from typing import Literal
 
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 from app.schemas.screening import PublicScreeningQuestionRead
+
+
+# clt = CLT, temporary = temporário, internship = estágio, pj = PJ.
+ContractType = Literal["clt", "temporary", "internship", "pj"]
 
 
 class JobBase(BaseModel):
@@ -13,9 +18,18 @@ class JobBase(BaseModel):
     salary_max: float | None = Field(default=None, ge=0)
     location: str | None = Field(default=None, max_length=180)
     work_mode: str | None = Field(default=None, max_length=80)
+    schedule: str | None = Field(default=None, max_length=180)
+    benefits: str | None = Field(default=None, max_length=2000)
+    contract_type: ContractType | None = None
+    openings: int | None = Field(default=None, ge=1, le=999)
 
 
 class JobCreate(JobBase):
+    @field_validator("schedule", "benefits", "contract_type", mode="before")
+    @classmethod
+    def _blank_is_none(cls, value):
+        return value.strip() or None if isinstance(value, str) else value
+
     @model_validator(mode="after")
     def _salary_range_is_ordered(self) -> "JobCreate":
         if self.salary_min is not None and self.salary_max is not None and self.salary_min > self.salary_max:

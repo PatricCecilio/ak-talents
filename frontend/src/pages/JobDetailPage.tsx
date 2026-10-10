@@ -1,12 +1,12 @@
 import type { FormEvent } from 'react'
 import { useEffect, useRef, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import { Alert, Badge, Button, Card, PageHeader } from '../components/ui'
+import { Alert, Button, Card, PageHeader } from '../components/ui'
 import { Container } from '../components/Container'
 import { JobsLoading } from '../components/JobsLoading'
 import { LoadErrorState } from '../components/LoadErrorState'
 import { ApiError } from '../services/api'
-import { formatSalary, formatWorkMode } from '../services/jobFormat'
+import { jobHighlights } from '../services/jobFormat'
 import { PRIVACY_POLICY_PATH } from '../services/privacyPolicy'
 import { getJobBySlug } from '../services/jobService'
 import { createPublicApplication, getPublicScreening, submitScreeningAnswers } from '../services/applicationService'
@@ -30,6 +30,12 @@ import {
 import type { Job, PublicScreeningQuestion } from '../types/user'
 
 type JobLoadError = 'not-found' | 'network' | 'server' | null
+
+// Long texts take the whole row (on phones the short ones sit two by two).
+const WIDE_HIGHLIGHTS: Record<string, string> = {
+  'Horário ou escala': 'col-span-2 lg:col-span-1',
+  Benefícios: 'col-span-2 lg:col-span-3',
+}
 
 const screeningChatEnabled = isScreeningChatEnabled()
 
@@ -191,8 +197,7 @@ export function JobDetailPage() {
     stepRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
   }, [step])
 
-  const salary = job ? formatSalary(job) : ''
-  const workMode = job ? formatWorkMode(job.work_mode) : ''
+  const highlights = job ? jobHighlights(job) : []
 
   return (
     <Container className="py-12">
@@ -238,12 +243,23 @@ export function JobDetailPage() {
           />
 
           <Card className="p-6">
-            <div className="flex flex-wrap gap-2">
-              {workMode ? <Badge>{workMode}</Badge> : null}
-              {salary ? <Badge>{salary}</Badge> : null}
-            </div>
+            {highlights.length > 0 ? (
+              <section aria-label="Resumo da vaga">
+                <dl className="grid grid-cols-2 gap-2 sm:gap-3 lg:grid-cols-3">
+                  {highlights.map((item) => (
+                    <div
+                      key={item.label}
+                      className={`rounded-lg border border-amber-200 bg-amber-50 p-3 sm:p-4 ${WIDE_HIGHLIGHTS[item.label] ?? ''}`}
+                    >
+                      <dt className="text-xs font-black uppercase tracking-[0.14em] text-gold-700">{item.label}</dt>
+                      <dd className="mt-1 whitespace-pre-line text-base font-bold text-ink-950">{item.value}</dd>
+                    </div>
+                  ))}
+                </dl>
+              </section>
+            ) : null}
 
-            <section className="mt-8">
+            <section className={highlights.length > 0 ? 'mt-8' : ''}>
               <h2 className="text-xl font-black text-ink-950">Descrição</h2>
               <p className="mt-3 whitespace-pre-line text-base leading-8 text-ink-700">{job.description}</p>
             </section>
