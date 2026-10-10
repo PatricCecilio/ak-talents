@@ -6,6 +6,7 @@ import {
   AK_STAGE_LABELS,
   CLOSED_STAGES,
   PIPELINE_COLUMNS,
+  finalistWaitingLabel,
   formatDaysAgo,
   formatScreeningStatus,
   whatsappLink,
@@ -109,4 +110,22 @@ test('the hire dialog uses those defaults and asks what to do with the job', () 
   assert.match(dialog, /close_job: willCloseJob \? true : undefined/)
   assert.match(read('src/pages/recruiter/RecruiterJobPage.tsx'), /openings=\{job\.openings\}/)
   assert.match(read('src/pages/recruiter/RecruiterApplicationPage.tsx'), /openings=\{detail\.job_openings\}/)
+})
+
+test('finalists show how long the client company has been deciding', () => {
+  const now = new Date(2026, 9, 10, 15, 0)
+  assert.equal(finalistWaitingLabel(new Date(2026, 9, 10, 9, 0).toISOString(), now), 'Aguardando a empresa desde hoje')
+  assert.equal(finalistWaitingLabel(new Date(2026, 9, 9, 9, 0).toISOString(), now), 'Aguardando a empresa há 1 dia')
+  assert.equal(finalistWaitingLabel(new Date(2026, 9, 6, 9, 0).toISOString(), now), 'Aguardando a empresa há 4 dias')
+
+  const page = read('src/pages/recruiter/RecruiterJobPage.tsx')
+  assert.match(page, /card\.stage === 'finalist' \? \(/)
+  assert.match(page, /\{finalistWaitingLabel\(card\.stage_updated_at\)\}/)
+  assert.match(page, /card\.waiting_client_too_long \? ' · cobrar retorno' : ''/)
+
+  const dialog = read('src/components/recruiter/MoveStageDialog.tsx')
+  assert.match(dialog, /currentStage === 'finalist' \? \(/)
+  assert.match(dialog, /Aguardando a decisão da empresa\{companyName \? <strong> \{companyName\}<\/strong> : null\}/)
+  assert.match(page, /companyName=\{job\.company_name\}/)
+  assert.match(read('src/pages/recruiter/RecruiterApplicationPage.tsx'), /companyName=\{detail\.company_name\}/)
 })

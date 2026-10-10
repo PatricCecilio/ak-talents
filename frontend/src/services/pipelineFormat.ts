@@ -56,14 +56,25 @@ export function formatScreeningStatus(status: string): string {
   return SCREENING_LABELS[status] ?? status
 }
 
-/** "hoje", "ontem" or "há N dias" (calendar days in the viewer's timezone). */
-export function formatDaysAgo(isoDate: string, now: Date = new Date()): string {
+function calendarDaysSince(isoDate: string, now: Date): number {
   const date = new Date(isoDate)
   const startOf = (value: Date) => new Date(value.getFullYear(), value.getMonth(), value.getDate()).getTime()
-  const days = Math.round((startOf(now) - startOf(date)) / 86_400_000)
+  return Math.round((startOf(now) - startOf(date)) / 86_400_000)
+}
+
+/** "hoje", "ontem" or "há N dias" (calendar days in the viewer's timezone). */
+export function formatDaysAgo(isoDate: string, now: Date = new Date()): string {
+  const days = calendarDaysSince(isoDate, now)
   if (days <= 0) return 'hoje'
   if (days === 1) return 'ontem'
   return `há ${days} dias`
+}
+
+/** Finalist card: how long the client company has had the candidate to decide. */
+export function finalistWaitingLabel(sinceIso: string, now: Date = new Date()): string {
+  const days = calendarDaysSince(sinceIso, now)
+  if (days <= 0) return 'Aguardando a empresa desde hoje'
+  return days === 1 ? 'Aguardando a empresa há 1 dia' : `Aguardando a empresa há ${days} dias`
 }
 
 export function formatDateTime(isoDate: string): string {

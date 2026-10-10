@@ -12,6 +12,7 @@ import {
   CLOSED_STAGES,
   PIPELINE_COLUMNS,
   STAGE_SHORT_LABELS,
+  finalistWaitingLabel,
   formatDaysAgo,
   formatScreeningStatus,
 } from '../../services/pipelineFormat'
@@ -46,8 +47,15 @@ function CandidateCard({
         <br />
         Na etapa {formatDaysAgo(card.stage_updated_at)} · {formatScreeningStatus(card.screening_status)}
       </p>
-      {card.waiting_client_too_long ? (
-        <p className="rounded-md bg-gold-50 px-3 py-2 text-xs font-semibold text-gold-800">Aguardando o cliente há muitos dias</p>
+      {card.stage === 'finalist' ? (
+        <p
+          className={`rounded-md px-3 py-2 text-xs font-semibold ${
+            card.waiting_client_too_long ? 'bg-gold-100 text-gold-800' : 'bg-slate-100 text-ink-700'
+          }`}
+        >
+          {finalistWaitingLabel(card.stage_updated_at)}
+          {card.waiting_client_too_long ? ' · cobrar retorno' : ''}
+        </p>
       ) : null}
       <div className={compact ? 'grid gap-1' : 'flex flex-wrap gap-2'}>
         {card.allowed_next_stages.length ? (
@@ -190,6 +198,8 @@ export function RecruiterJobPage() {
           applicationId={moving.id}
           candidateName={moving.candidate_name}
           currentLabel={moving.stage_label}
+          currentStage={moving.stage}
+          companyName={job.company_name}
           options={moving.allowed_next_stages}
           otherActiveCount={otherActiveFor(moving)}
           openings={job.openings}

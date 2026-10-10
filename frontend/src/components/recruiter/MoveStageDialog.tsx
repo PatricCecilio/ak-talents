@@ -11,6 +11,9 @@ interface MoveStageDialogProps {
   applicationId: number
   candidateName: string
   currentLabel: string
+  currentStage?: StageValue
+  /** Client company: shown while a finalist waits for its decision. */
+  companyName?: string
   options: StageOption[]
   /** Other active candidates of the same job; offered to close as "Vaga preenchida" when hiring. */
   otherActiveCount: number
@@ -25,6 +28,8 @@ export function MoveStageDialog({
   applicationId,
   candidateName,
   currentLabel,
+  currentStage,
+  companyName,
   options,
   otherActiveCount,
   openings,
@@ -110,6 +115,11 @@ export function MoveStageDialog({
           Mover {candidateName}
         </h2>
         <p className="mt-1 text-sm text-ink-600">Etapa atual: {currentLabel}</p>
+        {currentStage === 'finalist' ? (
+          <BrandNotice tone="info" className="mt-3">
+            Aguardando a decisão da empresa{companyName ? <strong> {companyName}</strong> : null}.
+          </BrandNotice>
+        ) : null}
 
         {confirming ? (
           <div className="mt-5 grid gap-4">

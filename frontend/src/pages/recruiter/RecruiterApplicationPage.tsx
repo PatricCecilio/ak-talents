@@ -229,6 +229,8 @@ export function RecruiterApplicationPage() {
           applicationId={detail.id}
           candidateName={candidate.name}
           currentLabel={detail.stage_label}
+          currentStage={detail.stage}
+          companyName={detail.company_name}
           options={detail.allowed_next_stages}
           otherActiveCount={detail.other_active_count}
           openings={detail.job_openings}
