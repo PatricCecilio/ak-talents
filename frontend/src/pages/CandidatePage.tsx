@@ -1,10 +1,12 @@
 import type { FormEvent } from 'react'
 import { useEffect, useState } from 'react'
 import { AIResultList } from '../components/AIResultList'
+import { AiComingSoon } from '../components/AiComingSoon'
 import { FormField } from '../components/FormField'
 import { MyApplicationsSection } from '../components/candidate/MyApplicationsSection'
 import { Alert, Button, Card, EmptyState, LoadingSpinner, PageHeader } from '../components/ui'
 import { useFormState } from '../hooks/useFormState'
+import { useAiAvailable } from '../hooks/useAiAvailable'
 import { DashboardShell } from '../layouts/DashboardShell'
 import { createApplication } from '../services/applicationService'
 import { generateCandidateProfile } from '../services/aiService'
@@ -33,6 +35,7 @@ function formatSalary(job: Job) {
 
 export function CandidatePage() {
   const user = getCurrentUser()
+  const aiAvailable = useAiAvailable()
   const [jobs, setJobs] = useState<Job[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [isLoadingProfile, setIsLoadingProfile] = useState(true)
@@ -377,6 +380,7 @@ export function CandidatePage() {
         </form>
         </Card>
 
+        {aiAvailable ? (
         <Card className="mt-8 p-6">
         <form onSubmit={handleCareerAI} className="grid gap-5">
           <div>
@@ -485,6 +489,14 @@ export function CandidatePage() {
           ) : null}
         </form>
         </Card>
+        ) : (
+          <AiComingSoon
+            className="mt-8"
+            eyebrow="Perfil com IA"
+            title="Monte seu perfil profissional com IA."
+            description="Em breve, a IA vai organizar seu resumo, suas habilidades e sugerir melhorias no perfil."
+          />
+        )}
 
         <div id="vagas" className="mt-10 grid scroll-mt-28 gap-4">
           {isLoading ? (

@@ -20,8 +20,12 @@ AI_UNAVAILABLE_MESSAGE = "O assistente de IA está indisponível no momento. Ten
 AI_FAILED_MESSAGE = "Não foi possível gerar a sugestão agora. Tente novamente em instantes."
 
 
+def ai_available() -> bool:
+    return bool(settings.OPENAI_API_KEY.strip())
+
+
 def _get_client() -> OpenAI:
-    if not settings.OPENAI_API_KEY:
+    if not ai_available():
         logger.error("OPENAI_API_KEY is not configured; AI endpoints are unavailable.")
         raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=AI_UNAVAILABLE_MESSAGE)
 

@@ -1,9 +1,11 @@
 import type { FormEvent } from 'react'
 import { useEffect, useState } from 'react'
+import { AiComingSoon } from '../components/AiComingSoon'
 import { AIOnboardingWizard } from '../components/company/AIOnboardingWizard'
 import { FinalistsSection } from '../components/company/FinalistsSection'
 import { FormField } from '../components/FormField'
 import { Alert, Badge, Button, Card, EmptyState, LoadingSpinner, PageHeader, Select, Textarea } from '../components/ui'
+import { useAiAvailable } from '../hooks/useAiAvailable'
 import { useFormState } from '../hooks/useFormState'
 import { DashboardShell } from '../layouts/DashboardShell'
 import { getCurrentUser, logout } from '../services/authService'
@@ -25,7 +27,8 @@ export function CompanyPage() {
   const [isLoadingCompanyProfile, setIsLoadingCompanyProfile] = useState(true)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isSavingCompanyProfile, setIsSavingCompanyProfile] = useState(false)
-  const [creationMode, setCreationMode] = useState<'ai' | 'manual'>('ai')
+  const [creationMode, setCreationMode] = useState<'ai' | 'manual'>('manual')
+  const aiAvailable = useAiAvailable()
   const [loadingMatchesJobId, setLoadingMatchesJobId] = useState<number | null>(null)
   const [matchesByJobId, setMatchesByJobId] = useState<Record<number, CandidateMatch[]>>({})
   const [matchErrorsByJobId, setMatchErrorsByJobId] = useState<Record<number, string>>({})
@@ -206,7 +209,7 @@ export function CompanyPage() {
       <PageHeader
         eyebrow="Dashboard empresa"
         title="Contrate com menos complexidade."
-        description={`${user?.name ? `${user.name}, ` : ''}use a IA para cadastrar sua empresa e criar uma vaga em poucos minutos, ou continue pelo modo manual.`}
+        description={`${user?.name ? `${user.name}, ` : ''}publique sua vaga em poucos minutos. A equipe AK Talent revisa, divulga e faz a seleção com você.`}
         action={
           <Button
             type="button"
@@ -228,22 +231,6 @@ export function CompanyPage() {
       <div id="nova-vaga" className="mt-10 grid scroll-mt-28 gap-4 md:grid-cols-2">
         <button
           type="button"
-          onClick={() => setCreationMode('ai')}
-          className={`rounded-lg border p-5 text-left transition ${
-            creationMode === 'ai'
-              ? 'border-gold-500 bg-amber-50 shadow-sm'
-              : 'border-slate-200 bg-white hover:border-gold-500'
-          }`}
-        >
-          <p className="text-sm font-black uppercase tracking-[0.18em] text-gold-500">Criar vaga com IA</p>
-          <h2 className="mt-2 text-xl font-black text-ink-950">Experiência guiada</h2>
-          <p className="mt-2 text-sm leading-6 text-ink-600">
-            Responda perguntas simples. A IA organiza empresa, vaga, requisitos e descrição.
-          </p>
-        </button>
-
-        <button
-          type="button"
           onClick={() => setCreationMode('manual')}
           className={`rounded-lg border p-5 text-left transition ${
             creationMode === 'manual'
@@ -251,17 +238,41 @@ export function CompanyPage() {
               : 'border-slate-200 bg-white hover:border-gold-500'
           }`}
         >
-          <p className="text-sm font-black uppercase tracking-[0.18em] text-brand-700">Criar vaga manualmente</p>
-          <h2 className="mt-2 text-xl font-black text-ink-950">Controle completo</h2>
+          <p className="text-sm font-black uppercase tracking-[0.18em] text-brand-700">Criar vaga</p>
+          <h2 className="mt-2 text-xl font-black text-ink-950">Preencha os dados da vaga</h2>
           <p className="mt-2 text-sm leading-6 text-ink-600">
-            Edite o perfil da empresa e preencha os dados da vaga campo por campo.
+            Complete o perfil da empresa e descreva a vaga campo por campo.
           </p>
         </button>
+
+        {aiAvailable ? (
+          <button
+            type="button"
+            onClick={() => setCreationMode('ai')}
+            className={`rounded-lg border p-5 text-left transition ${
+              creationMode === 'ai'
+                ? 'border-gold-500 bg-amber-50 shadow-sm'
+                : 'border-slate-200 bg-white hover:border-gold-500'
+            }`}
+          >
+            <p className="text-sm font-black uppercase tracking-[0.18em] text-gold-500">Criar vaga com IA</p>
+            <h2 className="mt-2 text-xl font-black text-ink-950">Experiência guiada</h2>
+            <p className="mt-2 text-sm leading-6 text-ink-600">
+              Responda perguntas simples. A IA organiza empresa, vaga, requisitos e descrição.
+            </p>
+          </button>
+        ) : (
+          <AiComingSoon
+            eyebrow="Criar vaga com IA"
+            title="Experiência guiada"
+            description="Em breve, a IA vai ajudar a escrever a vaga a partir de perguntas simples."
+          />
+        )}
       </div>
 
       <div className="mt-8 grid gap-8 lg:grid-cols-[1fr_0.9fr]">
         <div className="grid gap-8">
-          {creationMode === 'ai' ? (
+          {creationMode === 'ai' && aiAvailable ? (
             <AIOnboardingWizard onJobCreated={(job) => setJobs((currentJobs) => [job, ...currentJobs])} />
           ) : null}
 

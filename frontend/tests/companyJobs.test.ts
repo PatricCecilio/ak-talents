@@ -30,3 +30,21 @@ test('job status labels are friendly for companies', () => {
   assert.equal(formatJobStatus('hidden'), 'Oculta')
   assert.equal(formatJobStatus(null), '')
 })
+
+test('AI features only when the API says the assistant is configured', () => {
+  const root = new URL('../', import.meta.url)
+  const read = (path: string) => readFileSync(new URL(path, root), 'utf8')
+  const company = read('src/pages/CompanyPage.tsx')
+  const candidate = read('src/pages/CandidatePage.tsx')
+
+  assert.match(read('src/services/aiService.ts'), /'\/ai\/status'/)
+  assert.match(read('src/hooks/useAiAvailable.ts'), /useState\(false\)/)
+  assert.match(company, /useState<'ai' \| 'manual'>\('manual'\)/)
+  assert.match(company, /\{aiAvailable \? \(\s*<button/)
+  assert.match(company, /creationMode === 'ai' && aiAvailable \? \(/)
+  // Manual comes first.
+  assert.ok(company.indexOf("setCreationMode('manual')") < company.indexOf("setCreationMode('ai')"))
+  assert.match(candidate, /\{aiAvailable \? \(\s*<Card className="mt-8 p-6">\s*<form onSubmit=\{handleCareerAI\}/)
+  assert.match(read('src/components/AiComingSoon.tsx'), /aria-disabled="true"/)
+  assert.match(read('src/components/AiComingSoon.tsx'), /Em breve/)
+})

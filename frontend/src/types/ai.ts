@@ -30,3 +30,7 @@ export interface CompanyJobAIResponse {
   desirable_requirements: string[]
   interview_questions: string[]
 }
+
+export interface AIStatus {
+  available: boolean
+}

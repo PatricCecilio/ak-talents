@@ -1,6 +1,11 @@
 from pydantic import BaseModel, Field
 
 
+class AIStatusRead(BaseModel):
+    # Only whether the assistant can be used; never anything about the key itself.
+    available: bool
+
+
 class CandidateProfileAIRequest(BaseModel):
     desired_role: str = Field(min_length=2, max_length=180)
     experience: str = Field(min_length=2, max_length=5000)
