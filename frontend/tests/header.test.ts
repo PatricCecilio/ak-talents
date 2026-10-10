@@ -1,0 +1,45 @@
+import assert from 'node:assert/strict'
+import { readFileSync } from 'node:fs'
+import { test } from 'node:test'
+import { firstName, roleHome } from '../src/services/roleHome.ts'
+
+const root = new URL('../', import.meta.url)
+const read = (path: string) => readFileSync(new URL(path, root), 'utf8')
+
+test('each account type has its own panel', () => {
+  assert.equal(roleHome('admin'), '/admin')
+  assert.equal(roleHome('recruiter'), '/recrutador')
+  assert.equal(roleHome('company'), '/company')
+  assert.equal(roleHome('candidate'), '/candidate')
+  assert.equal(roleHome(undefined), '/candidate')
+  assert.equal(firstName('  Ana Maria Souza '), 'Ana')
+  assert.equal(firstName(''), '')
+})
+
+test('phone header: collapsed ☰ menu instead of a second fixed row of links', () => {
+  const header = read('src/components/Header.tsx')
+  assert.match(header, /aria-expanded=\{menuOpen\}/)
+  assert.match(header, /aria-controls="menu-celular"/)
+  assert.match(header, /\{menuOpen \? \(\s*<nav id="menu-celular"/)
+  assert.match(header, /event\.key === 'Escape'/)
+  assert.match(header, /pointerdown/)
+  // Closes on navigation: the open state belongs to the location it was opened on.
+  assert.match(header, /openAt === location\.key/)
+  assert.doesNotMatch(header, /Principal mobile/)
+  assert.match(read('src/layouts/MainLayout.tsx'), /'pt-20 lg:pt-24'/)
+})
+
+test('signed in: name, link to the right panel and "Sair" instead of "Entrar"', () => {
+  const header = read('src/components/Header.tsx')
+  assert.match(header, /getCurrentUser\(\)/)
+  assert.match(header, /\{user \? \(/)
+  assert.match(header, /Olá, \{firstName\(user\.name\)\}/)
+  assert.match(header, /to=\{roleHome\(user\.role\)\}/)
+  assert.match(header, /Meu painel/)
+  assert.match(header, /Sair/)
+  // "Entrar" only in the signed-out branches.
+  for (const match of header.matchAll(/>\s*Entrar\s*</g)) {
+    const before = header.slice(0, match.index)
+    assert.ok(before.lastIndexOf(') : (') > before.lastIndexOf('{user ? ('), 'Entrar fora do ramo deslogado')
+  }
+})

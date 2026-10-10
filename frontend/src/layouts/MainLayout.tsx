@@ -9,7 +9,7 @@ export function MainLayout() {
   return (
     <div className="flex min-h-svh flex-col bg-slate-50">
       <Header />
-      <main className={`flex-1 ${isLanding ? '' : 'pt-40 lg:pt-24'}`}>
+      <main className={`flex-1 ${isLanding ? '' : 'pt-20 lg:pt-24'}`}>
         <Outlet />
       </main>
       <Footer />

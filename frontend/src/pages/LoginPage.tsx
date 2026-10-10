@@ -6,6 +6,7 @@ import { Alert, Button } from '../components/ui'
 import { useFormState } from '../hooks/useFormState'
 import { AuthLayout } from '../layouts/AuthLayout'
 import { loginUser } from '../services/authService'
+import { roleHome } from '../services/roleHome'
 
 export function LoginPage() {
   const navigate = useNavigate()
@@ -31,17 +32,7 @@ export function LoginPage() {
         email: values.email,
         password: values.password,
       })
-      if (response.user.role === 'admin') {
-        navigate('/admin')
-        return
-      }
-
-      if (response.user.role === 'recruiter') {
-        navigate('/recrutador')
-        return
-      }
-
-      navigate(response.user.role === 'company' ? '/company' : '/candidate')
+      navigate(roleHome(response.user.role))
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Nao foi possivel entrar.')
     } finally {

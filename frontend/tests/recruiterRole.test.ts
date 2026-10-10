@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import { test } from 'node:test'
+import { roleHome } from '../src/services/roleHome.ts'
 import { STAFF_ROLES } from '../src/types/user.ts'
 
 const root = new URL('../', import.meta.url)
@@ -13,7 +14,8 @@ test('recruiter is an internal role that public sign-up never offers', () => {
 })
 
 test('recruiters land on /recrutador after login', () => {
-  assert.match(read('src/pages/LoginPage.tsx'), /response\.user\.role === 'recruiter'\) \{\s*navigate\('\/recrutador'\)/)
+  assert.equal(roleHome('recruiter'), '/recrutador')
+  assert.match(read('src/pages/LoginPage.tsx'), /navigate\(roleHome\(response\.user\.role\)\)/)
 })
 
 test('/recrutador is private to admin and recruiter and uses the internal layout', () => {
