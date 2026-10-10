@@ -72,6 +72,12 @@ button[data-appintelli-cta] {
   font: revert-layer;
 }
 
+/* AppIntelli widget only on commercial pages (AppIntelliRouteGate). These are the widget's own public markers. */
+html[data-appintelli='off'] [data-appintelli-mini-widget],
+html[data-appintelli='off'] iframe[title='AppIntelli Connect'] {
+  display: none !important;
+}
+
 #root {
   min-height: 100svh;
   overflow-x: hidden;

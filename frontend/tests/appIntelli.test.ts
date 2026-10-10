@@ -16,6 +16,7 @@ import {
   installAppIntelliWidget,
   resolveAppIntelliWidgetConfig,
 } from '../src/services/appIntelliWidgetLoader.ts'
+import { isCommercialPath } from '../src/services/appIntelliRoutes.ts'
 
 const root = new URL('../', import.meta.url)
 const read = (path: string) => readFileSync(new URL(path, root), 'utf8').replace(/\r\n/g, '\n')
@@ -214,7 +215,24 @@ test('T15: AppIntelli widget is installed by runtime config, not a hardcoded HTM
   const html = read('index.html')
   assert.equal((html.match(/https:\/\/www\.appintelli\.com\.br\/widget\.js/g) ?? []).length, 0)
   assert.equal((html.match(/data-widget-key=/g) ?? []).length, 0)
-  assert.match(read('src/main.tsx'), /installAppIntelliWidget\(\)/)
+  // Installed per route (commercial pages only), never globally at startup.
+  assert.doesNotMatch(read('src/main.tsx'), /installAppIntelliWidget/)
+  assert.match(read('src/components/AppIntelliRouteGate.tsx'), /installAppIntelliWidget\(\)/)
+  assert.match(read('src/routes/AppRoutes.tsx'), /<AppIntelliRouteGate \/>/)
+})
+
+test('AppIntelli widget only on commercial pages', () => {
+  for (const path of ['/', '/solucoes/recrutamento', '/solucoes/recrutamento/']) {
+    assert.equal(isCommercialPath(path), true, path)
+  }
+  for (const path of ['/vagas', '/vagas/atendente', '/login', '/register', '/privacidade', '/admin', '/recrutador', '/recrutador/vagas/1', '/company', '/candidate', '/qualquer']) {
+    assert.equal(isCommercialPath(path), false, path)
+  }
+  const gate = read('src/components/AppIntelliRouteGate.tsx')
+  assert.match(gate, /window\.AppIntelli\?\.close\(\)/)
+  const css = read('src/index.css')
+  assert.match(css, /html\[data-appintelli='off'\] \[data-appintelli-mini-widget\]/)
+  assert.match(css, /html\[data-appintelli='off'\] iframe\[title='AppIntelli Connect'\]/)
 })
 
 test('widget config defaults to production URL without embedding a live key', () => {
