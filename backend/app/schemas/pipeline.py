@@ -98,6 +98,8 @@ class ApplicationCard(BaseModel):
     screening_score: int | None
     created_at: datetime
     waiting_client_too_long: bool
+    # Another visible application of the same job has the same phone or e-mail (warning only, nothing is blocked).
+    possible_duplicate: bool = False
     allowed_next_stages: list[StageOption]
 
 
@@ -154,3 +156,4 @@ class ApplicationDetail(BaseModel):
     # Other active, visible applications of the same job (for the "vaga preenchida" prompt on hire).
     other_active_count: int
     job_openings: int | None = None
+    possible_duplicate: bool = False

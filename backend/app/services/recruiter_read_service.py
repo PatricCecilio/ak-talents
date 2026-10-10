@@ -29,6 +29,7 @@ from app.schemas.pipeline import (
     stage_label,
     stage_options,
 )
+from app.services.identity_service import normalize_email, normalize_phone
 from app.services.pipeline_service import allowed_next_stages, get_application_or_404
 
 ACTIVE_STAGE_VALUES = [stage.value for stage in ACTIVE_STAGES]
@@ -109,6 +110,27 @@ def list_recruiter_jobs(db: Session) -> RecruiterJobsResponse:
     return RecruiterJobsResponse(finalist_alert_days=_alert_days(), jobs=_summaries(db, jobs))
 
 
+def _contact_keys(candidate) -> set[str]:
+    keys = set()
+    email = candidate.email or (candidate.user.email if candidate.user else None)
+    if email and email.strip():
+        keys.add("email:" + normalize_email(email))
+    digits = normalize_phone(candidate.phone or "")
+    if len(digits) >= 8:
+        # Last 10 digits = DDD + number, so "+55 (41) 98888-7777" and "41988887777" match.
+        keys.add("phone:" + digits[-10:])
+    return keys
+
+
+def _possible_duplicates(db: Session, job_id: int) -> set[int]:
+    """Ids of the job's visible applications that share a phone or e-mail with another one."""
+    owners: dict[str, set[int]] = defaultdict(set)
+    for application in _visible_applications(db).filter(Application.job_id == job_id).all():
+        for key in _contact_keys(application.candidate):
+            owners[key].add(application.id)
+    return {application_id for ids in owners.values() if len(ids) > 1 for application_id in ids}
+
+
 def get_job_pipeline(db: Session, job_id: int, actor: User, stage: str | None = None) -> JobPipelineResponse:
     job = db.query(Job).filter(Job.id == job_id).first()
     if not job:
@@ -120,6 +142,7 @@ def get_job_pipeline(db: Session, job_id: int, actor: User, stage: str | None = 
     applications = query.order_by(Application.stage_updated_at.desc(), Application.id.desc()).all()
 
     now = datetime.now(timezone.utc)
+    duplicates = _possible_duplicates(db, job.id)
     return JobPipelineResponse(
         finalist_alert_days=_alert_days(),
         job=_summaries(db, [job])[0],
@@ -136,6 +159,7 @@ def get_job_pipeline(db: Session, job_id: int, actor: User, stage: str | None = 
                 screening_score=application.screening_score,
                 created_at=application.created_at,
                 waiting_client_too_long=_waiting_too_long(application, now),
+                possible_duplicate=application.id in duplicates,
                 allowed_next_stages=stage_options(allowed_next_stages(application, actor.role)),
             )
             for application in applications
@@ -225,4 +249,5 @@ def get_application_detail(db: Session, application_id: int, actor: User) -> App
         allowed_next_stages=stage_options(allowed_next_stages(application, actor.role)),
         other_active_count=other_active,
         job_openings=application.job.openings,
+        possible_duplicate=application.id in _possible_duplicates(db, application.job_id),
     )

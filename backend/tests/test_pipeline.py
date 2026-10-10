@@ -201,6 +201,47 @@ class PipelineTestCase(unittest.TestCase):
         detail = self.client.get(f"/recruiter/applications/{application_id}", headers=self.headers("recruiter")).json()
         self.assertEqual(detail["job_openings"], 3)
 
+    # --- possible duplicates ---
+
+    def make_with_contact(self, email: str | None, phone: str | None, job_id: int | None = None) -> int:
+        with self.SessionLocal() as db:
+            candidate = Candidate(full_name="Pessoa", email=email, phone=phone)
+            db.add(candidate)
+            db.flush()
+            application = Application(candidate_id=candidate.id, job_id=job_id or self.job.id, stage="new")
+            db.add(application)
+            db.commit()
+            return application.id
+
+    def duplicate_flags(self) -> dict[int, bool]:
+        body = self.client.get(f"/recruiter/jobs/{self.job.id}/applications", headers=self.headers("recruiter")).json()
+        return {card["id"]: card["possible_duplicate"] for card in body["applications"]}
+
+    def test_same_phone_in_another_format_is_flagged(self) -> None:
+        first = self.make_with_contact("ana@example.com", "(41) 98888-7777")
+        second = self.make_with_contact("outra@example.com", "+55 41 988887777")
+        alone = self.make_with_contact("caio@example.com", "41 97777-6666")
+        self.assertEqual(self.duplicate_flags(), {first: True, second: True, alone: False})
+        detail = self.client.get(f"/recruiter/applications/{first}", headers=self.headers("recruiter")).json()
+        self.assertTrue(detail["possible_duplicate"])
+
+    def test_same_email_with_capitals_is_flagged(self) -> None:
+        first = self.make_with_contact("Ana@Example.com", None)
+        second = self.make_with_contact(" ana@example.com ", "41 96666-5555")
+        self.assertEqual(self.duplicate_flags(), {first: True, second: True})
+
+    def test_other_jobs_and_missing_contacts_do_not_count(self) -> None:
+        with self.SessionLocal() as db:
+            other_job = Job(company_id=self.job.company_id, title="Caixa", slug="caixa", description="Operar o caixa.", status="approved", is_active=True)
+            db.add(other_job)
+            db.commit()
+            other_job_id = other_job.id
+        here = self.make_with_contact("ana@example.com", "41988887777")
+        self.make_with_contact("ana@example.com", "41988887777", job_id=other_job_id)
+        no_contact_a = self.make_with_contact(None, None)
+        no_contact_b = self.make_with_contact("", "")
+        self.assertEqual(self.duplicate_flags(), {here: False, no_contact_a: False, no_contact_b: False})
+
     # --- notes ---
 
     def test_internal_notes(self) -> None:

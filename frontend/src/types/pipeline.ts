@@ -45,6 +45,8 @@ export interface ApplicationCard {
   screening_score: number | null
   created_at: string
   waiting_client_too_long: boolean
+  /** Another application of the same job has the same phone or e-mail (warning only). */
+  possible_duplicate?: boolean
   allowed_next_stages: StageOption[]
 }
 
@@ -109,6 +111,7 @@ export interface ApplicationDetail {
   allowed_next_stages: StageOption[]
   other_active_count: number
   job_openings?: number | null
+  possible_duplicate?: boolean
 }
 
 export interface StageMovePayload {

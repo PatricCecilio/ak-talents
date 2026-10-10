@@ -23,6 +23,17 @@ type MobileFilter = 'active' | 'closed' | StageValue
 
 const ACTIVE_STAGES: StageValue[] = ['new', 'screening', 'ak_interview', 'finalist', 'client_approved']
 
+function DuplicateBadge() {
+  return (
+    <p
+      className="w-fit rounded-md border border-amber-300 bg-amber-50 px-2 py-1 text-xs font-semibold text-amber-800"
+      title="Outra candidatura desta vaga tem o mesmo telefone ou e-mail."
+    >
+      Possível duplicado
+    </p>
+  )
+}
+
 function CandidateCard({
   card,
   onMove,
@@ -42,6 +53,7 @@ function CandidateCard({
         </Link>
         {showStage ? <StageBadge stage={card.stage} label={card.stage_label} /> : null}
       </div>
+      {card.possible_duplicate ? <DuplicateBadge /> : null}
       <p className="text-sm text-ink-600">
         {[card.city, card.neighborhood].filter(Boolean).join(' · ') || 'Cidade não informada'}
         <br />

@@ -129,3 +129,12 @@ test('finalists show how long the client company has been deciding', () => {
   assert.match(page, /companyName=\{job\.company_name\}/)
   assert.match(read('src/pages/recruiter/RecruiterApplicationPage.tsx'), /companyName=\{detail\.company_name\}/)
 })
+
+test('possible duplicates are flagged on the card and the detail, without blocking', () => {
+  const page = read('src/pages/recruiter/RecruiterJobPage.tsx')
+  assert.match(page, /\{card\.possible_duplicate \? <DuplicateBadge \/> : null\}/)
+  assert.match(page, /Possível duplicado/)
+  const detail = read('src/pages/recruiter/RecruiterApplicationPage.tsx')
+  assert.match(detail, /detail\.possible_duplicate \? \(/)
+  assert.match(detail, /nada foi bloqueado/)
+})

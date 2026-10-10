@@ -93,6 +93,12 @@ export function RecruiterApplicationPage() {
           </div>
           <StageBadge stage={detail.stage} label={detail.stage_label} />
         </div>
+        {detail.possible_duplicate ? (
+          <BrandNotice tone="warning">
+            <strong>Possível duplicado:</strong> outra candidatura desta vaga tem o mesmo telefone ou e-mail. Confira antes de
+            seguir (nada foi bloqueado).
+          </BrandNotice>
+        ) : null}
         {flash ? <BrandNotice tone="success">{flash}</BrandNotice> : null}
         {detail.allowed_next_stages.length ? (
           <BrandButton variant="navy" fullWidth className="sm:w-auto" onClick={() => setIsMoving(true)}>
