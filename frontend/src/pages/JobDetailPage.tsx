@@ -1,8 +1,9 @@
 import type { FormEvent } from 'react'
 import { useEffect, useRef, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import { Alert, Badge, Button, Card, LoadingSpinner, PageHeader } from '../components/ui'
+import { Alert, Badge, Button, Card, PageHeader } from '../components/ui'
 import { Container } from '../components/Container'
+import { JobsLoading } from '../components/JobsLoading'
 import { LoadErrorState } from '../components/LoadErrorState'
 import { ApiError } from '../services/api'
 import { formatSalary, formatWorkMode } from '../services/jobFormat'
@@ -195,7 +196,11 @@ export function JobDetailPage() {
         Voltar para vagas
       </Link>
 
-      {isLoading ? <Card className="mt-8 p-6"><LoadingSpinner label="Carregando vaga..." /></Card> : null}
+      {isLoading ? (
+        <div className="mt-8">
+          <JobsLoading label="Carregando vaga..." count={1} />
+        </div>
+      ) : null}
       {!isLoading && loadError === 'not-found' ? (
         <div className="mt-8">
           <LoadErrorState

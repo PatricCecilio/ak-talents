@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict'
+import { readFileSync } from 'node:fs'
 import { test } from 'node:test'
 import { ApiError, extractErrorMessage, NETWORK_ERROR_MESSAGE } from '../src/services/api.ts'
 import { resolveFeaturedJobsMode } from '../src/services/featuredJobs.ts'
@@ -54,4 +55,17 @@ test('job formatting uses friendly Portuguese labels', () => {
   assert.equal(formatWorkMode('onsite'), 'Presencial')
   assert.equal(formatWorkMode(null), '')
   assert.equal(formatSalary({ salary_min: null, salary_max: 3000 }), `Até R$ ${(3000).toLocaleString('pt-BR')}`)
+})
+
+test('job lists show a visible loading state and explain a slow first load', () => {
+  const root = new URL('../', import.meta.url)
+  const read = (path: string) => readFileSync(new URL(path, root), 'utf8')
+  const loading = read('src/components/JobsLoading.tsx')
+
+  assert.match(loading, /role="status"/)
+  assert.match(loading, /SLOW_LOADING_AFTER_MS = 3000/)
+  assert.match(loading, /A primeira visita do dia pode levar alguns segundos\./)
+  assert.match(read('src/pages/JobsPage.tsx'), /loadState === 'loading' \? <JobsLoading \/> : null/)
+  assert.match(read('src/pages/JobDetailPage.tsx'), /<JobsLoading label="Carregando vaga\.\.\." count=\{1\} \/>/)
+  assert.match(read('src/pages/HomePage.tsx'), /<LoadingHint label="Carregando vagas\.\.\." \/>/)
 })

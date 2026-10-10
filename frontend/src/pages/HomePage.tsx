@@ -6,6 +6,7 @@ import videoThumbnailImage from '../assets/ak-talent-video-thumbnail.webp'
 import { AppIntelliButton } from '../components/AppIntelliButton'
 import { Container } from '../components/Container'
 import { JobsUnavailableNotice } from '../components/JobsUnavailableNotice'
+import { LoadingHint } from '../components/JobsLoading'
 import { useScrolledPast } from '../hooks/useScrolledPast'
 import { resolveFeaturedJobsMode, type FeaturedJobsMode } from '../services/featuredJobs'
 import { getJobs } from '../services/jobService'
@@ -501,6 +502,11 @@ function FeaturedJobsSection() {
           </div>
         ) : (
           <div className="mt-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            {isLoading ? (
+              <div className="col-span-full">
+                <LoadingHint label="Carregando vagas..." />
+              </div>
+            ) : null}
             {isLoading
               ? Array.from({ length: 4 }).map((_, index) => (
                   <div key={index} className="h-52 animate-pulse rounded-xl border border-slate-200 bg-white" />

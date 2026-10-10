@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Badge, Card, LoadingSpinner, PageHeader } from '../components/ui'
+import { Badge, Card, PageHeader } from '../components/ui'
 import { Container } from '../components/Container'
+import { JobsLoading } from '../components/JobsLoading'
 import { JobsUnavailableNotice } from '../components/JobsUnavailableNotice'
 import { LoadErrorState } from '../components/LoadErrorState'
 import { ApiError } from '../services/api'
@@ -54,11 +55,7 @@ export function JobsPage() {
       />
 
       <div className="mt-8 grid gap-4">
-        {loadState === 'loading' ? (
-          <Card className="p-6">
-            <LoadingSpinner label="Carregando vagas..." />
-          </Card>
-        ) : null}
+        {loadState === 'loading' ? <JobsLoading /> : null}
 
         {hasError ? (
           <LoadErrorState
