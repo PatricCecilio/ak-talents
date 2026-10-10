@@ -28,7 +28,6 @@ test('public application form validates required fields', () => {
   assert.equal(validatePublicApplicationForm({ ...validValues, email: '' }).isValid, false)
   assert.equal(validatePublicApplicationForm({ ...validValues, phone: '' }).isValid, false)
   assert.equal(validatePublicApplicationForm({ ...validValues, city: '' }).isValid, false)
-  assert.equal(validatePublicApplicationForm({ ...validValues, neighborhood: '' }).isValid, false)
 })
 
 test('public application form does not submit without privacy acceptance', () => {
@@ -225,4 +224,13 @@ test('applying twice shows the API reassurance as a neutral notice, not an error
 
   assert.match(source, /err instanceof ApiError && err\.status === 409\) setFormNotice\(err\.message\)/)
   assert.match(source, /\{formNotice \? <Alert tone="info">\{formNotice\}<\/Alert> : null\}/)
+})
+
+test('neighborhood is optional: valid without it and left out of the payload when blank', () => {
+  assert.equal(validatePublicApplicationForm({ ...validValues, neighborhood: '' }).isValid, true)
+  assert.equal(toPublicApplicationPayload({ ...validValues, neighborhood: '   ' }).neighborhood, undefined)
+  assert.equal(toPublicApplicationPayload(validValues).neighborhood, 'Pinheiros')
+
+  const root = new URL('../', import.meta.url)
+  assert.match(readFileSync(new URL('src/pages/JobDetailPage.tsx', root), 'utf8'), /Bairro \(opcional\)/)
 })

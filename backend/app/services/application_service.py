@@ -143,7 +143,7 @@ def _resolve_public_candidate(
         candidate.email = candidate.email or normalized_email
         candidate.phone = candidate.phone or normalized_phone
         candidate.city = candidate.city or payload.city.strip()
-        candidate.neighborhood = candidate.neighborhood or payload.neighborhood.strip()
+        candidate.neighborhood = candidate.neighborhood or payload.neighborhood
         return candidate
 
     candidate = Candidate(
@@ -151,7 +151,7 @@ def _resolve_public_candidate(
         email=normalized_email,
         phone=normalized_phone,
         city=payload.city.strip(),
-        neighborhood=payload.neighborhood.strip(),
+        neighborhood=payload.neighborhood,
     )
     db.add(candidate)
     db.flush()

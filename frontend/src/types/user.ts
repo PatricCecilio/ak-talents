@@ -79,7 +79,7 @@ export interface PublicApplicationPayload {
   email: string
   phone: string
   city: string
-  neighborhood: string
+  neighborhood?: string
   privacy_accepted: boolean
 }
 

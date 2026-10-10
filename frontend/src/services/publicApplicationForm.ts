@@ -18,14 +18,13 @@ export function validatePublicApplicationForm(values: PublicApplicationFormValue
   if (!values.full_name.trim()) return { isValid: false, message: 'Informe seu nome completo.' }
   if (!values.email.trim()) return { isValid: false, message: 'Informe seu e-mail.' }
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(values.email.trim())) {
-    return { isValid: false, message: 'Informe um e-mail valido.' }
+    return { isValid: false, message: 'Informe um e-mail válido.' }
   }
   if (!values.phone.trim()) return { isValid: false, message: 'Informe seu telefone.' }
   if (values.phone.replace(/\D+/g, '').length < 8) {
-    return { isValid: false, message: 'Informe um telefone valido.' }
+    return { isValid: false, message: 'Informe um telefone válido, com DDD.' }
   }
   if (!values.city.trim()) return { isValid: false, message: 'Informe sua cidade.' }
-  if (!values.neighborhood.trim()) return { isValid: false, message: 'Informe seu bairro.' }
   if (!values.privacy_accepted) {
     return { isValid: false, message: 'Aceite o tratamento dos dados para enviar sua candidatura.' }
   }
@@ -39,7 +38,7 @@ export function toPublicApplicationPayload(values: PublicApplicationFormValues):
     email: values.email.trim(),
     phone: values.phone.trim(),
     city: values.city.trim(),
-    neighborhood: values.neighborhood.trim(),
+    neighborhood: values.neighborhood.trim() || undefined,
     privacy_accepted: values.privacy_accepted,
   }
 }

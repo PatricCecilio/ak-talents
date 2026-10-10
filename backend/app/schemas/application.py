@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from pydantic import BaseModel, ConfigDict, EmailStr, Field
+from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
 
 
 class ApplicationCreate(BaseModel):
@@ -28,10 +28,16 @@ class PublicApplicationCreate(BaseModel):
     email: EmailStr
     phone: str = Field(min_length=8, max_length=40)
     city: str = Field(min_length=2, max_length=180)
-    neighborhood: str = Field(min_length=2, max_length=180)
+    # Optional: many candidates skip it on the phone.
+    neighborhood: str | None = Field(default=None, max_length=180)
     privacy_accepted: bool
 
     model_config = ConfigDict(extra="forbid")
+
+    @field_validator("neighborhood")
+    @classmethod
+    def _blank_neighborhood_is_none(cls, value: str | None) -> str | None:
+        return (value or "").strip() or None
 
 
 class PublicApplicationRead(BaseModel):

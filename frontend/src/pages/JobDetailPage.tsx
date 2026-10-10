@@ -320,7 +320,7 @@ export function JobDetailPage() {
                     />
                   </label>
                   <label htmlFor="application_neighborhood" className="grid gap-2 text-sm font-bold text-ink-800">
-                    Bairro
+                    Bairro (opcional)
                     <input
                       id="application_neighborhood"
                       value={formValues.neighborhood}
