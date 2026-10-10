@@ -8,6 +8,7 @@ from sqlalchemy.pool import StaticPool
 
 from app.api.routes import jobs
 from app.core.errors import install_error_handlers
+from app.core.names import normalize_person_name
 from app.core.rate_limit import limiter
 from app.database.base import Base
 from app.database.session import get_db
@@ -69,6 +70,31 @@ class PublicApplicationFormTestCase(unittest.TestCase):
 
     def test_neighborhood_is_kept_when_given(self) -> None:
         self.assertEqual(self.apply(neighborhood="  Centro ")["neighborhood"], "Centro")
+
+    def test_all_caps_name_is_saved_in_normal_case(self) -> None:
+        self.assertEqual(self.apply(full_name="PATRIC  CECILIO")["full_name"], "Patric Cecilio")
+
+    def test_name_typed_normally_is_kept(self) -> None:
+        self.assertEqual(self.apply(full_name="Ana de Souza McDonald", email="ana@example.com", phone="41977776666")["full_name"], "Ana de Souza McDonald")
+
+
+class PersonNameTestCase(unittest.TestCase):
+    def test_all_caps_names(self) -> None:
+        cases = {
+            "PATRIC CECILIO": "Patric Cecilio",
+            "MARIA DA SILVA DOS SANTOS": "Maria da Silva dos Santos",
+            "  JOÃO   DE  SOUZA ": "João de Souza",
+            "ANA-MARIA D'ÁVILA": "Ana-Maria D'Ávila",
+            "JOSÉ E MARIA DAS DORES DO CARMO": "José e Maria das Dores do Carmo",
+            "E SILVA": "E Silva",
+        }
+        for typed, saved in cases.items():
+            self.assertEqual(normalize_person_name(typed), saved, typed)
+
+    def test_anything_with_lowercase_is_left_alone(self) -> None:
+        for typed in ("Ana de Souza", "McDonald", "joão da silva", "DIEGO silva"):
+            self.assertEqual(normalize_person_name(typed), typed)
+        self.assertEqual(normalize_person_name("1234"), "1234")
 
 
 if __name__ == "__main__":

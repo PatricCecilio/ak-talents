@@ -54,6 +54,12 @@ class PrivacyConsentTestCase(unittest.TestCase):
             self.assertEqual(response.json()["detail"], PRIVACY_CONSENT_REQUIRED_MESSAGE)
         self.assertIsNone(self.stored_user("candidate@example.com"))
 
+    def test_candidate_name_in_all_caps_is_saved_in_normal_case_company_name_is_kept(self) -> None:
+        self.assertEqual(self.register("candidate", name="MARIA DA SILVA", privacy_accepted=True).status_code, 201)
+        self.assertEqual(self.stored_user("candidate@example.com").name, "Maria da Silva")
+        self.assertEqual(self.register("company", name="MERCADO BOM PREÇO", privacy_accepted=True).status_code, 201)
+        self.assertEqual(self.stored_user("company@example.com").name, "MERCADO BOM PREÇO")
+
     def test_candidate_and_company_consent_is_recorded_with_time_and_version(self) -> None:
         for role in ("candidate", "company"):
             response = self.register(role, privacy_accepted=True, company_name="Empresa X" if role == "company" else None)

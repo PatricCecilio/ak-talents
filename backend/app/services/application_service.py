@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 
 from app.core import messages
 from app.core.config import settings
+from app.core.names import normalize_person_name
 from app.core.privacy import PRIVACY_CONSENT_REQUIRED_MESSAGE, PRIVACY_POLICY_VERSION
 from app.models.application import Application
 from app.models.candidate import Candidate
@@ -44,6 +45,9 @@ def create_application(db: Session, current_user: User, payload: ApplicationCrea
 
     if existing_application:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=messages.APPLICATION_ALREADY_EXISTS)
+
+    if candidate.full_name:
+        candidate.full_name = normalize_person_name(candidate.full_name)
 
     # Account applications skip the automated screening and go straight to the AK team ("Nova").
     application = Application(
@@ -139,7 +143,7 @@ def _resolve_public_candidate(
     if candidate:
         # Fill only what is still empty; the public form never overwrites existing data. With the link
         # flag on, this completes an account holder's missing contact data (never changes it).
-        candidate.full_name = candidate.full_name or payload.full_name.strip()
+        candidate.full_name = normalize_person_name(candidate.full_name or payload.full_name)
         candidate.email = candidate.email or normalized_email
         candidate.phone = candidate.phone or normalized_phone
         candidate.city = candidate.city or payload.city.strip()
@@ -147,7 +151,7 @@ def _resolve_public_candidate(
         return candidate
 
     candidate = Candidate(
-        full_name=payload.full_name.strip(),
+        full_name=normalize_person_name(payload.full_name),
         email=normalized_email,
         phone=normalized_phone,
         city=payload.city.strip(),

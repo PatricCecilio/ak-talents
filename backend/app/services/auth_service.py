@@ -4,6 +4,7 @@ from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.core import messages
+from app.core.names import normalize_person_name
 from app.core.privacy import PRIVACY_CONSENT_REQUIRED_MESSAGE, PRIVACY_POLICY_VERSION
 from app.core.security import create_access_token, get_password_hash, verify_password
 from app.models.candidate import Candidate
@@ -26,8 +27,10 @@ def register_user(db: Session, payload: RegisterRequest) -> TokenResponse:
     if existing_user:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=messages.EMAIL_ALREADY_REGISTERED)
 
+    # Candidates are people: "PATRIC CECILIO" is saved as "Patric Cecilio". Company names are kept as typed.
+    name = normalize_person_name(payload.name) if payload.role == UserRole.candidate else payload.name
     user = User(
-        name=payload.name,
+        name=name,
         email=str(payload.email),
         hashed_password=get_password_hash(payload.password),
         role=payload.role.value,
@@ -42,7 +45,7 @@ def register_user(db: Session, payload: RegisterRequest) -> TokenResponse:
     elif payload.role == UserRole.candidate:
         # Same e-mail on the candidate profile, so a later application through the public job form
         # (same e-mail) is linked to this account and shows up in "Minhas candidaturas".
-        db.add(Candidate(user_id=user.id, full_name=payload.name, email=normalize_email(user.email)))
+        db.add(Candidate(user_id=user.id, full_name=name, email=normalize_email(user.email)))
 
     db.commit()
     db.refresh(user)
