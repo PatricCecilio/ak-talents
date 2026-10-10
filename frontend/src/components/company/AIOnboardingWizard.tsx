@@ -4,7 +4,7 @@ import { Alert, Badge, Button, Card, Select, Textarea } from '../ui'
 import { useFormState } from '../../hooks/useFormState'
 import { generateCompanyJob } from '../../services/aiService'
 import { createJob } from '../../services/jobService'
-import { getSalaryRangeError } from '../../services/jobValidation'
+import { getSalaryRangeError, JOB_SENT_MESSAGE } from '../../services/jobValidation'
 import { updateCompanyProfile } from '../../services/profileService'
 import type { CompanyJobAIResponse } from '../../types/ai'
 import type { Job } from '../../types/user'
@@ -50,7 +50,7 @@ export function AIOnboardingWizard({ onJobCreated }: AIOnboardingWizardProps) {
     role: '',
     activities: '',
     experience: '',
-    work_mode: 'remote',
+    work_mode: 'onsite',
     salary: '',
     skills: '',
   })
@@ -71,7 +71,7 @@ export function AIOnboardingWizard({ onJobCreated }: AIOnboardingWizardProps) {
       })
       setAIResult(response)
       setStep(4)
-      setSuccess('A IA preparou uma primeira versao da sua vaga.')
+      setSuccess('A IA preparou uma primeira versão da sua vaga.')
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Não foi possível gerar a vaga com IA.')
     } finally {
@@ -116,7 +116,7 @@ export function AIOnboardingWizard({ onJobCreated }: AIOnboardingWizardProps) {
       })
 
       onJobCreated(createdJob)
-      setSuccess('Empresa salva e vaga publicada. Ela pode precisar de aprovação do admin antes de aparecer para candidatos.')
+      setSuccess(JOB_SENT_MESSAGE)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Não foi possível salvar a empresa e publicar a vaga.')
     } finally {
@@ -167,14 +167,14 @@ export function AIOnboardingWizard({ onJobCreated }: AIOnboardingWizardProps) {
                 id="wizard_company_name"
                 label="Qual o nome da empresa?"
                 value={companyValues.company_name}
-                placeholder="Empresa Exemplo"
+                placeholder="Mercado Bom Preço"
                 onChange={(value) => updateCompanyField('company_name', value)}
               />
               <FormField
                 id="wizard_city"
                 label="Em qual cidade fica?"
                 value={companyValues.city}
-                placeholder="São Paulo"
+                placeholder="Curitiba"
                 onChange={(value) => updateCompanyField('city', value)}
               />
               <FormField
@@ -188,7 +188,7 @@ export function AIOnboardingWizard({ onJobCreated }: AIOnboardingWizardProps) {
                 id="wizard_company_size"
                 label="Quantos funcionários possui?"
                 value={companyValues.company_size}
-                placeholder="11-50, 51-200..."
+                placeholder="2 a 10, 11 a 50..."
                 onChange={(value) => updateCompanyField('company_size', value)}
               />
             </div>
@@ -197,7 +197,7 @@ export function AIOnboardingWizard({ onJobCreated }: AIOnboardingWizardProps) {
               label="O que sua empresa faz?"
               value={companyValues.description}
               rows={4}
-              placeholder="Explique de forma simples o produto, servico ou mercado da empresa"
+              placeholder="Explique de forma simples o produto, serviço ou mercado da empresa"
               onChange={(event) => updateCompanyField('description', event.target.value)}
             />
             <div className="flex flex-col gap-3 sm:flex-row">
@@ -219,14 +219,14 @@ export function AIOnboardingWizard({ onJobCreated }: AIOnboardingWizardProps) {
                 id="wizard_role"
                 label="Qual profissional você precisa contratar?"
                 value={jobValues.role}
-                placeholder="Analista de Marketing"
+                placeholder="Atendente de loja"
                 onChange={(value) => updateJobField('role', value)}
               />
               <FormField
                 id="wizard_salary"
                 label="Qual faixa salarial?"
                 value={jobValues.salary}
-                placeholder="R$ 5.000 a R$ 7.000"
+                placeholder="R$ 1.800 a R$ 2.200"
                 onChange={(value) => updateJobField('salary', value)}
               />
             </div>
@@ -253,15 +253,15 @@ export function AIOnboardingWizard({ onJobCreated }: AIOnboardingWizardProps) {
                 value={jobValues.work_mode}
                 onChange={(event) => updateJobField('work_mode', event.target.value)}
               >
-                <option value="remote">Remoto</option>
-                <option value="hybrid">Híbrido</option>
                 <option value="onsite">Presencial</option>
+                <option value="hybrid">Híbrido</option>
+                <option value="remote">Remoto</option>
               </Select>
               <FormField
                 id="wizard_skills"
                 label="Quais habilidades são importantes?"
                 value={jobValues.skills}
-                placeholder="Excel, comunicação, React, vendas..."
+                placeholder="Atendimento, caixa, organização, vendas..."
                 onChange={(value) => updateJobField('skills', value)}
               />
             </div>
@@ -281,7 +281,7 @@ export function AIOnboardingWizard({ onJobCreated }: AIOnboardingWizardProps) {
             <div>
               <h3 className="text-xl font-black text-ink-950">Revisao inteligente</h3>
               <p className="mt-2 text-sm leading-6 text-ink-600">
-                Confira tudo antes de salvar. Depois de publicada, a vaga pode precisar de aprovação do admin.
+                Confira tudo antes de enviar. A equipe AK Talent revisa a vaga antes de publicá-la.
               </p>
             </div>
 

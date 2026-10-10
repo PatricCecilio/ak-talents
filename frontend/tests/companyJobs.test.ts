@@ -48,3 +48,21 @@ test('AI features only when the API says the assistant is configured', () => {
   assert.match(read('src/components/AiComingSoon.tsx'), /aria-disabled="true"/)
   assert.match(read('src/components/AiComingSoon.tsx'), /Em breve/)
 })
+
+test('job form speaks to our public: everyday examples, Presencial first, clear message after sending', () => {
+  const root = new URL('../', import.meta.url)
+  const read = (path: string) => readFileSync(new URL(path, root), 'utf8')
+  const company = read('src/pages/CompanyPage.tsx')
+  const wizard = read('src/components/company/AIOnboardingWizard.tsx')
+
+  for (const example of ['placeholder="Atendente de loja"', 'placeholder="1800"', 'placeholder="2200"', 'placeholder="Curitiba, PR"']) {
+    assert.ok(company.includes(example), example)
+  }
+  for (const source of [company, wizard]) {
+    assert.match(source, /work_mode: 'onsite'/)
+    assert.ok(source.indexOf('<option value="onsite">') < source.indexOf('<option value="remote">'))
+    assert.match(source, /setSuccess\(JOB_SENT_MESSAGE\)/)
+    assert.doesNotMatch(source, /aprovação do admin/)
+  }
+  assert.match(read('src/services/jobValidation.ts'), /'Vaga enviada! A equipe AK Talent vai revisar e publicar em breve\.'/)
+})

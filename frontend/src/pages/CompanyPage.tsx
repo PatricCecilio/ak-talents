@@ -13,7 +13,7 @@ import { companyJobProgress } from '../services/companyProgress'
 import { companySizeOptions, toCompanyProfilePayload, validateCompanyProfile } from '../services/companyProfileForm'
 import { formatJobStatus, formatWorkMode } from '../services/jobFormat'
 import { createJob, getJobMatches, getMyCompanyJobs } from '../services/jobService'
-import { getSalaryRangeError } from '../services/jobValidation'
+import { getSalaryRangeError, JOB_SENT_MESSAGE } from '../services/jobValidation'
 import { getCompanyProfile, updateCompanyProfile } from '../services/profileService'
 import type { CandidateMatch, Job } from '../types/user'
 
@@ -59,7 +59,7 @@ export function CompanyPage() {
     salary_min: '',
     salary_max: '',
     location: '',
-    work_mode: 'remote',
+    work_mode: 'onsite',
   })
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -88,7 +88,7 @@ export function CompanyPage() {
       })
       setJobs((currentJobs) => [createdJob, ...currentJobs])
       reset()
-      setSuccess('Vaga criada com sucesso. Ela pode precisar de aprovação do admin antes de aparecer para candidatos.')
+      setSuccess(JOB_SENT_MESSAGE)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Não foi possível criar a vaga.')
     } finally {
@@ -381,7 +381,7 @@ export function CompanyPage() {
               <Card className="p-6">
                 <form onSubmit={handleSubmit} className="grid gap-5">
                   <div>
-                    <h2 className="text-2xl font-black text-ink-950">Nova vaga manual</h2>
+                    <h2 className="text-2xl font-black text-ink-950">Nova vaga</h2>
                     <p className="mt-2 text-sm leading-6 text-ink-600">Preencha os dados principais da oportunidade.</p>
                   </div>
 
@@ -392,14 +392,14 @@ export function CompanyPage() {
                     id="title"
                     label="Título da vaga"
                     value={values.title}
-                    placeholder="Product Designer Senior"
+                    placeholder="Atendente de loja"
                     onChange={(value) => updateField('title', value)}
                   />
                   <Textarea
                     id="description"
                     label="Descrição da vaga"
                     value={values.description}
-                    placeholder="Descreva responsabilidades, contexto e impacto da vaga"
+                    placeholder="Atender clientes no balcão, organizar a loja, operar o caixa e repor produtos."
                     onChange={(event) => updateField('description', event.target.value)}
                     required
                     rows={5}
@@ -408,7 +408,7 @@ export function CompanyPage() {
                     id="requirements"
                     label="Requisitos"
                     value={values.requirements}
-                    placeholder="Liste habilidades, senioridade e requisitos obrigatórios"
+                    placeholder="Ensino médio completo. Gostar de atender pessoas. Experiência com caixa é um diferencial."
                     onChange={(event) => updateField('requirements', event.target.value)}
                     rows={4}
                   />
@@ -419,7 +419,7 @@ export function CompanyPage() {
                       label="Salário mínimo"
                       type="number"
                       value={values.salary_min}
-                      placeholder="6000"
+                      placeholder="1800"
                       onChange={(value) => updateField('salary_min', value)}
                     />
                     <FormField
@@ -427,7 +427,7 @@ export function CompanyPage() {
                       label="Salário máximo"
                       type="number"
                       value={values.salary_max}
-                      placeholder="10000"
+                      placeholder="2200"
                       onChange={(value) => updateField('salary_max', value)}
                     />
                   </div>
@@ -437,7 +437,7 @@ export function CompanyPage() {
                       id="location"
                       label="Cidade da vaga"
                       value={values.location}
-                      placeholder="São Paulo, SP"
+                      placeholder="Curitiba, PR"
                       onChange={(value) => updateField('location', value)}
                     />
                     <Select
@@ -446,14 +446,14 @@ export function CompanyPage() {
                       value={values.work_mode}
                       onChange={(event) => updateField('work_mode', event.target.value)}
                     >
-                      <option value="remote">Remoto</option>
-                      <option value="hybrid">Híbrido</option>
                       <option value="onsite">Presencial</option>
+                      <option value="hybrid">Híbrido</option>
+                      <option value="remote">Remoto</option>
                     </Select>
                   </div>
 
                   <Button type="submit" isLoading={isSubmitting}>
-                    Criar vaga
+                    Enviar vaga
                   </Button>
                 </form>
               </Card>

@@ -16,7 +16,7 @@ function screenFiles(dir: string): string[] {
 }
 
 // Words that only appear on screen without their accent by mistake.
-const UNACCENTED = /\b(usuarios?|responsavel|descricao|recomendacoes|experiencia|comecar|titulo|salario|minimo|maximo|hibrido|nao|voce|possivel|aprovacao|localizacao|configuracao|pretensao|pagina|obrigatorios|desejaveis|funcionarios|trajetoria|informacoes|Sao Paulo)\b/i
+const UNACCENTED = /\b(usuarios?|responsavel|descricao|recomendacoes|experiencia|comecar|titulo|salario|minimo|maximo|hibrido|nao|voce|possivel|aprovacao|localizacao|configuracao|pretensao|pagina|obrigatorios|desejaveis|funcionarios|trajetoria|informacoes|versao|servico|Sao Paulo)\b/i
 
 function visibleLines(source: string): string[] {
   return source
