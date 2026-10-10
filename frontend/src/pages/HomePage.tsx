@@ -9,6 +9,7 @@ import { JobsUnavailableNotice } from '../components/JobsUnavailableNotice'
 import { LoadingHint } from '../components/JobsLoading'
 import { useScrolledPast } from '../hooks/useScrolledPast'
 import { resolveFeaturedJobsMode, type FeaturedJobsMode } from '../services/featuredJobs'
+import { formatWorkMode } from '../services/jobFormat'
 import { getJobs } from '../services/jobService'
 import type { Job } from '../types/user'
 
@@ -388,7 +389,7 @@ function useFeaturedJobs(allowDemoJobs: boolean = import.meta.env.DEV) {
         const mapped = response.slice(0, 4).map((job: Job) => ({
           title: job.title,
           location: job.location || 'Localização a confirmar',
-          workMode: job.work_mode || 'Modalidade a confirmar',
+          workMode: formatWorkMode(job.work_mode) || 'Modalidade a confirmar',
           company: 'AK Talent',
           status: job.status || 'Recebendo candidatos',
           area: job.status || 'Vaga ativa',

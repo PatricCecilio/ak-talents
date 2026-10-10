@@ -58,7 +58,7 @@ export function LoginPage() {
           label="E-mail"
           type="email"
           value={values.email}
-          placeholder="voce@email.com"
+          placeholder="seu@email.com"
           autoComplete="email"
           onChange={(value) => updateField('email', value)}
         />

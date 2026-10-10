@@ -6,9 +6,9 @@ export function NotFoundPage() {
     <section className="grid min-h-[60svh] place-items-center py-16">
       <Container className="text-center">
         <p className="text-sm font-black uppercase tracking-[0.22em] text-brand-700">404</p>
-        <h1 className="mt-4 text-4xl font-black text-ink-950">Pagina nao encontrada</h1>
+        <h1 className="mt-4 text-4xl font-black text-ink-950">Página não encontrada</h1>
         <p className="mx-auto mt-4 max-w-xl text-lg leading-8 text-ink-600">
-          A rota solicitada nao existe na Fase 1 da AK Talent.
+          O endereço que você abriu não existe ou mudou. Veja as vagas abertas ou volte para o início.
         </p>
         <div className="mt-8">
           <ButtonLink to="/">Voltar para inicio</ButtonLink>

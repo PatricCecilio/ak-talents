@@ -9,6 +9,7 @@ import { DashboardShell } from '../layouts/DashboardShell'
 import { createApplication } from '../services/applicationService'
 import { generateCandidateProfile } from '../services/aiService'
 import { getCurrentUser, logout } from '../services/authService'
+import { formatWorkMode } from '../services/jobFormat'
 import { getJobs } from '../services/jobService'
 import { getCandidateProfile, updateCandidateProfile } from '../services/profileService'
 import type { CandidateProfileAIResponse } from '../types/ai'
@@ -24,10 +25,10 @@ function formatSalary(job: Job) {
   }
 
   if (job.salary_max) {
-    return `Ate R$ ${job.salary_max.toLocaleString('pt-BR')}`
+    return `Até R$ ${job.salary_max.toLocaleString('pt-BR')}`
   }
 
-  return 'Salario a combinar'
+  return 'Salário a combinar'
 }
 
 export function CandidatePage() {
@@ -80,7 +81,7 @@ export function CandidatePage() {
       setSuccess('Candidatura enviada com sucesso.')
       setApplicationsRefreshKey((key) => key + 1)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Nao foi possivel enviar a candidatura.')
+      setError(err instanceof Error ? err.message : 'Não foi possível enviar a candidatura.')
     } finally {
       setApplyingJobId(null)
     }
@@ -97,7 +98,7 @@ export function CandidatePage() {
       setCareerAIResult(response)
       setCareerAISuccess('Perfil profissional gerado com sucesso.')
     } catch (err) {
-      setCareerAIError(err instanceof Error ? err.message : 'Nao foi possivel gerar seu perfil com IA.')
+      setCareerAIError(err instanceof Error ? err.message : 'Não foi possível gerar seu perfil com IA.')
     } finally {
       setIsGeneratingProfile(false)
     }
@@ -126,7 +127,7 @@ export function CandidatePage() {
       })
       setProfileSuccess('Perfil salvo com sucesso.')
     } catch (err) {
-      setProfileError(err instanceof Error ? err.message : 'Nao foi possivel salvar seu perfil.')
+      setProfileError(err instanceof Error ? err.message : 'Não foi possível salvar seu perfil.')
     } finally {
       setIsSavingProfile(false)
     }
@@ -143,7 +144,7 @@ export function CandidatePage() {
       })
       .catch((err: unknown) => {
         if (isMounted) {
-          setError(err instanceof Error ? err.message : 'Nao foi possivel carregar as vagas.')
+          setError(err instanceof Error ? err.message : 'Não foi possível carregar as vagas.')
         }
       })
       .finally(() => {
@@ -181,7 +182,7 @@ export function CandidatePage() {
       })
       .catch((err: unknown) => {
         if (isMounted) {
-          setProfileError(err instanceof Error ? err.message : 'Nao foi possivel carregar seu perfil.')
+          setProfileError(err instanceof Error ? err.message : 'Não foi possível carregar seu perfil.')
         }
       })
       .finally(() => {
@@ -199,7 +200,7 @@ export function CandidatePage() {
     <DashboardShell active="candidate">
         <PageHeader
           eyebrow="Portal do candidato"
-          title="Vagas abertas para voce."
+          title="Vagas abertas para você."
           description={`${user?.name ? `${user.name}, ` : ''}encontre oportunidades, melhore seu perfil e envie candidaturas pela AK Talent.`}
           action={
             <Button
@@ -224,11 +225,11 @@ export function CandidatePage() {
           ) : null}
         </div>
 
-        <div className="mt-8">
+        <div id="candidaturas" className="mt-8 scroll-mt-28">
           <MyApplicationsSection refreshKey={applicationsRefreshKey} />
         </div>
 
-        <Card className="mt-10 p-6">
+        <Card id="perfil" className="mt-10 scroll-mt-28 p-6">
         <form onSubmit={handleProfileSubmit} className="grid gap-5">
           <div>
             <p className="text-sm font-black uppercase tracking-[0.22em] text-brand-700">Meu Perfil</p>
@@ -274,7 +275,7 @@ export function CandidatePage() {
               id="profile_city"
               label="Cidade"
               value={profileValues.city}
-              placeholder="Sao Paulo"
+              placeholder="São Paulo"
               onChange={(value) => updateProfileField('city', value)}
             />
             <FormField
@@ -298,7 +299,7 @@ export function CandidatePage() {
             <textarea
               id="profile_summary"
               value={profileValues.professional_summary}
-              placeholder="Resumo da sua experiencia, objetivos e diferenciais"
+              placeholder="Resumo da sua experiência, objetivos e diferenciais"
               onChange={(event) => updateProfileField('professional_summary', event.target.value)}
               rows={4}
               className="rounded-lg border border-slate-300 bg-white px-4 py-3 text-base font-medium text-ink-950 outline-none transition placeholder:text-ink-400 focus:border-brand-600 focus:ring-4 focus:ring-teal-100"
@@ -320,7 +321,7 @@ export function CandidatePage() {
           <div className="grid gap-4 md:grid-cols-3">
             <FormField
               id="profile_experience"
-              label="Anos de experiencia"
+              label="Anos de experiência"
               type="number"
               value={profileValues.experience_years}
               placeholder="4"
@@ -328,7 +329,7 @@ export function CandidatePage() {
             />
             <FormField
               id="profile_salary"
-              label="Pretensao salarial"
+              label="Pretensão salarial"
               type="number"
               value={profileValues.salary_expectation}
               placeholder="9000"
@@ -343,7 +344,7 @@ export function CandidatePage() {
                 className="h-12 rounded-lg border border-slate-300 bg-white px-4 text-base font-medium text-ink-950 outline-none transition focus:border-brand-600 focus:ring-4 focus:ring-teal-100"
               >
                 <option value="remote">Remoto</option>
-                <option value="hybrid">Hibrido</option>
+                <option value="hybrid">Híbrido</option>
                 <option value="onsite">Presencial</option>
               </select>
             </label>
@@ -359,7 +360,7 @@ export function CandidatePage() {
             />
             <FormField
               id="profile_portfolio"
-              label="Portfolio"
+              label="Portfólio"
               value={profileValues.portfolio_url}
               placeholder="https://seusite.com"
               onChange={(value) => updateProfileField('portfolio_url', value)}
@@ -382,7 +383,7 @@ export function CandidatePage() {
             <p className="text-sm font-black uppercase tracking-[0.22em] text-brand-700">Career AI</p>
             <h2 className="mt-2 text-2xl font-black text-ink-950">Monte seu perfil profissional com IA.</h2>
             <p className="mt-2 text-sm leading-6 text-ink-600">
-              Informe sua trajetoria e receba um resumo, habilidades organizadas e melhorias sugeridas.
+              Informe sua trajetória e receba um resumo, habilidades organizadas e melhorias sugeridas.
             </p>
           </div>
 
@@ -409,17 +410,17 @@ export function CandidatePage() {
               id="candidate_city"
               label="Cidade"
               value={aiValues.city}
-              placeholder="Sao Paulo, SP"
+              placeholder="São Paulo, SP"
               onChange={(value) => updateAIField('city', value)}
             />
           </div>
 
           <label htmlFor="experience" className="grid gap-2 text-sm font-bold text-ink-800">
-            Experiencia
+            Experiência
             <textarea
               id="experience"
               value={aiValues.experience}
-              placeholder="Conte sua experiencia, setores, projetos e responsabilidades"
+              placeholder="Conte sua experiência, setores, projetos e responsabilidades"
               onChange={(event) => updateAIField('experience', event.target.value)}
               required
               rows={4}
@@ -432,7 +433,7 @@ export function CandidatePage() {
             <textarea
               id="skills"
               value={aiValues.skills}
-              placeholder="Liste ferramentas, conhecimentos tecnicos e soft skills"
+              placeholder="Liste ferramentas, conhecimentos técnicos e soft skills"
               onChange={(event) => updateAIField('skills', event.target.value)}
               required
               rows={3}
@@ -450,13 +451,13 @@ export function CandidatePage() {
                 className="h-12 rounded-lg border border-slate-300 bg-white px-4 text-base font-medium text-ink-950 outline-none transition focus:border-brand-600 focus:ring-4 focus:ring-teal-100"
               >
                 <option value="remote">Remoto</option>
-                <option value="hybrid">Hibrido</option>
+                <option value="hybrid">Híbrido</option>
                 <option value="onsite">Presencial</option>
               </select>
             </label>
             <FormField
               id="salary_expectation"
-              label="Pretensao salarial"
+              label="Pretensão salarial"
               value={aiValues.salary_expectation}
               placeholder="R$ 8.000"
               onChange={(value) => updateAIField('salary_expectation', value)}
@@ -485,7 +486,7 @@ export function CandidatePage() {
         </form>
         </Card>
 
-        <div className="mt-10 grid gap-4">
+        <div id="vagas" className="mt-10 grid scroll-mt-28 gap-4">
           {isLoading ? (
             <Card className="p-6"><LoadingSpinner label="Carregando vagas..." /></Card>
           ) : null}
@@ -499,7 +500,7 @@ export function CandidatePage() {
               <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
                 <div>
                   <p className="text-sm font-black uppercase tracking-[0.18em] text-brand-700">
-                    {job.work_mode || 'Modelo nao informado'}
+                    {formatWorkMode(job.work_mode) || 'Modelo não informado'}
                   </p>
                   <h2 className="mt-3 text-2xl font-black text-ink-950">{job.title}</h2>
                   <p className="mt-3 max-w-3xl text-sm leading-6 text-ink-600">{job.description}</p>
@@ -509,7 +510,7 @@ export function CandidatePage() {
                     </p>
                   ) : null}
                   <div className="mt-5 flex flex-wrap gap-2 text-xs font-black uppercase tracking-[0.14em] text-ink-600">
-                    <span className="rounded-lg bg-slate-100 px-3 py-2">{job.location || 'Local nao informado'}</span>
+                    <span className="rounded-lg bg-slate-100 px-3 py-2">{job.location || 'Local não informado'}</span>
                     <span className="rounded-lg bg-slate-100 px-3 py-2">{formatSalary(job)}</span>
                   </div>
                 </div>

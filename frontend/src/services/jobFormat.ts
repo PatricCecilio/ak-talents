@@ -16,6 +16,19 @@ const JOB_STATUS_LABELS: Record<string, string> = {
   pending: 'Aguardando aprovação',
   approved: 'Publicada',
   hidden: 'Oculta',
+  closed: 'Encerrada',
+}
+
+const COMPANY_STATUS_LABELS: Record<string, string> = {
+  pending: 'Aguardando aprovação',
+  approved: 'Aprovada',
+  blocked: 'Bloqueada',
+}
+
+/** Portuguese label for a company account status (admin panel). */
+export function formatCompanyStatus(status: string | null | undefined): string {
+  if (!status) return ''
+  return COMPANY_STATUS_LABELS[status] ?? status
 }
 
 /** Portuguese label for a job moderation status shown to the company. */

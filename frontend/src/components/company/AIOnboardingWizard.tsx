@@ -25,7 +25,7 @@ function parseSalaryRange(value: string) {
 function workModeLabel(value: string) {
   const labels: Record<string, string> = {
     remote: 'Remoto',
-    hybrid: 'Hibrido',
+    hybrid: 'Híbrido',
     onsite: 'Presencial',
   }
 
@@ -73,7 +73,7 @@ export function AIOnboardingWizard({ onJobCreated }: AIOnboardingWizardProps) {
       setStep(4)
       setSuccess('A IA preparou uma primeira versao da sua vaga.')
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Nao foi possivel gerar a vaga com IA.')
+      setError(err instanceof Error ? err.message : 'Não foi possível gerar a vaga com IA.')
     } finally {
       setIsGenerating(false)
     }
@@ -116,9 +116,9 @@ export function AIOnboardingWizard({ onJobCreated }: AIOnboardingWizardProps) {
       })
 
       onJobCreated(createdJob)
-      setSuccess('Empresa salva e vaga publicada. Ela pode precisar de aprovacao do admin antes de aparecer para candidatos.')
+      setSuccess('Empresa salva e vaga publicada. Ela pode precisar de aprovação do admin antes de aparecer para candidatos.')
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Nao foi possivel salvar a empresa e publicar a vaga.')
+      setError(err instanceof Error ? err.message : 'Não foi possível salvar a empresa e publicar a vaga.')
     } finally {
       setIsSaving(false)
     }
@@ -146,14 +146,14 @@ export function AIOnboardingWizard({ onJobCreated }: AIOnboardingWizardProps) {
         {step === 1 ? (
           <div className="mt-4 grid gap-6">
             <div className="rounded-lg bg-slate-50 p-6">
-              <h3 className="text-2xl font-black text-ink-950">Ola, vou te ajudar a cadastrar sua empresa e criar sua primeira vaga em poucos minutos.</h3>
+              <h3 className="text-2xl font-black text-ink-950">Olá, vou te ajudar a cadastrar sua empresa e criar sua primeira vaga em poucos minutos.</h3>
               <p className="mt-3 max-w-2xl text-sm leading-6 text-ink-600">
-                Responda perguntas simples. A IA organiza o texto, melhora a vaga e deixa tudo pronto para voce revisar antes de publicar.
+                Responda perguntas simples. A IA organiza o texto, melhora a vaga e deixa tudo pronto para você revisar antes de publicar.
               </p>
             </div>
             <div>
               <Button type="button" onClick={() => setStep(2)}>
-                Comecar com IA
+                Começar com IA
               </Button>
             </div>
           </div>
@@ -174,19 +174,19 @@ export function AIOnboardingWizard({ onJobCreated }: AIOnboardingWizardProps) {
                 id="wizard_city"
                 label="Em qual cidade fica?"
                 value={companyValues.city}
-                placeholder="Sao Paulo"
+                placeholder="São Paulo"
                 onChange={(value) => updateCompanyField('city', value)}
               />
               <FormField
                 id="wizard_industry"
                 label="Qual segmento?"
                 value={companyValues.industry}
-                placeholder="Tecnologia, saude, varejo..."
+                placeholder="Tecnologia, saúde, varejo..."
                 onChange={(value) => updateCompanyField('industry', value)}
               />
               <FormField
                 id="wizard_company_size"
-                label="Quantos funcionarios possui?"
+                label="Quantos funcionários possui?"
                 value={companyValues.company_size}
                 placeholder="11-50, 51-200..."
                 onChange={(value) => updateCompanyField('company_size', value)}
@@ -217,7 +217,7 @@ export function AIOnboardingWizard({ onJobCreated }: AIOnboardingWizardProps) {
             <div className="grid gap-4 md:grid-cols-2">
               <FormField
                 id="wizard_role"
-                label="Qual profissional voce precisa contratar?"
+                label="Qual profissional você precisa contratar?"
                 value={jobValues.role}
                 placeholder="Analista de Marketing"
                 onChange={(value) => updateJobField('role', value)}
@@ -240,28 +240,28 @@ export function AIOnboardingWizard({ onJobCreated }: AIOnboardingWizardProps) {
             />
             <Textarea
               id="wizard_experience"
-              label="Precisa de experiencia?"
+              label="Precisa de experiência?"
               value={jobValues.experience}
               rows={3}
-              placeholder="Exemplo: pelo menos 2 anos na area, experiencia com atendimento..."
+              placeholder="Exemplo: pelo menos 2 anos na área, experiência com atendimento..."
               onChange={(event) => updateJobField('experience', event.target.value)}
             />
             <div className="grid gap-4 md:grid-cols-2">
               <Select
                 id="wizard_work_mode"
-                label="E presencial, hibrido ou remoto?"
+                label="É presencial, híbrido ou remoto?"
                 value={jobValues.work_mode}
                 onChange={(event) => updateJobField('work_mode', event.target.value)}
               >
                 <option value="remote">Remoto</option>
-                <option value="hybrid">Hibrido</option>
+                <option value="hybrid">Híbrido</option>
                 <option value="onsite">Presencial</option>
               </Select>
               <FormField
                 id="wizard_skills"
-                label="Quais habilidades sao importantes?"
+                label="Quais habilidades são importantes?"
                 value={jobValues.skills}
-                placeholder="Excel, comunicacao, React, vendas..."
+                placeholder="Excel, comunicação, React, vendas..."
                 onChange={(value) => updateJobField('skills', value)}
               />
             </div>
@@ -281,7 +281,7 @@ export function AIOnboardingWizard({ onJobCreated }: AIOnboardingWizardProps) {
             <div>
               <h3 className="text-xl font-black text-ink-950">Revisao inteligente</h3>
               <p className="mt-2 text-sm leading-6 text-ink-600">
-                Confira tudo antes de salvar. Depois de publicada, a vaga pode precisar de aprovacao do admin.
+                Confira tudo antes de salvar. Depois de publicada, a vaga pode precisar de aprovação do admin.
               </p>
             </div>
 
@@ -291,9 +291,9 @@ export function AIOnboardingWizard({ onJobCreated }: AIOnboardingWizardProps) {
                 <h4 className="mt-3 text-lg font-black text-ink-950">{companyValues.company_name}</h4>
                 <p className="mt-2 text-sm leading-6 text-ink-600">{companyValues.description}</p>
                 <div className="mt-4 flex flex-wrap gap-2">
-                  <Badge>{companyValues.city || 'Cidade nao informada'}</Badge>
-                  <Badge>{companyValues.industry || 'Segmento nao informado'}</Badge>
-                  <Badge>{companyValues.company_size || 'Tamanho nao informado'}</Badge>
+                  <Badge>{companyValues.city || 'Cidade não informada'}</Badge>
+                  <Badge>{companyValues.industry || 'Segmento não informado'}</Badge>
+                  <Badge>{companyValues.company_size || 'Tamanho não informado'}</Badge>
                 </div>
               </div>
 
@@ -302,16 +302,16 @@ export function AIOnboardingWizard({ onJobCreated }: AIOnboardingWizardProps) {
                 <h4 className="mt-3 text-lg font-black text-ink-950">{aiResult.optimized_title}</h4>
                 <p className="mt-2 text-sm leading-6 text-ink-600">{aiResult.job_description}</p>
                 <div className="mt-4 flex flex-wrap gap-2">
-                  <Badge>{jobValues.salary || 'Salario nao informado'}</Badge>
+                  <Badge>{jobValues.salary || 'Salário não informado'}</Badge>
                   <Badge>{workModeLabel(jobValues.work_mode)}</Badge>
-                  <Badge>{companyValues.city || 'Cidade nao informada'}</Badge>
+                  <Badge>{companyValues.city || 'Cidade não informada'}</Badge>
                 </div>
               </div>
             </div>
 
             <div className="grid gap-4 md:grid-cols-2">
               <div>
-                <h4 className="text-sm font-black uppercase tracking-[0.16em] text-ink-400">Requisitos obrigatorios</h4>
+                <h4 className="text-sm font-black uppercase tracking-[0.16em] text-ink-400">Requisitos obrigatórios</h4>
                 <ul className="mt-3 grid gap-2 text-sm leading-6 text-ink-700">
                   {aiResult.mandatory_requirements.map((item) => (
                     <li key={item} className="rounded-lg bg-slate-50 px-3 py-2">{item}</li>
@@ -319,7 +319,7 @@ export function AIOnboardingWizard({ onJobCreated }: AIOnboardingWizardProps) {
                 </ul>
               </div>
               <div>
-                <h4 className="text-sm font-black uppercase tracking-[0.16em] text-ink-400">Requisitos desejaveis</h4>
+                <h4 className="text-sm font-black uppercase tracking-[0.16em] text-ink-400">Requisitos desejáveis</h4>
                 <ul className="mt-3 grid gap-2 text-sm leading-6 text-ink-700">
                   {aiResult.desirable_requirements.map((item) => (
                     <li key={item} className="rounded-lg bg-slate-50 px-3 py-2">{item}</li>

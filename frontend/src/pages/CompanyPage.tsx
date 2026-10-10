@@ -84,9 +84,9 @@ export function CompanyPage() {
       })
       setJobs((currentJobs) => [createdJob, ...currentJobs])
       reset()
-      setSuccess('Vaga criada com sucesso. Ela pode precisar de aprovacao do admin antes de aparecer para candidatos.')
+      setSuccess('Vaga criada com sucesso. Ela pode precisar de aprovação do admin antes de aparecer para candidatos.')
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Nao foi possivel criar a vaga.')
+      setError(err instanceof Error ? err.message : 'Não foi possível criar a vaga.')
     } finally {
       setIsSubmitting(false)
     }
@@ -112,7 +112,7 @@ export function CompanyPage() {
       })
       setCompanyProfileSuccess('Perfil da empresa salvo com sucesso.')
     } catch (err) {
-      setCompanyProfileError(err instanceof Error ? err.message : 'Nao foi possivel salvar o perfil da empresa.')
+      setCompanyProfileError(err instanceof Error ? err.message : 'Não foi possível salvar o perfil da empresa.')
     } finally {
       setIsSavingCompanyProfile(false)
     }
@@ -152,7 +152,7 @@ export function CompanyPage() {
       })
       .catch((err: unknown) => {
         if (isMounted) {
-          setError(err instanceof Error ? err.message : 'Nao foi possivel carregar as vagas.')
+          setError(err instanceof Error ? err.message : 'Não foi possível carregar as vagas.')
         }
       })
       .finally(() => {
@@ -187,7 +187,7 @@ export function CompanyPage() {
       })
       .catch((err: unknown) => {
         if (isMounted) {
-          setCompanyProfileError(err instanceof Error ? err.message : 'Nao foi possivel carregar o perfil da empresa.')
+          setCompanyProfileError(err instanceof Error ? err.message : 'Não foi possível carregar o perfil da empresa.')
         }
       })
       .finally(() => {
@@ -221,11 +221,11 @@ export function CompanyPage() {
         }
       />
 
-      <div className="mt-8">
+      <div id="finalistas" className="mt-8 scroll-mt-28">
         <FinalistsSection />
       </div>
 
-      <div className="mt-10 grid gap-4 md:grid-cols-2">
+      <div id="nova-vaga" className="mt-10 grid scroll-mt-28 gap-4 md:grid-cols-2">
         <button
           type="button"
           onClick={() => setCreationMode('ai')}
@@ -236,9 +236,9 @@ export function CompanyPage() {
           }`}
         >
           <p className="text-sm font-black uppercase tracking-[0.18em] text-gold-500">Criar vaga com IA</p>
-          <h2 className="mt-2 text-xl font-black text-ink-950">Experiencia guiada</h2>
+          <h2 className="mt-2 text-xl font-black text-ink-950">Experiência guiada</h2>
           <p className="mt-2 text-sm leading-6 text-ink-600">
-            Responda perguntas simples. A IA organiza empresa, vaga, requisitos e descricao.
+            Responda perguntas simples. A IA organiza empresa, vaga, requisitos e descrição.
           </p>
         </button>
 
@@ -291,7 +291,7 @@ export function CompanyPage() {
                     />
                     <FormField
                       id="responsible_name"
-                      label="Responsavel"
+                      label="Responsável"
                       value={companyProfileValues.responsible_name}
                       placeholder="Ana Costa"
                       onChange={(value) => updateCompanyProfileField('responsible_name', value)}
@@ -310,7 +310,7 @@ export function CompanyPage() {
                       id="company_city"
                       label="Cidade"
                       value={companyProfileValues.city}
-                      placeholder="Sao Paulo"
+                      placeholder="São Paulo"
                       onChange={(value) => updateCompanyProfileField('city', value)}
                     />
                     <FormField
@@ -348,7 +348,7 @@ export function CompanyPage() {
 
                   <Textarea
                     id="company_description"
-                    label="Descricao"
+                    label="Descrição"
                     value={companyProfileValues.description}
                     placeholder="Conte sobre a empresa, cultura, produto e momento de crescimento"
                     onChange={(event) => updateCompanyProfileField('description', event.target.value)}
@@ -373,14 +373,14 @@ export function CompanyPage() {
 
                   <FormField
                     id="title"
-                    label="Titulo da vaga"
+                    label="Título da vaga"
                     value={values.title}
                     placeholder="Product Designer Senior"
                     onChange={(value) => updateField('title', value)}
                   />
                   <Textarea
                     id="description"
-                    label="Descricao da vaga"
+                    label="Descrição da vaga"
                     value={values.description}
                     placeholder="Descreva responsabilidades, contexto e impacto da vaga"
                     onChange={(event) => updateField('description', event.target.value)}
@@ -391,7 +391,7 @@ export function CompanyPage() {
                     id="requirements"
                     label="Requisitos"
                     value={values.requirements}
-                    placeholder="Liste habilidades, senioridade e requisitos obrigatorios"
+                    placeholder="Liste habilidades, senioridade e requisitos obrigatórios"
                     onChange={(event) => updateField('requirements', event.target.value)}
                     rows={4}
                   />
@@ -399,7 +399,7 @@ export function CompanyPage() {
                   <div className="grid gap-4 sm:grid-cols-2">
                     <FormField
                       id="salary_min"
-                      label="Salario minimo"
+                      label="Salário mínimo"
                       type="number"
                       value={values.salary_min}
                       placeholder="6000"
@@ -407,7 +407,7 @@ export function CompanyPage() {
                     />
                     <FormField
                       id="salary_max"
-                      label="Salario maximo"
+                      label="Salário máximo"
                       type="number"
                       value={values.salary_max}
                       placeholder="10000"
@@ -420,7 +420,7 @@ export function CompanyPage() {
                       id="location"
                       label="Cidade da vaga"
                       value={values.location}
-                      placeholder="Sao Paulo, SP"
+                      placeholder="São Paulo, SP"
                       onChange={(value) => updateField('location', value)}
                     />
                     <Select
@@ -430,7 +430,7 @@ export function CompanyPage() {
                       onChange={(event) => updateField('work_mode', event.target.value)}
                     >
                       <option value="remote">Remoto</option>
-                      <option value="hybrid">Hibrido</option>
+                      <option value="hybrid">Híbrido</option>
                       <option value="onsite">Presencial</option>
                     </Select>
                   </div>
@@ -444,7 +444,7 @@ export function CompanyPage() {
           ) : null}
         </div>
 
-        <Card className="p-6">
+        <Card id="suas-vagas" className="scroll-mt-28 p-6">
           <h2 className="text-2xl font-black text-ink-950">Suas vagas</h2>
           <p className="mt-2 text-sm leading-6 text-ink-600">
             Acompanhe a aprovação de cada vaga e os candidatos que se inscreveram nela.

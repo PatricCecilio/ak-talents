@@ -19,10 +19,12 @@ import {
   updateJobScreeningQuestions,
 } from '../services/adminService'
 import { logout } from '../services/authService'
+import { formatCompanyStatus, formatJobStatus } from '../services/jobFormat'
+import { formatScreeningStatus } from '../services/pipelineFormat'
 import type { AdminApplication, AdminCandidate, AdminCompany, AdminJob, AdminUser } from '../types/user'
 
-function StatusBadge({ status }: { status: string }) {
-  return <Badge status={status as 'pending' | 'approved' | 'blocked' | 'hidden'}>{status}</Badge>
+function StatusBadge({ status, label }: { status: string; label: string }) {
+  return <Badge status={status as 'pending' | 'approved' | 'blocked' | 'hidden' | 'closed'}>{label}</Badge>
 }
 
 export function AdminPage() {
@@ -65,7 +67,7 @@ export function AdminPage() {
       await refreshAdminData()
       setSuccess(message)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Nao foi possivel executar a acao.')
+      setError(err instanceof Error ? err.message : 'Não foi possível executar a ação.')
     } finally {
       setActionId(null)
     }
@@ -92,7 +94,7 @@ export function AdminPage() {
       }))
       setOpenScreeningJobId(jobId)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Nao foi possivel carregar a triagem.')
+      setError(err instanceof Error ? err.message : 'Não foi possível carregar a triagem.')
     } finally {
       setActionId(null)
     }
@@ -105,13 +107,13 @@ export function AdminPage() {
     try {
       const parsed = JSON.parse(screeningConfigByJobId[jobId] || '[]') as unknown
       if (!Array.isArray(parsed)) {
-        throw new Error('A configuracao precisa ser uma lista JSON de perguntas.')
+        throw new Error('A configuração precisa ser uma lista JSON de perguntas.')
       }
       await updateJobScreeningQuestions(jobId, parsed)
       setSuccess('Triagem salva para a vaga.')
       await refreshAdminData()
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Nao foi possivel salvar a triagem.')
+      setError(err instanceof Error ? err.message : 'Não foi possível salvar a triagem.')
     } finally {
       setActionId(null)
     }
@@ -138,7 +140,7 @@ export function AdminPage() {
       })
       .catch((err: unknown) => {
         if (isMounted) {
-          setError(err instanceof Error ? err.message : 'Nao foi possivel carregar o painel admin.')
+          setError(err instanceof Error ? err.message : 'Não foi possível carregar o painel admin.')
         }
       })
       .finally(() => {
@@ -153,7 +155,7 @@ export function AdminPage() {
   }, [])
 
   const summaries = [
-    { label: 'Usuarios', value: users.length },
+    { label: 'Usuários', value: users.length },
     { label: 'Empresas', value: companies.length },
     { label: 'Candidatos', value: candidates.length },
     { label: 'Vagas', value: jobs.length },
@@ -165,7 +167,7 @@ export function AdminPage() {
         <PageHeader
           eyebrow="Painel Admin"
           title="Controle interno AK Talent."
-          description="Gerencie empresas, vagas, candidatos, usuarios e candidaturas da plataforma."
+          description="Gerencie empresas, vagas, candidatos, usuários e candidaturas da plataforma."
           action={
             <Button
             type="button"
@@ -189,7 +191,7 @@ export function AdminPage() {
           ) : null}
         </div>
 
-        <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+        <div id="resumo" className="mt-10 grid scroll-mt-28 gap-4 sm:grid-cols-2 lg:grid-cols-5">
           {summaries.map((summary) => (
             <Card key={summary.label} className="p-5">
               <p className="text-sm font-black uppercase tracking-[0.16em] text-ink-400">{summary.label}</p>
@@ -207,7 +209,7 @@ export function AdminPage() {
         ) : null}
 
         <div className="mt-10 grid gap-8">
-          <Card className="p-6">
+          <Card id="empresas" className="scroll-mt-28 p-6">
             <h2 className="text-2xl font-black text-ink-950">Empresas</h2>
             <div className="mt-5 grid gap-3">
               {companies.length === 0 ? <EmptyState title="Nenhuma empresa cadastrada." /> : null}
@@ -220,10 +222,10 @@ export function AdminPage() {
                         {company.is_active === false ? <span className="ml-2 text-sm font-bold text-red-700">(desativada)</span> : null}
                       </h3>
                       <p className="mt-1 text-sm text-ink-600">{company.email}</p>
-                      <p className="mt-1 text-sm text-ink-600">{company.city || 'Cidade nao informada'}</p>
+                      <p className="mt-1 text-sm text-ink-600">{company.city || 'Cidade não informada'}</p>
                     </div>
                     <div className="flex flex-wrap items-center gap-2">
-                      <StatusBadge status={company.status} />
+                      <StatusBadge status={company.status} label={formatCompanyStatus(company.status)} />
                       <Button
                         type="button"
                         isLoading={actionId === `company-approve-${company.id}`}
@@ -271,7 +273,7 @@ export function AdminPage() {
             </div>
           </Card>
 
-          <Card className="p-6">
+          <Card id="vagas" className="scroll-mt-28 p-6">
             <h2 className="text-2xl font-black text-ink-950">Vagas</h2>
             <div className="mt-5 grid gap-3">
               {jobs.length === 0 ? <EmptyState title="Nenhuma vaga cadastrada." /> : null}
@@ -281,10 +283,10 @@ export function AdminPage() {
                     <div>
                       <h3 className="font-black text-ink-950">{job.title}</h3>
                       <p className="mt-1 text-sm text-ink-600">{job.company_name}</p>
-                      <p className="mt-1 text-sm text-ink-600">{job.location || 'Local nao informado'}</p>
+                      <p className="mt-1 text-sm text-ink-600">{job.location || 'Local não informado'}</p>
                     </div>
                     <div className="flex flex-wrap items-center gap-2">
-                      <StatusBadge status={job.status} />
+                      <StatusBadge status={job.status} label={formatJobStatus(job.status)} />
                       <Button
                         type="button"
                         isLoading={actionId === `job-approve-${job.id}`}
@@ -347,19 +349,19 @@ export function AdminPage() {
             </div>
           </Card>
 
-          <Card className="p-6">
+          <Card id="candidatos" className="scroll-mt-28 p-6">
             <h2 className="text-2xl font-black text-ink-950">Candidatos</h2>
             <div className="mt-5 grid gap-3 md:grid-cols-2">
               {candidates.length === 0 ? <EmptyState title="Nenhum candidato cadastrado." /> : null}
               {candidates.map((candidate) => (
                 <article key={candidate.id} className="rounded-lg border border-slate-200 p-4">
                   <h3 className="font-black text-ink-950">{candidate.name}</h3>
-                  <p className="mt-1 text-sm text-ink-600">{candidate.email || 'Email nao informado'}</p>
-                  <p className="mt-1 text-sm text-ink-600">{candidate.phone || 'Telefone nao informado'}</p>
+                  <p className="mt-1 text-sm text-ink-600">{candidate.email || 'E-mail não informado'}</p>
+                  <p className="mt-1 text-sm text-ink-600">{candidate.phone || 'Telefone não informado'}</p>
                   <p className="mt-1 text-sm text-ink-600">
-                    {[candidate.city, candidate.neighborhood].filter(Boolean).join(' / ') || 'Localizacao nao informada'}
+                    {[candidate.city, candidate.neighborhood].filter(Boolean).join(' / ') || 'Localização não informada'}
                   </p>
-                  <p className="mt-1 text-sm text-ink-600">{candidate.desired_role || 'Cargo nao informado'}</p>
+                  <p className="mt-1 text-sm text-ink-600">{candidate.desired_role || 'Cargo não informado'}</p>
                   {candidate.is_active === false ? <p className="mt-1 text-sm font-bold text-red-700">Desativado</p> : null}
                   <Button
                     type="button"
@@ -384,7 +386,7 @@ export function AdminPage() {
             </div>
           </Card>
 
-          <Card className="p-6">
+          <Card id="candidaturas" className="scroll-mt-28 p-6">
             <h2 className="text-2xl font-black text-ink-950">Candidaturas</h2>
             <label className="mt-3 flex w-fit items-center gap-2 text-sm font-semibold text-ink-700">
               <input
@@ -404,17 +406,17 @@ export function AdminPage() {
                 <article key={application.id} className="rounded-lg border border-slate-200 p-4">
                   <h3 className="font-black text-ink-950">{application.candidate_name}</h3>
                   <p className="mt-1 text-sm text-ink-600">{application.job_title}</p>
-                  <p className="mt-1 text-sm text-ink-600">{application.candidate_phone || 'Telefone nao informado'}</p>
+                  <p className="mt-1 text-sm text-ink-600">{application.candidate_phone || 'Telefone não informado'}</p>
                   <p className="mt-1 text-sm text-ink-600">
                     {[application.candidate_city, application.candidate_neighborhood].filter(Boolean).join(' / ') ||
-                      'Localizacao nao informada'}
+                      'Localização não informada'}
                   </p>
                   <p className="mt-1 text-sm font-bold text-ink-700">
                     Etapa: {application.stage_label ?? application.status}
                     {application.is_hidden ? <span className="ml-2 text-red-700">(oculta)</span> : null}
                   </p>
                   <p className="mt-1 text-sm font-bold text-brand-700">
-                    Triagem: {application.screening_status}
+                    Triagem: {formatScreeningStatus(application.screening_status)}
                     {application.screening_score !== null ? ` (${application.screening_score})` : ''}
                   </p>
                   <Button

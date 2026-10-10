@@ -24,7 +24,7 @@ export function installAppIntelliWidget(
   }
 
   if (!config.key) {
-    console.error('[AK Talent] VITE_APPINTELLI_WIDGET_KEY nao configurada; chat AppIntelli nao pode ser aberto.')
+    console.error('[AK Talent] VITE_APPINTELLI_WIDGET_KEY não configurada; chat AppIntelli não pode ser aberto.')
     return null
   }
 
