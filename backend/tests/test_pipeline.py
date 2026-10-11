@@ -7,7 +7,7 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
 from app.api.routes import applications, jobs, public, recruiter
-from app.core.pipeline import AK_TRANSITIONS, FILLED_JOB_NOTE, Stage
+from app.core.pipeline import AK_TRANSITIONS, CLIENT_RESPONSES, FILLED_JOB_NOTE, STAGE_LABELS, Stage
 from app.core.rate_limit import limiter
 from app.core.security import create_access_token
 from app.database.base import Base
@@ -105,7 +105,10 @@ class PipelineTestCase(unittest.TestCase):
                 self.assertEqual((entry.from_stage, entry.to_stage), (from_stage.value, to_stage.value))
                 self.assertEqual(entry.changed_by_user_id, self.users["recruiter"].id)
                 self.assertEqual(entry.changed_by_role, "recruiter")
-                self.assertEqual(entry.note, "ok")
+                if from_stage == Stage.finalist and to_stage in CLIENT_RESPONSES:
+                    self.assertEqual(entry.note, f"Resposta do cliente: {CLIENT_RESPONSES[to_stage]}. ok")
+                else:
+                    self.assertEqual(entry.note, "ok")
 
     def test_forbidden_transitions_are_refused(self) -> None:
         cases = [
@@ -113,9 +116,8 @@ class PipelineTestCase(unittest.TestCase):
             ("new", "hired"),
             ("screening", "client_approved"),
             ("hired", "rejected"),
-            # Finalist -> client decision belongs to the company, not the AK team.
-            ("finalist", "client_approved"),
-            ("finalist", "rejected"),
+            ("ak_interview", "client_approved"),
+            ("finalist", "hired"),
         ]
         for from_stage, to_stage in cases:
             application_id = self.make_application(from_stage)
@@ -138,8 +140,8 @@ class PipelineTestCase(unittest.TestCase):
 
         ok = self.move(application_id, "finalist", finalist_summary="Experiência sólida em atendimento.")
         self.assertEqual(ok.status_code, 200)
-        self.assertEqual(ok.json()["stage_label"], "Finalista (enviado ao cliente)")
-        self.assertEqual({option["value"] for option in ok.json()["allowed_next_stages"]}, {"ak_interview", "withdrawn"})
+        self.assertEqual(ok.json()["stage_label"], "Enviado ao cliente")
+        self.assertEqual({option["value"] for option in ok.json()["allowed_next_stages"]}, {"client_approved", "rejected", "ak_interview", "withdrawn"})
         with self.SessionLocal() as db:
             self.assertEqual(db.get(Application, application_id).finalist_summary, "Experiência sólida em atendimento.")
 
@@ -177,6 +179,32 @@ class PipelineTestCase(unittest.TestCase):
         self.assertEqual(self.client.get("/jobs").json(), [])
         self.assertEqual(self.client.get("/jobs/atendente").status_code, 404)
         self.assertEqual(self.stage_of(hired), "hired")
+
+    def test_ak_records_the_client_answer_with_a_required_observation(self) -> None:
+        for to_stage, verb in (("client_approved", "aprovou"), ("rejected", "recusou")):
+            with self.subTest(to_stage=to_stage):
+                application_id = self.make_application("finalist")
+                missing = self.move(application_id, to_stage, note="   ")
+                self.assertEqual(missing.status_code, 422)
+                self.assertEqual(missing.json()["detail"], "Escreva uma observação sobre a resposta do cliente.")
+                self.assertEqual(self.stage_of(application_id), "finalist")
+                self.assertEqual(self.history(application_id), [])
+
+                ok = self.move(application_id, to_stage, note="Retorno pelo WhatsApp em 11/10.")
+                self.assertEqual(ok.status_code, 200, ok.text)
+                entry = self.history(application_id)[-1]
+                self.assertEqual(entry.note, f"Resposta do cliente: {verb}. Retorno pelo WhatsApp em 11/10.")
+                self.assertEqual(entry.changed_by_role, "recruiter")
+        # After the client approved: hired, as before.
+        approved = self.make_application("finalist")
+        self.move(approved, "client_approved", note="Aprovou.")
+        self.assertEqual(self.move(approved, "hired").status_code, 200)
+
+    def test_new_labels_and_every_stored_stage_has_one(self) -> None:
+        self.assertEqual(STAGE_LABELS[Stage.ak_interview], "Entrevista AK")
+        self.assertEqual(STAGE_LABELS[Stage.finalist], "Enviado ao cliente")
+        self.assertEqual(STAGE_LABELS[Stage.client_approved], "Aprovado pelo cliente")
+        self.assertEqual(set(STAGE_LABELS), set(Stage))
 
     def test_hiring_can_keep_the_job_open_for_more_positions(self) -> None:
         response = self.move(self.make_application("client_approved", "Ana"), "hired")

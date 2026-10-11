@@ -24,7 +24,7 @@ def stage_label(value: str) -> str:
 class StageMoveRequest(BaseModel):
     to_stage: str = Field(max_length=30)
     note: str | None = Field(default=None, max_length=4000)
-    # Required when moving to "finalist": the short opinion the client company will read.
+    # Required when moving to "finalist" (Enviado ao cliente): the AK opinion that goes in the report to the client.
     finalist_summary: str | None = Field(default=None, max_length=4000)
     # Only with to_stage="hired": move every other active candidate of the job to "rejected" ("Vaga preenchida").
     close_other_active: bool = False

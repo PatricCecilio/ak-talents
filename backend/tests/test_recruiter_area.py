@@ -126,7 +126,7 @@ class RecruiterAreaTestCase(unittest.TestCase):
         finalists = self.get(f"/recruiter/jobs/{self.job.id}/applications?stage=finalist").json()["applications"]
         waiting = {card["candidate_name"]: card["waiting_client_too_long"] for card in finalists}
         self.assertEqual(waiting, {"Carla": True, "Davi": False})
-        self.assertEqual({option["value"] for option in finalists[0]["allowed_next_stages"]}, {"ak_interview", "withdrawn"})
+        self.assertEqual({option["value"] for option in finalists[0]["allowed_next_stages"]}, {"client_approved", "rejected", "ak_interview", "withdrawn"})
 
     def test_application_detail_has_everything_the_recruiter_needs(self) -> None:
         detail = self.get(f"/recruiter/applications/{self.screening.id}").json()

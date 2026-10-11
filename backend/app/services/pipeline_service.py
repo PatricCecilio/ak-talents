@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 from app.core.pipeline import (
     ACTIVE_STAGES,
     AK_TRANSITIONS,
+    CLIENT_RESPONSES,
     COMPANY_TRANSITIONS,
     FILLED_JOB_NOTE,
     STAGE_LABELS,
@@ -24,7 +25,8 @@ SCREENING_RESULT_LABELS = {
     "NOT_MATCHED": "não atende a algum requisito",
     "REVIEW": "para análise da equipe",
 }
-FINALIST_SUMMARY_REQUIRED = "Escreva um parecer curto para a empresa antes de enviar o finalista."
+FINALIST_SUMMARY_REQUIRED = "Escreva o parecer do candidato antes de marcar como enviado ao cliente."
+CLIENT_RESPONSE_NOTE_REQUIRED = "Escreva uma observação sobre a resposta do cliente."
 
 
 def _now() -> datetime:
@@ -112,6 +114,12 @@ def move_application(
         if len(summary) > MAX_NOTE_LENGTH:
             raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="O parecer está muito longo.")
         application.finalist_summary = summary
+
+    if actor.role in STAFF_ROLES and application.stage == Stage.finalist.value and to_stage in CLIENT_RESPONSES:
+        observation = (note or "").strip()
+        if not observation:
+            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=CLIENT_RESPONSE_NOTE_REQUIRED)
+        note = f"Resposta do cliente: {CLIENT_RESPONSES[to_stage]}. {observation}"
 
     if close_other_active and to_stage != Stage.hired:
         raise HTTPException(

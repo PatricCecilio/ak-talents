@@ -21,29 +21,36 @@ class Stage(str, Enum):
 # Stages where the person is still in the running (used for counts and the "vaga preenchida" bulk close).
 ACTIVE_STAGES = (Stage.new, Stage.screening, Stage.ak_interview, Stage.finalist, Stage.client_approved)
 
-# AK Talent team (admin/recruiter). Finalist -> client decision is NOT here: that belongs to the company.
+# AK Talent team (admin/recruiter). The client no longer uses the system: AK sends the report (WhatsApp) and records
+# the client's answer itself ("Enviado ao cliente" -> "Aprovado pelo cliente" or "Reprovado").
 AK_TRANSITIONS: dict[Stage, tuple[Stage, ...]] = {
     Stage.new: (Stage.screening, Stage.ak_interview, Stage.rejected, Stage.withdrawn),
     Stage.screening: (Stage.ak_interview, Stage.rejected, Stage.withdrawn),
     Stage.ak_interview: (Stage.finalist, Stage.screening, Stage.rejected, Stage.withdrawn),
-    Stage.finalist: (Stage.ak_interview, Stage.withdrawn),
+    Stage.finalist: (Stage.client_approved, Stage.rejected, Stage.ak_interview, Stage.withdrawn),
     Stage.client_approved: (Stage.hired, Stage.rejected, Stage.withdrawn),
     Stage.hired: (),
     Stage.rejected: (Stage.screening,),
     Stage.withdrawn: (Stage.screening,),
 }
 
-# The client company only decides on finalists of its own jobs.
+# Old company portal (COMPANY_PORTAL_ENABLED): the client company decided on finalists of its own jobs.
 COMPANY_TRANSITIONS: dict[Stage, tuple[Stage, ...]] = {
     Stage.finalist: (Stage.client_approved, Stage.rejected),
 }
 
-# Labels for the AK team (and history entries).
+# The client's answer, recorded by AK when leaving "Enviado ao cliente" (observation required, kept in the history).
+CLIENT_RESPONSES: dict[Stage, str] = {
+    Stage.client_approved: "aprovou",
+    Stage.rejected: "recusou",
+}
+
+# Labels for the AK team (and history entries). Stage values never change: old history keeps working.
 STAGE_LABELS: dict[Stage, str] = {
     Stage.new: "Nova",
     Stage.screening: "Em triagem",
-    Stage.ak_interview: "Entrevista com a AK",
-    Stage.finalist: "Finalista (enviado ao cliente)",
+    Stage.ak_interview: "Entrevista AK",
+    Stage.finalist: "Enviado ao cliente",
     Stage.client_approved: "Aprovado pelo cliente",
     Stage.hired: "Contratado",
     Stage.rejected: "Reprovado",
