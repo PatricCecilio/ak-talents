@@ -7,7 +7,7 @@ import { Alert, Button } from '../components/ui'
 import { useFormState } from '../hooks/useFormState'
 import { AuthLayout } from '../layouts/AuthLayout'
 import { authenticate, startSession } from '../services/authService'
-import { isGoogleLoginEnabled } from '../services/googleIdentity'
+import { isGoogleButtonAvailable, isGoogleLoginEnabled } from '../services/googleIdentity'
 import { DOOR_COPY, LOGIN_CHOOSER_PATH, decideAfterLogin, type LoginDoor } from '../services/loginDoors'
 
 const linkClass = 'font-bold text-brand-700 underline underline-offset-2 hover:text-brand-600'
@@ -102,7 +102,11 @@ export function LoginDoorPage({ door }: { door: LoginDoor }) {
           </p>
         ) : null}
         {door !== 'equipe' && isGoogleLoginEnabled() ? (
-          <p className="text-center text-xs text-ink-600">Criou a conta com o Google? Use o botão "Continuar com o Google".</p>
+          <p className="text-center text-xs text-ink-600">
+            {isGoogleButtonAvailable()
+              ? 'Criou a conta com o Google? Use o botão "Continuar com o Google".'
+              : 'Criou a conta com o Google? Por enquanto, entre pelo computador. No celular, o login com Google volta em breve.'}
+          </p>
         ) : null}
         {door !== 'equipe' ? (
           <p className="text-center text-sm">

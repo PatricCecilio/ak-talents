@@ -2,7 +2,7 @@ import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import { test } from 'node:test'
 import { ApiError } from '../src/services/api.ts'
-import { GOOGLE_IDENTITY_SCRIPT_URL, googleClientId, isGoogleLoginEnabled } from '../src/services/googleIdentity.ts'
+import { GOOGLE_IDENTITY_SCRIPT_URL, googleClientId, isGoogleLoginEnabled, isPopupUnreliable } from '../src/services/googleIdentity.ts'
 
 const root = new URL('../', import.meta.url)
 const read = (path: string) => readFileSync(new URL(path, root), 'utf8')
@@ -14,7 +14,9 @@ test('without VITE_GOOGLE_CLIENT_ID there is no Google button', () => {
   assert.equal(googleClientId({ VITE_GOOGLE_CLIENT_ID: ' 123-abc.apps.googleusercontent.com ' } as ImportMetaEnv), '123-abc.apps.googleusercontent.com')
 
   const button = read('src/components/auth/GoogleSignInButton.tsx')
-  assert.match(button, /if \(!isGoogleLoginEnabled\(\)\) return null/)
+  assert.match(button, /if \(!isGoogleButtonAvailable\(\)\) return null/)
+  // isGoogleButtonAvailable starts from isGoogleLoginEnabled: no client ID, no button anywhere.
+  assert.match(read('src/services/googleIdentity.ts'), /isGoogleButtonAvailable[^{]*\{\s*if \(!isGoogleLoginEnabled\(env\)\) return false/)
   assert.match(read('.env.example'), /VITE_GOOGLE_CLIENT_ID=""/)
 })
 
@@ -62,4 +64,22 @@ test('the consent step never widens the page nor duplicates the Google button', 
   assert.equal((button.match(/ref=\{buttonRef\}/g) ?? []).length, 1)
   // A fixed-width child (Google's button) cannot stretch the login card past the screen.
   assert.match(read('src/layouts/AuthLayout.tsx'), /grid-cols-\[minmax\(0,1fr\)\][^"]*lg:grid-cols-\[minmax\(0,0\.9fr\)_minmax\(0,1\.1fr\)\]/)
+})
+
+test('phones and tablets do not get the popup button (it hangs on a blank Google tab there)', () => {
+  const android = 'Mozilla/5.0 (Linux; Android 14; SM-A546E) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Mobile Safari/537.36'
+  const edgeAndroid = 'Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Mobile Safari/537.36 EdgA/130.0.0.0'
+  const iphone = 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Mobile/15E148 Safari/604.1'
+  const ipadOs = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Safari/605.1.15'
+  const windowsChrome = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36'
+  assert.equal(isPopupUnreliable(android), true)
+  assert.equal(isPopupUnreliable(edgeAndroid), true)
+  assert.equal(isPopupUnreliable(iphone), true)
+  assert.equal(isPopupUnreliable(ipadOs, 5), true)
+  assert.equal(isPopupUnreliable(ipadOs, 0), false) // a real Mac
+  assert.equal(isPopupUnreliable(windowsChrome), false)
+
+  const button = read('src/components/auth/GoogleSignInButton.tsx')
+  assert.match(button, /if \(!isGoogleButtonAvailable\(\)\) return null/)
+  assert.match(read('src/pages/LoginDoorPage.tsx'), /Por enquanto, entre pelo computador/)
 })

@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { Alert, Button } from '../ui'
 import { ApiError } from '../../services/api'
 import { authenticateWithGoogle, startSession } from '../../services/authService'
-import { GOOGLE_LINKED_NOTICE, googleClientId, isGoogleLoginEnabled, loadGoogleIdentity } from '../../services/googleIdentity'
+import { GOOGLE_LINKED_NOTICE, googleClientId, isGoogleButtonAvailable, loadGoogleIdentity } from '../../services/googleIdentity'
 import { decideAfterLogin } from '../../services/loginDoors'
 import { PRIVACY_POLICY_PATH } from '../../services/privacyPolicy'
 
@@ -66,7 +66,7 @@ export function GoogleSignInButton({ door, externalConsent, divider = 'below' }:
   }
 
   useEffect(() => {
-    if (!isGoogleLoginEnabled()) return
+    if (!isGoogleButtonAvailable()) return
     let active = true
     loadGoogleIdentity()
       .then((google) => {
@@ -104,7 +104,7 @@ export function GoogleSignInButton({ door, externalConsent, divider = 'below' }:
     // eslint-disable-next-line react-hooks/exhaustive-deps -- rendered once; `send` reads props through `latest`
   }, [])
 
-  if (!isGoogleLoginEnabled()) return null
+  if (!isGoogleButtonAvailable()) return null
 
   const orDivider = (
     <div className="flex items-center gap-3 text-xs font-semibold uppercase tracking-[0.14em] text-ink-400" aria-hidden="true">

@@ -12,6 +12,23 @@ export function isGoogleLoginEnabled(env: ImportMetaEnv = import.meta.env): bool
   return googleClientId(env).length > 0
 }
 
+/**
+ * Phones and tablets open Google's popup as a separate tab that never hands the result back to the site (blank page
+ * at accounts.google.com on Android Chrome and Edge). Until the redirect flow ships, the button is not shown there.
+ */
+export function isPopupUnreliable(userAgent: string, maxTouchPoints = 0): boolean {
+  if (/Android|iPhone|iPad|iPod|Mobile|Silk|Kindle/i.test(userAgent)) return true
+  // iPadOS reports itself as a Mac; touch support gives it away.
+  return /Macintosh/i.test(userAgent) && maxTouchPoints > 1
+}
+
+/** The Google button is offered only when configured and on browsers where the popup works. */
+export function isGoogleButtonAvailable(env: ImportMetaEnv = import.meta.env): boolean {
+  if (!isGoogleLoginEnabled(env)) return false
+  if (typeof navigator === 'undefined') return true
+  return !isPopupUnreliable(navigator.userAgent, navigator.maxTouchPoints)
+}
+
 interface GoogleCredentialResponse {
   credential?: string
 }
