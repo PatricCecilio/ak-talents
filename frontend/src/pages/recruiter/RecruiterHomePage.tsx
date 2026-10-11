@@ -57,7 +57,7 @@ export function RecruiterHomePage() {
       {waitingTotal > 0 ? (
         <section className="rounded-xl border border-gold-600/40 bg-gold-50 p-4 sm:p-5" aria-labelledby="waiting-title">
           <h2 id="waiting-title" className="font-semibold text-gold-800">
-            {waitingTotal === 1 ? '1 finalista aguarda' : `${waitingTotal} finalistas aguardam`} o cliente há mais de {alertDays} dias
+            {waitingTotal === 1 ? '1 candidato enviado aguarda' : `${waitingTotal} candidatos enviados aguardam`} o cliente há mais de {alertDays} dias
           </h2>
           <ul className="mt-2 grid gap-1 text-sm">
             {waitingJobs.map((job) => (
@@ -111,7 +111,7 @@ export function RecruiterHomePage() {
 
             {job.finalists_waiting > 0 ? (
               <p className="text-sm font-semibold text-gold-800">
-                {job.finalists_waiting} {job.finalists_waiting === 1 ? 'finalista aguarda' : 'finalistas aguardam'} o cliente há mais de {alertDays} dias
+                {job.finalists_waiting} {job.finalists_waiting === 1 ? 'candidato enviado aguarda' : 'candidatos enviados aguardam'} o cliente há mais de {alertDays} dias
               </p>
             ) : null}
 

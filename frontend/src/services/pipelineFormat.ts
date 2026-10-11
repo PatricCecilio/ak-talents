@@ -5,8 +5,8 @@ import type { StageValue } from '../types/pipeline'
 export const AK_STAGE_LABELS: Record<StageValue, string> = {
   new: 'Nova',
   screening: 'Em triagem',
-  ak_interview: 'Entrevista com a AK',
-  finalist: 'Finalista (enviado ao cliente)',
+  ak_interview: 'Entrevista AK',
+  finalist: 'Enviado ao cliente',
   client_approved: 'Aprovado pelo cliente',
   hired: 'Contratado',
   rejected: 'Reprovado',
@@ -18,11 +18,27 @@ export const STAGE_SHORT_LABELS: Record<StageValue, string> = {
   new: 'Novas',
   screening: 'Em triagem',
   ak_interview: 'Entrevista AK',
-  finalist: 'Finalistas',
+  finalist: 'Enviados ao cliente',
   client_approved: 'Aprovados',
   hired: 'Contratados',
   rejected: 'Reprovados',
   withdrawn: 'Desistiram',
+}
+
+// The client no longer uses the system: AK records the client's answer when leaving "Enviado ao cliente".
+// Mirrors CLIENT_RESPONSES in backend/app/core/pipeline.py (the API requires the observation).
+const CLIENT_RESPONSE_LABELS: Partial<Record<StageValue, string>> = {
+  client_approved: 'Cliente aprovou',
+  rejected: 'Cliente recusou',
+}
+
+export function isClientResponse(currentStage: StageValue | undefined, toStage: StageValue | ''): boolean {
+  return currentStage === 'finalist' && toStage !== '' && toStage in CLIENT_RESPONSE_LABELS
+}
+
+/** Option text in "Mover para": from "Enviado ao cliente", approve/reject read as the client's answer. */
+export function moveOptionLabel(currentStage: StageValue | undefined, option: { value: StageValue; label: string }): string {
+  return isClientResponse(currentStage, option.value) ? (CLIENT_RESPONSE_LABELS[option.value] ?? option.label) : option.label
 }
 
 export const PIPELINE_COLUMNS: StageValue[] = ['new', 'screening', 'ak_interview', 'finalist', 'client_approved', 'hired']
@@ -73,8 +89,8 @@ export function formatDaysAgo(isoDate: string, now: Date = new Date()): string {
 /** Finalist card: how long the client company has had the candidate to decide. */
 export function finalistWaitingLabel(sinceIso: string, now: Date = new Date()): string {
   const days = calendarDaysSince(sinceIso, now)
-  if (days <= 0) return 'Aguardando a empresa desde hoje'
-  return days === 1 ? 'Aguardando a empresa há 1 dia' : `Aguardando a empresa há ${days} dias`
+  if (days <= 0) return 'Aguardando o cliente desde hoje'
+  return days === 1 ? 'Aguardando o cliente há 1 dia' : `Aguardando o cliente há ${days} dias`
 }
 
 export function formatDateTime(isoDate: string): string {

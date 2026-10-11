@@ -15,6 +15,7 @@ const ROLE_LABELS: Record<string, string> = {
   system: 'Sistema',
   admin: 'Admin',
   recruiter: 'Recrutador',
+  // Old company portal decisions stay in the history.
   company: 'Empresa cliente',
 }
 
@@ -174,7 +175,7 @@ export function RecruiterApplicationPage() {
       </div>
 
       {detail.finalist_summary ? (
-        <Section title="Parecer enviado à empresa">
+        <Section title="Parecer enviado ao cliente">
           <p className="whitespace-pre-line text-sm leading-6 text-ink-800">{detail.finalist_summary}</p>
         </Section>
       ) : null}

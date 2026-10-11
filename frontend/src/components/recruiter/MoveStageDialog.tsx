@@ -1,6 +1,7 @@
 import type { FormEvent } from 'react'
 import { useEffect, useRef, useState } from 'react'
 import { hireDefaults, otherActivePhrase } from '../../services/hireDefaults'
+import { isClientResponse, moveOptionLabel } from '../../services/pipelineFormat'
 import { moveApplication } from '../../services/pipelineService'
 import type { StageMoveResponse, StageOption, StageValue } from '../../types/pipeline'
 import { BrandButton } from '../brand/BrandButton'
@@ -12,7 +13,7 @@ interface MoveStageDialogProps {
   candidateName: string
   currentLabel: string
   currentStage?: StageValue
-  /** Client company: shown while a finalist waits for its decision. */
+  /** Client company: shown while AK waits for its answer to the report. */
   companyName?: string
   options: StageOption[]
   /** Other active candidates of the same job; offered to close as "Vaga preenchida" when hiring. */
@@ -58,6 +59,7 @@ export function MoveStageDialog({
 
   const isFinalist = toStage === 'finalist'
   const isHiring = toStage === 'hired'
+  const clientResponse = isClientResponse(currentStage, toStage)
   const canCloseOthers = isHiring && otherActiveCount > 0
   const willCloseOthers = canCloseOthers && closeOthers
   const willCloseJob = isHiring && closeJob
@@ -91,7 +93,11 @@ export function MoveStageDialog({
       return
     }
     if (isFinalist && !finalistSummary.trim()) {
-      setError('Escreva um parecer curto para a empresa antes de enviar o finalista.')
+      setError('Escreva o parecer do candidato antes de marcar como enviado ao cliente.')
+      return
+    }
+    if (clientResponse && !note.trim()) {
+      setError('Escreva uma observação sobre a resposta do cliente.')
       return
     }
     if ((willCloseOthers || willCloseJob) && !confirming) {
@@ -117,7 +123,8 @@ export function MoveStageDialog({
         <p className="mt-1 text-sm text-ink-600">Etapa atual: {currentLabel}</p>
         {currentStage === 'finalist' ? (
           <BrandNotice tone="info" className="mt-3">
-            Aguardando a decisão da empresa{companyName ? <strong> {companyName}</strong> : null}.
+            Aguardando a resposta do cliente{companyName ? <strong> {companyName}</strong> : null}. Quando ele responder,
+            registre aqui.
           </BrandNotice>
         ) : null}
 
@@ -168,15 +175,15 @@ export function MoveStageDialog({
                     onChange={() => setToStage(option.value)}
                     className="h-4 w-4"
                   />
-                  {option.label}
+                  {moveOptionLabel(currentStage, option)}
                 </label>
               ))}
             </fieldset>
 
             {isFinalist ? (
               <label className={brandLabel}>
-                Parecer para a empresa (obrigatório)
-                <span className="text-xs font-normal text-ink-600">A empresa cliente vai ler este texto. Seja breve e objetivo.</span>
+                Parecer do candidato (obrigatório)
+                <span className="text-xs font-normal text-ink-600">Vai no relatório enviado ao cliente. Seja breve e objetivo.</span>
                 <textarea
                   className={`${brandInput} min-h-28 py-3`}
                   value={finalistSummary}
@@ -213,7 +220,10 @@ export function MoveStageDialog({
             ) : null}
 
             <label className={brandLabel}>
-              Observação (opcional, só a equipe AK vê)
+              {clientResponse ? 'O que o cliente respondeu (obrigatório)' : 'Observação (opcional, só a equipe AK vê)'}
+              {clientResponse ? (
+                <span className="text-xs font-normal text-ink-600">Fica no histórico da candidatura. Ex.: retorno pelo WhatsApp e o motivo.</span>
+              ) : null}
               <textarea className={`${brandInput} min-h-20 py-3`} value={note} maxLength={2000} onChange={(event) => setNote(event.target.value)} />
             </label>
 

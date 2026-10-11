@@ -9,11 +9,34 @@ import {
   finalistWaitingLabel,
   formatDaysAgo,
   formatScreeningStatus,
+  isClientResponse,
+  moveOptionLabel,
   whatsappLink,
 } from '../src/services/pipelineFormat.ts'
 
 const root = new URL('../', import.meta.url)
 const read = (path: string) => readFileSync(new URL(path, root), 'utf8')
+
+test('from "Enviado ao cliente", AK records the client answer with a required observation', () => {
+  assert.equal(AK_STAGE_LABELS.finalist, 'Enviado ao cliente')
+  assert.equal(AK_STAGE_LABELS.ak_interview, 'Entrevista AK')
+  assert.equal(isClientResponse('finalist', 'client_approved'), true)
+  assert.equal(isClientResponse('finalist', 'rejected'), true)
+  assert.equal(isClientResponse('finalist', 'ak_interview'), false)
+  assert.equal(isClientResponse('screening', 'rejected'), false)
+  assert.equal(isClientResponse('finalist', ''), false)
+  assert.equal(moveOptionLabel('finalist', { value: 'client_approved', label: 'Aprovado pelo cliente' }), 'Cliente aprovou')
+  assert.equal(moveOptionLabel('finalist', { value: 'rejected', label: 'Reprovado' }), 'Cliente recusou')
+  assert.equal(moveOptionLabel('new', { value: 'rejected', label: 'Reprovado' }), 'Reprovado')
+
+  const dialog = read('src/components/recruiter/MoveStageDialog.tsx')
+  assert.match(dialog, /if \(clientResponse && !note\.trim\(\)\) \{/)
+  assert.match(dialog, /O que o cliente respondeu \(obrigatório\)/)
+  assert.match(dialog, /Aguardando a resposta do cliente/)
+  assert.doesNotMatch(dialog, /decisão da empresa/)
+  // The backend records the same answer in the history.
+  assert.match(read('../backend/app/core/pipeline.py'), /Stage\.client_approved: "aprovou",\s*Stage\.rejected: "recusou",/)
+})
 
 test('stage labels on screen match the backend pipeline labels', () => {
   const backend = read('../backend/app/core/pipeline.py')
@@ -60,7 +83,7 @@ test('pipeline: columns on desktop, stage filter list on phones, "Mover para…"
 test('move dialog: finalist needs a summary, hiring can close the others after confirmation', () => {
   const dialog = read('src/components/recruiter/MoveStageDialog.tsx')
   assert.match(dialog, /finalist_summary: isFinalist \? finalistSummary : undefined/)
-  assert.match(dialog, /Parecer para a empresa \(obrigatório\)/)
+  assert.match(dialog, /Parecer do candidato \(obrigatório\)/)
   assert.match(dialog, /const isHiring = toStage === 'hired'/)
   assert.match(dialog, /isHiring && otherActiveCount > 0/)
   assert.match(dialog, /Sim, confirmar/)
@@ -114,9 +137,9 @@ test('the hire dialog uses those defaults and asks what to do with the job', () 
 
 test('finalists show how long the client company has been deciding', () => {
   const now = new Date(2026, 9, 10, 15, 0)
-  assert.equal(finalistWaitingLabel(new Date(2026, 9, 10, 9, 0).toISOString(), now), 'Aguardando a empresa desde hoje')
-  assert.equal(finalistWaitingLabel(new Date(2026, 9, 9, 9, 0).toISOString(), now), 'Aguardando a empresa há 1 dia')
-  assert.equal(finalistWaitingLabel(new Date(2026, 9, 6, 9, 0).toISOString(), now), 'Aguardando a empresa há 4 dias')
+  assert.equal(finalistWaitingLabel(new Date(2026, 9, 10, 9, 0).toISOString(), now), 'Aguardando o cliente desde hoje')
+  assert.equal(finalistWaitingLabel(new Date(2026, 9, 9, 9, 0).toISOString(), now), 'Aguardando o cliente há 1 dia')
+  assert.equal(finalistWaitingLabel(new Date(2026, 9, 6, 9, 0).toISOString(), now), 'Aguardando o cliente há 4 dias')
 
   const page = read('src/pages/recruiter/RecruiterJobPage.tsx')
   assert.match(page, /card\.stage === 'finalist' \? \(/)
@@ -125,7 +148,7 @@ test('finalists show how long the client company has been deciding', () => {
 
   const dialog = read('src/components/recruiter/MoveStageDialog.tsx')
   assert.match(dialog, /currentStage === 'finalist' \? \(/)
-  assert.match(dialog, /Aguardando a decisão da empresa\{companyName \? <strong> \{companyName\}<\/strong> : null\}/)
+  assert.match(dialog, /Aguardando a resposta do cliente\{companyName \? <strong> \{companyName\}<\/strong> : null\}/)
   assert.match(page, /companyName=\{job\.company_name\}/)
   assert.match(read('src/pages/recruiter/RecruiterApplicationPage.tsx'), /companyName=\{detail\.company_name\}/)
 })
