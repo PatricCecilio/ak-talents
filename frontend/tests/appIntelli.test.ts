@@ -99,13 +99,8 @@ test('section and final CTAs carry their own contexts', () => {
     journeyStage: 'decision',
     ctaLabel: 'Conversar com a AK Talent',
   })
-  assert.deepEqual(appIntelliCtas.floatingChat, {
-    intentHint: 'general_contact',
-    entryPoint: 'floating_chat',
-    pageSection: 'floating_chat',
-    journeyStage: 'consideration',
-    ctaLabel: 'Conversar com a AK Talent',
-  })
+  // The site's own floating chat button is gone: the AppIntelli widget launcher is the only floating entry.
+  assert.equal('floatingChat' in appIntelliCtas, false)
 })
 
 test('T14: early click before widget.js loads waits, then opens once with the latest click context', async () => {
@@ -187,7 +182,8 @@ test('CTAs are real buttons wired to the expected contexts; each landing CTA app
   const count = (source: string, id: string) => (source.match(new RegExp(`cta="${id}"`, 'g')) ?? []).length
   assert.equal(count(homePage, 'heroDemo'), 1)
   assert.equal(count(homePage, 'finalDemo'), 1)
-  assert.equal(count(homePage, 'floatingChat'), 1)
+  assert.equal(count(homePage, 'floatingChat'), 0)
+  assert.doesNotMatch(homePage, /FloatingChatPrompt/)
   assert.equal(count(header, 'headerContact'), 0)
 })
 

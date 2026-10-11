@@ -53,13 +53,6 @@ export const appIntelliCtas = {
     journeyStage: 'decision',
     ctaLabel: 'Conversar com a AK Talent',
   },
-  floatingChat: {
-    intentHint: 'general_contact',
-    entryPoint: 'floating_chat',
-    pageSection: 'floating_chat',
-    journeyStage: 'consideration',
-    ctaLabel: 'Conversar com a AK Talent',
-  },
 } as const satisfies Record<string, AppIntelliCta>
 
 export type AppIntelliCtaId = keyof typeof appIntelliCtas

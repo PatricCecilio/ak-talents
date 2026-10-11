@@ -7,7 +7,6 @@ import { AppIntelliButton } from '../components/AppIntelliButton'
 import { Container } from '../components/Container'
 import { JobsUnavailableNotice } from '../components/JobsUnavailableNotice'
 import { LoadingHint } from '../components/JobsLoading'
-import { useScrolledPast } from '../hooks/useScrolledPast'
 import { resolveFeaturedJobsMode, type FeaturedJobsMode } from '../services/featuredJobs'
 import { formatWorkMode } from '../services/jobFormat'
 import { getJobs } from '../services/jobService'
@@ -421,54 +420,6 @@ function useFeaturedJobs(allowDemoJobs: boolean = import.meta.env.DEV) {
   return { jobs, isLoading, mode }
 }
 
-// True while the final CTA band or the footer is on screen.
-function useClosingAreaInView() {
-  const [inView, setInView] = useState(false)
-
-  useEffect(() => {
-    const targets = [document.getElementById('conversa'), document.querySelector('footer')].filter(
-      (el): el is HTMLElement => el !== null,
-    )
-    if (!targets.length || typeof IntersectionObserver === 'undefined') return
-
-    const visibleTargets = new Set<Element>()
-    const observer = new IntersectionObserver((entries) => {
-      for (const entry of entries) {
-        if (entry.isIntersecting) visibleTargets.add(entry.target)
-        else visibleTargets.delete(entry.target)
-      }
-      setInView(visibleTargets.size > 0)
-    })
-    targets.forEach((el) => observer.observe(el))
-    return () => observer.disconnect()
-  }, [])
-
-  return inView
-}
-
-// Compact launcher: appears only after the hero CTA has scrolled away and hides again over the
-// final CTA/footer, so it never competes with another chat button or covers content.
-// On phones it collapses to an icon.
-function FloatingChatPrompt() {
-  const closingAreaInView = useClosingAreaInView()
-  const visible = useScrolledPast(560) && !closingAreaInView
-
-  return (
-    <div
-      className={`fixed bottom-4 right-4 z-30 transition duration-300 sm:bottom-6 sm:right-6 ${
-        visible ? 'translate-y-0 opacity-100' : 'pointer-events-none translate-y-3 opacity-0'
-      }`}
-    >
-      <AppIntelliButton
-        cta="floatingChat"
-        leading={<Icon name="chat" className="h-5 w-5 shrink-0" />}
-        labelClassName="sr-only sm:not-sr-only"
-        className="inline-flex h-14 w-14 items-center justify-center gap-2 rounded-full bg-gold-700 text-sm font-semibold text-white shadow-xl shadow-ink-950/25 ring-4 ring-white transition hover:-translate-y-0.5 hover:bg-gold-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold-600 sm:h-12 sm:w-auto sm:px-5"
-      />
-    </div>
-  )
-}
-
 function FeaturedJobsSection() {
   const { jobs, isLoading, mode } = useFeaturedJobs()
   const showUnavailable = !isLoading && mode === 'unavailable'
@@ -743,7 +694,6 @@ function MarketingLanding({ campaign = false }: MarketingLandingProps) {
         </Container>
       </section>
 
-      <FloatingChatPrompt />
     </div>
   )
 }

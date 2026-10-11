@@ -49,7 +49,7 @@ test('commercial conversion is AppIntelli-first; WhatsApp only as fallback when 
 
   assert.match(source, /cta="heroDemo"/)
   assert.match(source, /cta="finalDemo"/)
-  assert.match(source, /cta="floatingChat"/)
+  assert.doesNotMatch(source, /cta="floatingChat"/)
   assert.match(source, /heroOfficeImage/)
   assert.match(source, /videoThumbnailImage/)
   assert.match(source, /enterpriseImage/)
