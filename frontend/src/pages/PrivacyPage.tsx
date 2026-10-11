@@ -60,8 +60,8 @@ export function PrivacyPage() {
 
         <Section title="2. Quais dados coletamos">
           <p>
-            <strong>Candidatos que se candidatam pelo site:</strong> nome completo, e-mail, telefone/WhatsApp, cidade e
-            bairro, as respostas da triagem da vaga e as mensagens que você escrever no chat.
+            <strong>Candidatos que se candidatam pelo site:</strong> nome completo, e-mail, telefone/WhatsApp, cidade e, se
+            informado, bairro, as respostas da triagem da vaga e as mensagens que você escrever no chat.
           </p>
           <p>
             <strong>Candidatos com conta:</strong> nome, e-mail e senha (guardada de forma criptografada), e os dados que
@@ -71,6 +71,12 @@ export function PrivacyPage() {
           <p>
             <strong>Empresas:</strong> nome da empresa, nome do responsável, e-mail, telefone, cidade, estado, segmento,
             porte, site, descrição e os dados das vagas publicadas.
+          </p>
+          <p>
+            <strong>Quem entra com o Google:</strong> recebemos do Google apenas seu nome, seu e-mail (já verificado pelo
+            Google) e um identificador da sua conta Google, usados para criar sua conta e para você entrar. Não recebemos sua
+            senha do Google nem acesso a outros dados da sua conta. Se você já tinha conta aqui com o mesmo e-mail, ela passa
+            a entrar com o Google, e a senha antiga deixa de funcionar.
           </p>
           <p>
             <strong>Dados técnicos:</strong> o endereço IP de quem acessa, usado para segurança (por exemplo, para limitar
@@ -122,6 +128,10 @@ export function PrivacyPage() {
               <>
                 <strong>Hospedagem e infraestrutura:</strong> Vercel (site e servidor da plataforma) e Neon (banco de dados). O site também
                 carrega fontes do Google Fonts, o que faz seu navegador se conectar aos servidores do Google.
+              </>,
+              <>
+                <strong>Google:</strong> quando você escolhe "Continuar com o Google", o login acontece no Google, que nos
+                confirma quem você é. Não enviamos ao Google seus dados de candidatura.
               </>,
               <>
                 <strong>Autoridades públicas:</strong> somente quando a lei ou uma ordem judicial exigir.

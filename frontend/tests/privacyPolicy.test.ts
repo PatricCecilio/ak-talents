@@ -42,6 +42,8 @@ test('privacy page is routed and covers the required topics, with the real compa
     'Por quanto tempo guardamos',
     'Seus direitos',
     'Como exercer seus direitos',
+    'Quem entra com o Google',
+    'Continuar com o Google',
   ]) {
     assert.ok(page.includes(topic), `missing topic ${topic}`)
   }
