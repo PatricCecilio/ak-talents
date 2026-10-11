@@ -1,5 +1,6 @@
 import type { PropsWithChildren } from 'react'
 import { Container } from '../components/Container'
+import { LoginNotice } from '../components/LoginNotice'
 import { getCurrentUser } from '../services/authService'
 
 interface DashboardShellProps extends PropsWithChildren {
@@ -60,7 +61,10 @@ export function DashboardShell({ active, children }: DashboardShellProps) {
             </nav>
           </aside>
 
-          <div className="min-w-0">{children}</div>
+          <div className="min-w-0">
+            <LoginNotice />
+            {children}
+          </div>
         </div>
       </Container>
     </section>

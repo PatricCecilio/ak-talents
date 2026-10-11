@@ -13,6 +13,7 @@ import { generateCandidateProfile } from '../services/aiService'
 import { getCurrentUser, logout } from '../services/authService'
 import { formatWorkMode } from '../services/jobFormat'
 import { getJobs } from '../services/jobService'
+import { LOGIN_CHOOSER_PATH } from '../services/loginDoors'
 import { getCandidateProfile, updateCandidateProfile } from '../services/profileService'
 import type { CandidateProfileAIResponse } from '../types/ai'
 import type { Job } from '../types/user'
@@ -211,7 +212,7 @@ export function CandidatePage() {
               variant="secondary"
             onClick={() => {
               logout()
-              window.location.href = '/login'
+              window.location.href = LOGIN_CHOOSER_PATH
             }}
           >
             Sair

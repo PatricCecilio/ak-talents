@@ -14,6 +14,7 @@ import { companySizeOptions, toCompanyProfilePayload, validateCompanyProfile } f
 import { CONTRACT_TYPE_OPTIONS, formatJobStatus, formatWorkMode } from '../services/jobFormat'
 import { createJob, getJobMatches, getMyCompanyJobs } from '../services/jobService'
 import { getSalaryRangeError, JOB_SENT_MESSAGE } from '../services/jobValidation'
+import { LOGIN_CHOOSER_PATH } from '../services/loginDoors'
 import { getCompanyProfile, updateCompanyProfile } from '../services/profileService'
 import type { CandidateMatch, ContractType, Job } from '../types/user'
 
@@ -221,7 +222,7 @@ export function CompanyPage() {
             variant="secondary"
             onClick={() => {
               logout()
-              window.location.href = '/login'
+              window.location.href = LOGIN_CHOOSER_PATH
             }}
           >
             Sair

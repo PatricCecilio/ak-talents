@@ -20,6 +20,7 @@ import {
 } from '../services/adminService'
 import { logout } from '../services/authService'
 import { formatCompanyStatus, formatJobStatus } from '../services/jobFormat'
+import { STAFF_LOGIN_PATH } from '../services/loginDoors'
 import { formatScreeningStatus } from '../services/pipelineFormat'
 import type { AdminApplication, AdminCandidate, AdminCompany, AdminJob, AdminUser } from '../types/user'
 
@@ -174,7 +175,7 @@ export function AdminPage() {
               variant="secondary"
             onClick={() => {
               logout()
-              window.location.href = '/login'
+              window.location.href = STAFF_LOGIN_PATH
             }}
           >
             Sair

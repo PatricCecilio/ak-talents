@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { useScrolledPast } from '../hooks/useScrolledPast'
 import { getCurrentUser, logout } from '../services/authService'
+import { LOGIN_CHOOSER_PATH } from '../services/loginDoors'
 import { firstName, roleHome } from '../services/roleHome'
 import { Container } from './Container'
 import { Logo } from './Logo'
@@ -91,7 +92,7 @@ export function Header() {
               </button>
             </>
           ) : (
-            <a href="/login" className={outlineButton}>
+            <a href={LOGIN_CHOOSER_PATH} className={outlineButton}>
               Entrar
             </a>
           )}
@@ -138,7 +139,7 @@ export function Header() {
                   </button>
                 </>
               ) : (
-                <a href="/login" onClick={closeMenu} className={`${solidButton} min-h-12`}>
+                <a href={LOGIN_CHOOSER_PATH} onClick={closeMenu} className={`${solidButton} min-h-12`}>
                   Entrar
                 </a>
               )}

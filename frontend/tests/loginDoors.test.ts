@@ -101,3 +101,33 @@ test('sign-up preselects the account type from ?tipo=', () => {
   assert.match(register, /role: roleFromQuery\(searchParams\.get\('tipo'\)\)/)
   assert.match(register, /return tipo === 'empresa' \? 'company' : 'candidate'/)
 })
+
+test('private areas send signed-out visitors straight to the right door', () => {
+  const privateRoute = read('src/components/PrivateRoute.tsx')
+  assert.match(privateRoute, /<Navigate to=\{doorPathForRole\(allowedRoles\?\.\[0\]\)\} replace state=\{\{ from: location\.pathname \}\} \/>/)
+  // The first allowed role of each private area decides the door.
+  const routes = read('src/routes/AppRoutes.tsx')
+  assert.match(routes, /allowedRoles=\{\['admin', 'recruiter'\]\}/)
+  assert.equal(doorPathForRole('admin'), '/equipe')
+  assert.match(routes, /allowedRoles=\{\['company'\]\}/)
+  assert.equal(doorPathForRole('company'), '/entrar/empresa')
+  assert.match(routes, /allowedRoles=\{\['candidate'\]\}/)
+  assert.equal(doorPathForRole('candidate'), '/entrar/candidato')
+  assert.equal(doorPathForRole(undefined), '/entrar/candidato')
+})
+
+test('"Entrar" goes to /entrar; signing out returns to the right login; wrong-door notice on the panels', () => {
+  assert.equal((read('src/components/Header.tsx').match(/href=\{LOGIN_CHOOSER_PATH\}/g) ?? []).length, 2)
+  assert.doesNotMatch(read('src/components/Header.tsx'), /href="\/login"/)
+  assert.match(read('src/layouts/WorkspaceLayout.tsx'), /window\.location\.href = STAFF_LOGIN_PATH/)
+  assert.match(read('src/pages/AdminPage.tsx'), /window\.location\.href = STAFF_LOGIN_PATH/)
+  assert.match(read('src/pages/CandidatePage.tsx'), /window\.location\.href = LOGIN_CHOOSER_PATH/)
+  assert.match(read('src/pages/CompanyPage.tsx'), /window\.location\.href = LOGIN_CHOOSER_PATH/)
+
+  assert.match(read('src/layouts/DashboardShell.tsx'), /<LoginNotice \/>/)
+  assert.match(read('src/layouts/WorkspaceLayout.tsx'), /<LoginNotice \/>\s*<Outlet \/>/)
+  const notice = read('src/components/LoginNotice.tsx')
+  assert.match(notice, /state\?\.loginNotice/)
+  assert.match(notice, /aria-label="Fechar aviso"/)
+  assert.match(read('src/pages/LoginDoorPage.tsx'), /navigate\(decision\.to, decision\.notice \? \{ state: \{ loginNotice: decision\.notice \} \} : undefined\)/)
+})

@@ -1,6 +1,8 @@
 import { NavLink, Outlet } from 'react-router-dom'
+import { LoginNotice } from '../components/LoginNotice'
 import { Logo } from '../components/Logo'
 import { getCurrentUser, logout } from '../services/authService'
+import { STAFF_LOGIN_PATH } from '../services/loginDoors'
 
 // Internal AK Talent area (recruiters and admin): landing look, no public menu, phone first.
 export function WorkspaceLayout() {
@@ -44,7 +46,7 @@ export function WorkspaceLayout() {
             type="button"
             onClick={() => {
               logout()
-              window.location.href = '/login'
+              window.location.href = STAFF_LOGIN_PATH
             }}
             className="rounded-lg px-3 py-2 text-sm font-semibold text-ink-700 transition hover:bg-slate-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold-600"
           >
@@ -54,6 +56,7 @@ export function WorkspaceLayout() {
       </header>
 
       <main className="mx-auto max-w-6xl px-4 py-6 sm:px-6 sm:py-8">
+        <LoginNotice />
         <Outlet />
       </main>
     </div>

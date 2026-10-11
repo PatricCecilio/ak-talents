@@ -195,7 +195,7 @@ test('T13: menu stays navigation (anchor links, no chat buttons inside the nav)'
   for (const href of ['/solucoes/recrutamento', '/#plataforma', '/vagas', '/#como-funciona', '/#sobre']) {
     assert.match(header, new RegExp(`href: '${href}'`))
   }
-  assert.match(header, /href="\/login"/)
+  assert.match(header, /href=\{LOGIN_CHOOSER_PATH\}/)
   assert.match(header, /Entrar/)
 })
 
@@ -221,7 +221,7 @@ test('AppIntelli widget only on commercial pages', () => {
   for (const path of ['/', '/solucoes/recrutamento', '/solucoes/recrutamento/']) {
     assert.equal(isCommercialPath(path), true, path)
   }
-  for (const path of ['/vagas', '/vagas/atendente', '/login', '/register', '/privacidade', '/admin', '/recrutador', '/recrutador/vagas/1', '/company', '/candidate', '/qualquer']) {
+  for (const path of ['/vagas', '/vagas/atendente', '/login', '/entrar', '/entrar/empresa', '/equipe', '/register', '/privacidade', '/admin', '/recrutador', '/recrutador/vagas/1', '/company', '/candidate', '/qualquer']) {
     assert.equal(isCommercialPath(path), false, path)
   }
   const gate = read('src/components/AppIntelliRouteGate.tsx')
