@@ -23,7 +23,7 @@
       "destination": "/api/vaga-preview?slug=:slug"
     },
     {
-      "source": "/(.*)",
+      "source": "/((?!api/).*)",
       "destination": "/index.html"
     }
   ]
