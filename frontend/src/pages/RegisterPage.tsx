@@ -1,12 +1,13 @@
 import type { FormEvent } from 'react'
 import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { FormField } from '../components/FormField'
 import { Alert, Button } from '../components/ui'
 import { useFormState } from '../hooks/useFormState'
 import { AuthLayout } from '../layouts/AuthLayout'
 import { registerUser } from '../services/authService'
 import { PRIVACY_POLICY_PATH } from '../services/privacyPolicy'
+import { doorPathForRole } from '../services/loginDoors'
 import { roleHome } from '../services/roleHome'
 import type { UserRole } from '../types/user'
 
@@ -23,13 +24,19 @@ const roles: Array<{ value: UserRole; label: string; description: string }> = [
   },
 ]
 
+// /register?tipo=empresa (or candidato) comes from the login doors with the right option already selected.
+function roleFromQuery(tipo: string | null): UserRole {
+  return tipo === 'empresa' ? 'company' : 'candidate'
+}
+
 export function RegisterPage() {
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
   const { values, updateField } = useFormState({
     name: '',
     email: '',
     password: '',
-    role: 'candidate',
+    role: roleFromQuery(searchParams.get('tipo')),
   })
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
@@ -158,7 +165,7 @@ export function RegisterPage() {
 
         <p className="text-center text-sm text-ink-600">
           Já tem conta?{' '}
-          <Link to="/login" className="font-bold text-brand-700 underline underline-offset-2 hover:text-brand-600">
+          <Link to={doorPathForRole(values.role)} className="font-bold text-brand-700 underline underline-offset-2 hover:text-brand-600">
             Entrar
           </Link>
         </p>

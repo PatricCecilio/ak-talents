@@ -1,4 +1,4 @@
-import { BrowserRouter, Route, Routes } from 'react-router-dom'
+import { BrowserRouter, Navigate, Route, Routes, useLocation } from 'react-router-dom'
 import { MainLayout } from '../layouts/MainLayout'
 import { WorkspaceLayout } from '../layouts/WorkspaceLayout'
 import { PrivateRoute } from '../components/PrivateRoute'
@@ -10,13 +10,20 @@ import { AdminPage } from '../pages/AdminPage'
 import { HomePage, RecruitmentSolutionPage } from '../pages/HomePage'
 import { JobDetailPage } from '../pages/JobDetailPage'
 import { JobsPage } from '../pages/JobsPage'
-import { LoginPage } from '../pages/LoginPage'
+import { LoginChooserPage } from '../pages/LoginChooserPage'
+import { LoginDoorPage } from '../pages/LoginDoorPage'
 import { NotFoundPage } from '../pages/NotFoundPage'
 import { PrivacyPage } from '../pages/PrivacyPage'
 import { RegisterPage } from '../pages/RegisterPage'
 import { RecruiterApplicationPage } from '../pages/recruiter/RecruiterApplicationPage'
 import { RecruiterHomePage } from '../pages/recruiter/RecruiterHomePage'
 import { RecruiterJobPage } from '../pages/recruiter/RecruiterJobPage'
+
+// Old /login links keep working (with whatever state they carried).
+function LegacyLoginRedirect() {
+  const { state } = useLocation()
+  return <Navigate to="/entrar" replace state={state} />
+}
 
 export function AppRoutes() {
   return (
@@ -43,7 +50,12 @@ export function AppRoutes() {
           <Route path="/vagas" element={<JobsPage />} />
           <Route path="/vagas/:slug" element={<JobDetailPage />} />
           <Route path="/privacidade" element={<PrivacyPage />} />
-          <Route path="/login" element={<LoginPage />} />
+          <Route path="/entrar" element={<LoginChooserPage />} />
+          <Route path="/entrar/candidato" element={<LoginDoorPage key="candidato" door="candidato" />} />
+          <Route path="/entrar/empresa" element={<LoginDoorPage key="empresa" door="empresa" />} />
+          {/* AK team login: not linked from any menu or footer; kept out of search engines. */}
+          <Route path="/equipe" element={<LoginDoorPage key="equipe" door="equipe" />} />
+          <Route path="/login" element={<LegacyLoginRedirect />} />
           <Route path="/register" element={<RegisterPage />} />
           <Route
             path="/candidate"

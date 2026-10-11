@@ -45,13 +45,13 @@ test('signed in: name, link to the right panel and "Sair" instead of "Entrar"', 
 })
 
 test('login and sign-up link to each other; sign-up signs in and opens the right panel', () => {
-  const login = read('src/pages/LoginPage.tsx')
+  const login = read('src/pages/LoginDoorPage.tsx')
   const register = read('src/pages/RegisterPage.tsx')
   const auth = read('src/services/authService.ts')
 
-  assert.match(login, /Não tem conta\?\{' '\}\s*<Link to="\/register"[^>]*>\s*Criar conta/)
-  assert.match(register, /Já tem conta\?\{' '\}\s*<Link to="\/login"[^>]*>\s*Entrar/)
-  const registerFn = auth.slice(auth.indexOf('export async function registerUser'), auth.indexOf('export async function loginUser'))
+  assert.match(login, /\{copy\.signUp\.prompt\}\{' '\}\s*<Link to=\{copy\.signUp\.to\}/)
+  assert.match(register, /Já tem conta\?\{' '\}\s*<Link to=\{doorPathForRole\(values\.role\)\}[^>]*>\s*Entrar/)
+  const registerFn = auth.slice(auth.indexOf('export async function registerUser'), auth.indexOf('export async function authenticate'))
   assert.match(registerFn, /persistSession\(response\)/)
   assert.match(register, /const response = await registerUser\(/)
   assert.match(register, /navigate\(roleHome\(response\.user\.role\)\)/)

@@ -21,13 +21,21 @@ export async function registerUser(payload: RegisterPayload): Promise<AuthRespon
   return response
 }
 
-export async function loginUser(payload: LoginPayload): Promise<AuthResponse> {
-  const response = await apiRequest<AuthResponse>('/auth/login', {
+/** Checks the credentials WITHOUT signing in (the staff door decides first whether this account may enter). */
+export async function authenticate(payload: LoginPayload): Promise<AuthResponse> {
+  return apiRequest<AuthResponse>('/auth/login', {
     method: 'POST',
     body: payload,
     auth: false,
   })
+}
 
+export function startSession(response: AuthResponse) {
+  persistSession(response)
+}
+
+export async function loginUser(payload: LoginPayload): Promise<AuthResponse> {
+  const response = await authenticate(payload)
   persistSession(response)
   return response
 }
