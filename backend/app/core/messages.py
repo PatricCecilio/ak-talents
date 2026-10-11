@@ -32,6 +32,7 @@ GOOGLE_STAFF_USE_TEAM_LOGIN = "Use o acesso da equipe em /equipe."
 GOOGLE_OTHER_ACCOUNT = "Este e-mail já está ligado a outra conta Google."
 GOOGLE_ONLY_ACCOUNT = "Esta conta usa o login com Google. Toque em Entrar com Google."
 GOOGLE_CONSENT_REQUIRED = "Para criar sua conta, leia e aceite a Política de Privacidade."
+GOOGLE_CODE_INVALID = "Este link de login expirou ou já foi usado. Toque de novo em Continuar com o Google."
 INVALID_CREDENTIALS = "E-mail ou senha inválidos."
 INACTIVE_USER = "Usuário inativo."
 

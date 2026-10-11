@@ -130,8 +130,27 @@ class GoogleSignInMigrationTestCase(TempSqliteDatabaseTestCase):
         self.assertEqual(not_null["hashed_password"], 0, "hashed_password passa a aceitar vazio")
         self.assertIn("ix_users_google_sub", {row[1] for row in self.query("pragma index_list(users)")})
         self.assertEqual(self.query("select email, hashed_password, google_sub from users"), [("ana@x.com", "hash-antigo", None)])
-        self.assertEqual(self.query("select version_num from alembic_version"), [("0012_google_sign_in",)])
-        self.assertEqual(HEAD_REVISION, "0012_google_sign_in")
+        self.assertEqual(self.query("select version_num from alembic_version"), [(HEAD_REVISION,)])
+
+
+class LoginCodesMigrationTestCase(TempSqliteDatabaseTestCase):
+    def test_database_at_0012_gets_the_login_codes_table(self) -> None:
+        engine = create_engine(f"sqlite:///{self.db_path.as_posix()}")
+        Base.metadata.create_all(bind=engine)
+        engine.dispose()
+        with closing(sqlite3.connect(self.db_path)) as connection:
+            connection.execute("drop table login_codes")
+            connection.execute("insert into users (id, name, email, hashed_password, role, is_active, created_at) values (1, 'Ana', 'ana@x.com', 'h', 'candidate', 1, '2026-09-01 10:00:00')")
+            connection.execute("create table alembic_version (version_num varchar(32) not null primary key)")
+            connection.execute("insert into alembic_version values ('0012_google_sign_in')")
+            connection.commit()
+
+        self.assertEqual(migrate_module.migrate(), "upgraded")
+        self.assertTrue({"code_hash", "purpose", "door", "user_id", "expires_at", "used_at"} <= self.columns("login_codes"))
+        self.assertIn("ix_login_codes_code_hash", {row[1] for row in self.query("pragma index_list(login_codes)")})
+        self.assertEqual(self.query("select email from users"), [("ana@x.com",)])
+        self.assertEqual(self.query("select version_num from alembic_version"), [("0013_login_codes",)])
+        self.assertEqual(HEAD_REVISION, "0013_login_codes")
 
 
 class PipelineMigrationTestCase(TempSqliteDatabaseTestCase):

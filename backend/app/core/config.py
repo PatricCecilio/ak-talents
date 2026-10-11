@@ -36,6 +36,8 @@ class Settings(BaseSettings):
     # Sign in with Google (ID token flow): the OAuth "Web application" Client ID. Public value, no secret needed.
     # Empty = the feature is off (POST /auth/google answers 503 and the site hides the button).
     GOOGLE_CLIENT_ID: str = ""
+    # Where the Google redirect flow sends people back (the site). Locally: http://localhost:5173.
+    FRONTEND_URL: str = "https://www.aktalent.com.br"
 
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
 

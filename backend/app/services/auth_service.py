@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 from datetime import datetime, timezone
 
 from fastapi import HTTPException, status
@@ -153,9 +154,20 @@ def _link_google(user: User, identity: GoogleIdentity) -> None:
     user.sessions_valid_after = now.replace(microsecond=0)
 
 
-def google_sign_in(db: Session, payload: GoogleSignInRequest) -> GoogleSignInResponse:
-    identity = verify_google_credential(payload.credential)
+@dataclass
+class GoogleAccountResult:
+    user: User
+    created: bool = False
+    linked: bool = False
+    linked_applications: int = 0
 
+
+def resolve_google_account(db: Session, identity: GoogleIdentity, door: str, privacy_accepted: bool) -> GoogleAccountResult:
+    """Finds, links or creates the account for a verified Google identity (shared by the JSON and redirect flows).
+
+    Raises HTTPException for refusals and ConsentRequiredError when a new account still needs the privacy consent.
+    Commits on success.
+    """
     user = db.query(User).filter(User.google_sub == identity.sub).first()
     linked = created = False
 
@@ -172,13 +184,13 @@ def google_sign_in(db: Session, payload: GoogleSignInRequest) -> GoogleSignInRes
             _link_google(user, identity)
             linked = True
         else:
-            if not payload.privacy_accepted:
+            if not privacy_accepted:
                 raise ConsentRequiredError()
             user = _create_account(
                 db,
                 name=identity.name,
                 email=identity.email,
-                role=DOOR_ROLES[payload.door],
+                role=DOOR_ROLES[door],
                 hashed_password=None,
                 google_sub=identity.sub,
             )
@@ -192,10 +204,16 @@ def google_sign_in(db: Session, payload: GoogleSignInRequest) -> GoogleSignInRes
     moved = link_public_applications(db, user)
     db.commit()
     db.refresh(user)
+    return GoogleAccountResult(user=user, created=created, linked=linked, linked_applications=moved)
+
+
+def google_sign_in(db: Session, payload: GoogleSignInRequest) -> GoogleSignInResponse:
+    identity = verify_google_credential(payload.credential)
+    result = resolve_google_account(db, identity, payload.door, payload.privacy_accepted)
     return GoogleSignInResponse(
-        access_token=create_access_token(user.id),
-        user=user,
-        created=created,
-        linked=linked,
-        linked_applications=moved,
+        access_token=create_access_token(result.user.id),
+        user=result.user,
+        created=result.created,
+        linked=result.linked,
+        linked_applications=result.linked_applications,
     )

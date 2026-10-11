@@ -42,3 +42,13 @@ class GoogleSignInResponse(TokenResponse):
     linked: bool = False
     # Public job-form applications with the same (now verified) e-mail moved into this account.
     linked_applications: int = 0
+    # Redirect flow: the login door the person started from (the page shows the wrong-door notice from it).
+    door: Literal["candidato", "empresa"] | None = None
+
+
+class GoogleCodeRequest(BaseModel):
+    codigo: str = Field(min_length=20, max_length=200)
+
+
+class GoogleConsentRequest(GoogleCodeRequest):
+    privacy_accepted: bool = False
