@@ -317,3 +317,15 @@ export interface AdminApplication {
   stage?: string
   stage_label?: string
 }
+
+export interface GoogleSignInPayload {
+  credential: string
+  door: 'candidato' | 'empresa'
+  privacy_accepted?: boolean
+}
+
+export interface GoogleSignInResponse extends AuthResponse {
+  created: boolean
+  linked: boolean
+  linked_applications: number
+}

@@ -1,6 +1,7 @@
 import type { FormEvent } from 'react'
 import { useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
+import { GoogleSignInButton } from '../components/auth/GoogleSignInButton'
 import { FormField } from '../components/FormField'
 import { Alert, Button } from '../components/ui'
 import { useFormState } from '../hooks/useFormState'
@@ -162,6 +163,12 @@ export function RegisterPage() {
         >
           Cadastrar
         </Button>
+
+        <GoogleSignInButton
+          door={values.role === 'company' ? 'empresa' : 'candidato'}
+          externalConsent={privacyAccepted}
+          divider="above"
+        />
 
         <p className="text-center text-sm text-ink-600">
           Já tem conta?{' '}

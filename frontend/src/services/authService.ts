@@ -1,4 +1,4 @@
-import type { AuthResponse, LoginPayload, RegisterPayload, User } from '../types/user'
+import type { AuthResponse, GoogleSignInPayload, GoogleSignInResponse, LoginPayload, RegisterPayload, User } from '../types/user'
 import { apiRequest } from './api'
 
 const TOKEN_KEY = 'ak_talent_access_token'
@@ -24,6 +24,15 @@ export async function registerUser(payload: RegisterPayload): Promise<AuthRespon
 /** Checks the credentials WITHOUT signing in (the staff door decides first whether this account may enter). */
 export async function authenticate(payload: LoginPayload): Promise<AuthResponse> {
   return apiRequest<AuthResponse>('/auth/login', {
+    method: 'POST',
+    body: payload,
+    auth: false,
+  })
+}
+
+/** Checks a Google ID token in the API WITHOUT signing in (the page decides where to go, then starts the session). */
+export async function authenticateWithGoogle(payload: GoogleSignInPayload): Promise<GoogleSignInResponse> {
+  return apiRequest<GoogleSignInResponse>('/auth/google', {
     method: 'POST',
     body: payload,
     auth: false,

@@ -14,11 +14,14 @@ const GENERIC_ERROR_MESSAGE = 'Não foi possível concluir a solicitação. Tent
 /** Error thrown for any failed API call. `status` is the HTTP status, or 0 when the request never got an answer. */
 export class ApiError extends Error {
   readonly status: number
+  /** Machine-readable reason some endpoints add next to "detail" (e.g. "consent_required"). */
+  readonly code?: string
 
-  constructor(status: number, message: string) {
+  constructor(status: number, message: string, code?: string) {
     super(message)
     this.name = 'ApiError'
     this.status = status
+    this.code = code
   }
 
   get isNetworkError() {
@@ -65,7 +68,8 @@ async function parseResponse<T>(response: Response): Promise<T> {
     }
 
     const detail = typeof data === 'object' && data !== null && 'detail' in data ? data.detail : null
-    throw new ApiError(response.status, extractErrorMessage(detail))
+    const code = typeof data === 'object' && data !== null && 'code' in data && typeof data.code === 'string' ? data.code : undefined
+    throw new ApiError(response.status, extractErrorMessage(detail), code)
   }
 
   return data as T

@@ -14,7 +14,7 @@ export function AuthLayout({ title, subtitle, showHighlights = true, children }:
   return (
     <section className="bg-slate-100 py-4 sm:py-10 lg:py-16">
       <Container>
-        <div className="mx-auto grid max-w-5xl overflow-hidden rounded-lg border border-slate-200 bg-white shadow-xl shadow-slate-200/70 lg:grid-cols-[0.9fr_1.1fr]">
+        <div className="mx-auto grid max-w-5xl grid-cols-[minmax(0,1fr)] overflow-hidden rounded-lg border border-slate-200 bg-white shadow-xl shadow-slate-200/70 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
           <aside className="hidden bg-ink-950 p-10 text-white lg:block">
             <p className="text-sm font-black uppercase tracking-[0.22em] text-gold-400">AK Talent</p>
             <h1 className="mt-6 text-4xl font-black leading-tight">{title}</h1>
