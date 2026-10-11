@@ -7,6 +7,7 @@ interface ImportMetaEnv {
   readonly VITE_APPINTELLI_SCREENING_ENABLED?: string
   readonly VITE_WHATSAPP_URL?: string
   readonly VITE_GOOGLE_CLIENT_ID?: string
+  readonly VITE_COMPANY_PORTAL_ENABLED?: string
 }
 
 interface ImportMeta {

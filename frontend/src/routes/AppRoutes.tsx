@@ -4,6 +4,7 @@ import { WorkspaceLayout } from '../layouts/WorkspaceLayout'
 import { PrivateRoute } from '../components/PrivateRoute'
 import { AppIntelliRouteGate } from '../components/AppIntelliRouteGate'
 import { ScrollToTop } from '../components/ScrollToTop'
+import { COMPANY_CLOSED_PATH, isCompanyPortalEnabled } from '../services/companyPortal'
 import { CandidatePage } from '../pages/CandidatePage'
 import { CompanyPage } from '../pages/CompanyPage'
 import { AdminPage } from '../pages/AdminPage'
@@ -68,12 +69,17 @@ export function AppRoutes() {
               </PrivateRoute>
             }
           />
+          {/* Old company portal: kept in the code, reachable only with VITE_COMPANY_PORTAL_ENABLED="true". */}
           <Route
             path="/company"
             element={
-              <PrivateRoute allowedRoles={['company']}>
-                <CompanyPage />
-              </PrivateRoute>
+              isCompanyPortalEnabled() ? (
+                <PrivateRoute allowedRoles={['company']}>
+                  <CompanyPage />
+                </PrivateRoute>
+              ) : (
+                <Navigate to={COMPANY_CLOSED_PATH} replace />
+              )
             }
           />
           <Route

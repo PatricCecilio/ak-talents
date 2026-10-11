@@ -3,12 +3,15 @@ import { useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { GoogleSignInButton } from '../components/auth/GoogleSignInButton'
 import { FormField } from '../components/FormField'
+import { HireContactLink } from '../components/HireContactLink'
 import { Alert, Button } from '../components/ui'
 import { useFormState } from '../hooks/useFormState'
 import { AuthLayout } from '../layouts/AuthLayout'
 import { registerUser } from '../services/authService'
+import { isCompanyPortalEnabled } from '../services/companyPortal'
 import { PRIVACY_POLICY_PATH } from '../services/privacyPolicy'
 import { doorPathForRole } from '../services/loginDoors'
+import { hireContact } from '../services/whatsapp'
 import { roleHome } from '../services/roleHome'
 import type { UserRole } from '../types/user'
 
@@ -26,8 +29,9 @@ const roles: Array<{ value: UserRole; label: string; description: string }> = [
 ]
 
 // /register?tipo=empresa (or candidato) comes from the login doors with the right option already selected.
+// With the company portal off there is only the candidate sign-up.
 function roleFromQuery(tipo: string | null): UserRole {
-  return tipo === 'empresa' ? 'company' : 'candidate'
+  return tipo === 'empresa' && isCompanyPortalEnabled() ? 'company' : 'candidate'
 }
 
 export function RegisterPage() {
@@ -42,6 +46,8 @@ export function RegisterPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
   const [privacyAccepted, setPrivacyAccepted] = useState(false)
+  const companyPortal = isCompanyPortalEnabled()
+  const companyAskedToSignUp = !companyPortal && searchParams.get('tipo') === 'empresa'
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -72,10 +78,22 @@ export function RegisterPage() {
 
   return (
     <AuthLayout
-      title="Crie seu cadastro"
-      subtitle="Defina seu perfil para que a plataforma personalize sua experiência desde a primeira etapa."
+      title={companyPortal ? 'Crie seu cadastro' : 'Crie sua conta de candidato'}
+      subtitle={
+        companyPortal
+          ? 'Defina seu perfil para que a plataforma personalize sua experiência desde a primeira etapa.'
+          : 'Acompanhe suas candidaturas e veja em que etapa está cada processo seletivo.'
+      }
     >
       <form onSubmit={handleSubmit} className="grid gap-5">
+        {companyAskedToSignUp ? (
+          <div className="grid gap-3 rounded-lg border border-blue-200 bg-blue-50 p-4 text-sm font-semibold text-blue-800">
+            <p>Empresas não precisam de cadastro: a AK Talent cuida de todo o processo e envia os resultados pelo WhatsApp.</p>
+            <div>
+              <HireContactLink />
+            </div>
+          </div>
+        ) : null}
         {error ? (
           <Alert tone="error">{error}</Alert>
         ) : null}
@@ -84,7 +102,7 @@ export function RegisterPage() {
           id="name"
           label="Nome"
           value={values.name}
-          placeholder="Seu nome ou empresa"
+          placeholder={companyPortal ? 'Seu nome ou empresa' : 'Seu nome completo'}
           autoComplete="name"
           onChange={(value) => updateField('name', value)}
         />
@@ -107,6 +125,7 @@ export function RegisterPage() {
           onChange={(value) => updateField('password', value)}
         />
 
+        {companyPortal ? (
         <fieldset className="grid gap-3">
           <legend className="text-sm font-bold text-ink-800">Tipo de usuário</legend>
           <div className="grid gap-3 sm:grid-cols-2">
@@ -133,6 +152,7 @@ export function RegisterPage() {
             ))}
           </div>
         </fieldset>
+        ) : null}
 
         <label htmlFor="register_privacy" className="flex gap-3 text-sm font-semibold leading-6 text-ink-700">
           <input
@@ -166,6 +186,15 @@ export function RegisterPage() {
 
         {/* New accounts accept the policy on the way back from Google (GoogleReturnPage). */}
         <GoogleSignInButton door={values.role === 'company' ? 'empresa' : 'candidato'} divider="above" />
+
+        {companyPortal ? null : (
+          <p className="text-center text-sm text-ink-600">
+            É empresa e quer contratar?{' '}
+            <a href={hireContact().href} target="_blank" rel="noopener noreferrer" className="font-bold text-brand-700 underline underline-offset-2 hover:text-brand-600">
+              Fale com a AK Talent
+            </a>
+          </p>
+        )}
 
         <p className="text-center text-sm text-ink-600">
           Já tem conta?{' '}

@@ -99,7 +99,7 @@ test('routes: chooser, three doors, /equipe hidden and noindex, /login redirects
 test('sign-up preselects the account type from ?tipo=', () => {
   const register = read('src/pages/RegisterPage.tsx')
   assert.match(register, /role: roleFromQuery\(searchParams\.get\('tipo'\)\)/)
-  assert.match(register, /return tipo === 'empresa' \? 'company' : 'candidate'/)
+  assert.match(register, /return tipo === 'empresa' && isCompanyPortalEnabled\(\) \? 'company' : 'candidate'/)
 })
 
 test('private areas send signed-out visitors straight to the right door', () => {

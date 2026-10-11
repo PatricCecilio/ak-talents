@@ -1,12 +1,14 @@
 import type { FormEvent } from 'react'
 import { useState } from 'react'
-import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom'
+import { Link, Navigate, useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import { GoogleSignInButton } from '../components/auth/GoogleSignInButton'
 import { FormField } from '../components/FormField'
+import { HireContactLink } from '../components/HireContactLink'
 import { Alert, Button } from '../components/ui'
 import { useFormState } from '../hooks/useFormState'
 import { AuthLayout } from '../layouts/AuthLayout'
 import { authenticate, startSession } from '../services/authService'
+import { COMPANY_CLOSED_PATH, COMPANY_PORTAL_CLOSED_MESSAGE, isCompanyPortalEnabled } from '../services/companyPortal'
 import { googleErrorMessage, isGoogleLoginEnabled } from '../services/googleIdentity'
 import { DOOR_COPY, LOGIN_CHOOSER_PATH, decideAfterLogin, type LoginDoor } from '../services/loginDoors'
 
@@ -27,6 +29,9 @@ export function LoginDoorPage({ door }: { door: LoginDoor }) {
     typeof location.state === 'object' && location.state !== null && 'message' in location.state
       ? String(location.state.message)
       : ''
+
+  // Company portal off: old links to /entrar/empresa land on the chooser with the notice.
+  if (door === 'empresa' && !isCompanyPortalEnabled()) return <Navigate to={COMPANY_CLOSED_PATH} replace />
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -62,7 +67,17 @@ export function LoginDoorPage({ door }: { door: LoginDoor }) {
       ) : null}
       <form onSubmit={handleSubmit} className="grid gap-5">
         {successMessage ? <Alert tone="success">{successMessage}</Alert> : null}
-        {error ? <Alert tone="error">{error}</Alert> : null}
+        {error === COMPANY_PORTAL_CLOSED_MESSAGE ? (
+          // A company account: friendly notice and the way to talk to AK, not an error.
+          <div className="grid gap-3 rounded-lg border border-blue-200 bg-blue-50 p-4 text-sm font-semibold text-blue-800">
+            <p>{error}</p>
+            <div>
+              <HireContactLink />
+            </div>
+          </div>
+        ) : error ? (
+          <Alert tone="error">{error}</Alert>
+        ) : null}
         {refusal ? (
           <Alert tone="error">
             {refusal.message}{' '}

@@ -26,6 +26,7 @@ export const GOOGLE_ERROR_MESSAGES: Record<string, string> = {
   inativo: 'Usuário inativo.',
   outra_conta: 'Este e-mail já está ligado a outra conta Google.',
   indisponivel: 'Login com Google indisponível no momento. Entre com e-mail e senha.',
+  empresa: 'O acesso de empresas foi encerrado. Agora a AK Talent cuida de todo o processo e envia os resultados pelo WhatsApp.',
 }
 
 export function googleErrorMessage(code: string | null): string {
