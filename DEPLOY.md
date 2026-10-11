@@ -234,7 +234,14 @@ Hoje as perguntas da vaga são respondidas **na própria página**. Com `VITE_AP
 
 ## G) Login com Google (candidatos e empresas)
 
-Fluxo de **ID token** (Google Identity Services): o botão do Google entrega um token ao navegador; a API confere assinatura, audience (= nosso Client ID), emissor do Google, validade e e-mail verificado, e emite o nosso JWT. **Não existe segredo de cliente** nesse fluxo — só o Client ID, que é público.
+Fluxo de **ID token por redirect** (Google Identity Services, `ux_mode: 'redirect'`, em todos os navegadores — o popup travava numa aba branca no celular):
+
+1. O botão leva a pessoa ao Google, que volta com um POST para `https://www.aktalent.com.br/auth/google/retorno/{candidato|empresa}` (com o cookie `g_csrf_token`, gravado no domínio do site).
+2. O `frontend/vercel.json` repassa para `https://ak-talent-api.vercel.app/auth/google/redirect/{porta}`.
+3. A API confere o CSRF (cookie = campo do formulário), a assinatura, a audience (= nosso Client ID), o emissor, a validade e o e-mail verificado.
+4. A API responde 303 para `/entrar/google?codigo=…` (código de uso único, 60 s; só o hash fica no banco, tabela `login_codes`) ou `?consentimento=…` (conta nova, 15 min; a conta só é criada depois do aceite). Erros voltam para `/entrar/{porta}?erro=…`.
+
+O JWT nunca vai na URL. **Não existe segredo de cliente** nesse fluxo — só o Client ID, que é público.
 
 - Aparece em `/entrar/candidato`, `/entrar/empresa` e `/register`. **Nunca em `/equipe`**: a equipe entra só com e-mail e senha.
 - Conta nova: o papel vem da porta (candidato ou empresa) e a pessoa aceita a Política antes de criar a conta.
@@ -255,7 +262,11 @@ Fluxo de **ID token** (Google Identity Services): o botão do Google entrega um 
 3. **APIs e serviços → Credenciais → Criar credenciais → ID do cliente OAuth** (ou "Clientes → Criar cliente"):
    - Tipo: **Aplicativo da Web**; nome: `AK Talent site`.
    - **Origens JavaScript autorizadas**: `https://www.aktalent.com.br`, `https://aktalent.com.br` e `http://localhost:5173`.
-   - URIs de redirecionamento: **deixe vazio** (o fluxo de ID token não usa).
+   - **URIs de redirecionamento autorizados** (exatamente estas quatro):
+     - `https://www.aktalent.com.br/auth/google/retorno/candidato`
+     - `https://www.aktalent.com.br/auth/google/retorno/empresa`
+     - `http://localhost:5173/auth/google/retorno/candidato`
+     - `http://localhost:5173/auth/google/retorno/empresa`
    - Criar → copie o **ID do cliente** (`....apps.googleusercontent.com`). O "segredo do cliente" **não é usado**: não copie para lugar nenhum.
 
 ### G2. Variáveis (Production) e redeploy
@@ -271,11 +282,14 @@ Depois de criar, **redeploy** dos dois (a `VITE_*` entra no build do site). Sem 
 
 ### G3. Banco
 
-A migração `0012_google_sign_in` (só aditiva: `email_verified_at`, `google_sub`, `sessions_valid_after`; senha passa a aceitar vazio) precisa estar aplicada **antes** do deploy desta versão da API: `backend/scripts/migrar-producao.ps1` (seção A5).
+As migrações `0012_google_sign_in` (só aditiva: `email_verified_at`, `google_sub`, `sessions_valid_after`; senha passa a aceitar vazio) e `0013_login_codes` (tabela nova dos códigos de uso único do redirect) precisam estar aplicadas **antes** do deploy da API: `backend/scripts/migrar-producao.ps1` (seção A5).
+
+A API redireciona para `FRONTEND_URL` (padrão `https://www.aktalent.com.br`); só mude essa variável se o domínio do site mudar.
 
 ### G4. Conferir
 
-- `/entrar/candidato` e `/entrar/empresa` mostram "Continuar com o Google"; `/equipe` não.
+- `/entrar/candidato` e `/entrar/empresa` mostram "Continuar com o Google", inclusive no celular; `/equipe` não.
+- Depois do Google, a barra de endereço passa por `/entrar/google` sem ficar com o código (a URL é limpa na hora).
 - Conta Google nova pela porta de candidato → pede o aceite → cai em `/candidate`. Pela porta de empresa → `/company` (empresa "Aguardando aprovação").
 - E-mail que já tinha conta com senha → entra pelo Google; a senha antiga passa a responder "Esta conta usa o login com Google. Toque em Entrar com Google."
 
