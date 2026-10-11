@@ -1,4 +1,5 @@
 import unittest
+from unittest import mock
 from datetime import datetime, timezone
 
 from fastapi import FastAPI
@@ -7,6 +8,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
+from app.core.config import settings
 from app.api.routes import auth, jobs
 from app.core.privacy import PRIVACY_CONSENT_REQUIRED_MESSAGE, PRIVACY_POLICY_VERSION
 from app.core.rate_limit import limiter
@@ -20,6 +22,10 @@ from app.models.user import User
 
 class PrivacyConsentTestCase(unittest.TestCase):
     def setUp(self) -> None:
+        # These tests cover the company portal itself (off in production: COMPANY_PORTAL_ENABLED=false).
+        portal = mock.patch.object(settings, "COMPANY_PORTAL_ENABLED", True)
+        portal.start()
+        self.addCleanup(portal.stop)
         limiter.reset()
         engine = create_engine("sqlite://", connect_args={"check_same_thread": False}, poolclass=StaticPool)
         Base.metadata.create_all(bind=engine)

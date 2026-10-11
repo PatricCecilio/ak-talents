@@ -1,4 +1,5 @@
 import unittest
+from unittest import mock
 
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
@@ -6,6 +7,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
+from app.core.config import settings
 from app.api.routes import admin, auth, candidates, companies, jobs, recruiter
 from app.core.rate_limit import limiter
 from app.core.security import create_access_token, get_password_hash
@@ -22,6 +24,10 @@ class AdminTestDataTestCase(unittest.TestCase):
     """Deactivate (never delete) test companies/candidates and hide test applications."""
 
     def setUp(self) -> None:
+        # These tests cover the company portal itself (off in production: COMPANY_PORTAL_ENABLED=false).
+        portal = mock.patch.object(settings, "COMPANY_PORTAL_ENABLED", True)
+        portal.start()
+        self.addCleanup(portal.stop)
         limiter.reset()
         engine = create_engine("sqlite://", connect_args={"check_same_thread": False}, poolclass=StaticPool)
         Base.metadata.create_all(bind=engine)

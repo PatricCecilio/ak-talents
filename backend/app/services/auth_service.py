@@ -6,6 +6,7 @@ from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.core import messages
+from app.core.config import settings
 from app.core.names import normalize_person_name
 from app.core.privacy import PRIVACY_CONSENT_REQUIRED_MESSAGE, PRIVACY_POLICY_VERSION
 from app.core.security import create_access_token, get_password_hash, verify_password
@@ -26,6 +27,11 @@ class ConsentRequiredError(Exception):
 
 def _now() -> datetime:
     return datetime.now(timezone.utc)
+
+
+def company_portal_closed_for(role: str) -> bool:
+    """Company accounts are kept but cannot sign in while the company portal is off (COMPANY_PORTAL_ENABLED)."""
+    return role == UserRole.company.value and not settings.COMPANY_PORTAL_ENABLED
 
 
 def _find_user_by_email(db: Session, email: str) -> User | None:
@@ -73,6 +79,8 @@ def register_user(db: Session, payload: RegisterRequest) -> TokenResponse:
     # Staff accounts (admin, recruiter) are only created by an admin, never on the public form.
     if payload.role.value not in PUBLIC_SIGNUP_ROLES:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Este tipo de conta não pode ser criado pelo cadastro.")
+    if company_portal_closed_for(payload.role.value):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=messages.COMPANY_SIGNUP_CLOSED)
 
     if not payload.privacy_accepted:
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=PRIVACY_CONSENT_REQUIRED_MESSAGE)
@@ -106,6 +114,10 @@ def authenticate_user(db: Session, payload: LoginRequest) -> TokenResponse:
 
     if not user.is_active:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=messages.INACTIVE_USER)
+
+    # Checked only after the password, so the message never reveals that an e-mail has a company account.
+    if company_portal_closed_for(user.role):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=messages.COMPANY_PORTAL_CLOSED)
 
     return TokenResponse(access_token=create_access_token(user.id), user=user)
 
@@ -168,6 +180,9 @@ def resolve_google_account(db: Session, identity: GoogleIdentity, door: str, pri
     Raises HTTPException for refusals and ConsentRequiredError when a new account still needs the privacy consent.
     Commits on success.
     """
+    if company_portal_closed_for(DOOR_ROLES[door].value):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=messages.COMPANY_PORTAL_CLOSED)
+
     user = db.query(User).filter(User.google_sub == identity.sub).first()
     linked = created = False
 
@@ -181,6 +196,8 @@ def resolve_google_account(db: Session, identity: GoogleIdentity, door: str, pri
                 raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=messages.GOOGLE_OTHER_ACCOUNT)
             if not user.is_active:
                 raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=messages.INACTIVE_USER)
+            if company_portal_closed_for(user.role):
+                raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=messages.COMPANY_PORTAL_CLOSED)
             _link_google(user, identity)
             linked = True
         else:
@@ -200,6 +217,8 @@ def resolve_google_account(db: Session, identity: GoogleIdentity, door: str, pri
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=messages.GOOGLE_STAFF_USE_TEAM_LOGIN)
     if not user.is_active:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=messages.INACTIVE_USER)
+    if company_portal_closed_for(user.role):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=messages.COMPANY_PORTAL_CLOSED)
 
     moved = link_public_applications(db, user)
     db.commit()

@@ -1,4 +1,5 @@
 import unittest
+from unittest import mock
 
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
@@ -6,6 +7,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
+from app.core.config import settings
 from app.api.routes import companies, recruiter
 from app.core.security import create_access_token
 from app.database.base import Base
@@ -20,6 +22,10 @@ from app.models.user import User
 
 class CompanyFinalistsTestCase(unittest.TestCase):
     def setUp(self) -> None:
+        # These tests cover the company portal itself (off in production: COMPANY_PORTAL_ENABLED=false).
+        portal = mock.patch.object(settings, "COMPANY_PORTAL_ENABLED", True)
+        portal.start()
+        self.addCleanup(portal.stop)
         engine = create_engine("sqlite://", connect_args={"check_same_thread": False}, poolclass=StaticPool)
         Base.metadata.create_all(bind=engine)
         self.SessionLocal = sessionmaker(bind=engine, expire_on_commit=False)

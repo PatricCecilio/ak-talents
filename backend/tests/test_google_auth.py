@@ -100,6 +100,8 @@ class GoogleSignInTestCase(unittest.TestCase):
         for patcher in (
             mock.patch("google.oauth2.id_token._fetch_certs", return_value={KID: CERT_PEM}),
             mock.patch.object(settings, "GOOGLE_CLIENT_ID", CLIENT_ID),
+            # The company door is covered here too; tests/test_company_portal_closed.py covers the portal off.
+            mock.patch.object(settings, "COMPANY_PORTAL_ENABLED", True),
         ):
             patcher.start()
             self.addCleanup(patcher.stop)

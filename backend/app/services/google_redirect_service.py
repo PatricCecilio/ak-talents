@@ -37,6 +37,7 @@ ERROR_CODES = {
     messages.GOOGLE_EMAIL_NOT_VERIFIED: "email_nao_verificado",
     messages.GOOGLE_LOGIN_UNAVAILABLE: "indisponivel",
     messages.GOOGLE_TOKEN_INVALID: "token",
+    messages.COMPANY_PORTAL_CLOSED: "empresa",
 }
 
 
@@ -61,7 +62,9 @@ def _issue_code(db: Session, *, purpose: str, door: str, ttl: timedelta, **field
 
 
 def _error_redirect(door: str, error: str) -> str:
-    return _site_url(f"/entrar/{door}", erro=error)
+    # Company refusals go to the chooser: the company door itself is closed while the portal is off.
+    path = "/entrar" if error == "empresa" else f"/entrar/{door}"
+    return _site_url(path, erro=error)
 
 
 def handle_google_redirect(db: Session, door: str, credential: str, csrf_form: str, csrf_cookie: str) -> str:

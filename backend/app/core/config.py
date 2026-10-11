@@ -38,6 +38,9 @@ class Settings(BaseSettings):
     GOOGLE_CLIENT_ID: str = ""
     # Where the Google redirect flow sends people back (the site). Locally: http://localhost:5173.
     FRONTEND_URL: str = "https://www.aktalent.com.br"
+    # Client companies no longer use the system: AK operates everything and sends the results by WhatsApp.
+    # Off = no company sign-up, login (password or Google), session or job posting. Code and data are kept.
+    COMPANY_PORTAL_ENABLED: bool = False
 
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
 

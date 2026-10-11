@@ -37,6 +37,10 @@ INVALID_CREDENTIALS = "E-mail ou senha inválidos."
 INACTIVE_USER = "Usuário inativo."
 
 # Accounts and companies
+COMPANY_PORTAL_CLOSED = (
+    "O acesso de empresas foi encerrado. Agora a AK Talent cuida de todo o processo e envia os resultados pelo WhatsApp."
+)
+COMPANY_SIGNUP_CLOSED = "O cadastro de empresas foi encerrado. Para contratar, fale com a AK Talent pelo WhatsApp."
 EMAIL_ALREADY_REGISTERED = "Este e-mail já tem cadastro. Entre com sua senha."
 BLOCKED_COMPANY = "Sua empresa está bloqueada para publicar vagas. Fale com a equipe AK Talent."
 

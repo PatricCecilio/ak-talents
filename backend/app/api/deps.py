@@ -5,6 +5,7 @@ from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
 from sqlalchemy.orm import Session
 
+from app.core import messages
 from app.core.config import settings
 from app.database.session import get_db
 from app.models.user import User, UserRole
@@ -43,6 +44,10 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
     # A deactivated account loses access immediately, even with a token that has not expired yet.
     if not user.is_active:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Usuário inativo.")
+
+    # Company portal off: sessions opened before it was closed stop working too.
+    if user.role == UserRole.company.value and not settings.COMPANY_PORTAL_ENABLED:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=messages.COMPANY_PORTAL_CLOSED)
 
     return user
 
