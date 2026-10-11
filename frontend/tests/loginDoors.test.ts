@@ -145,3 +145,16 @@ test('/equipe is also marked noindex by an HTTP header (robots that do not run J
   }
   assert.doesNotMatch(robots, /equipe/)
 })
+
+test('phones/tablets: form first under a thin strip and a short title; /equipe without marketing cards', () => {
+  const layout = read('src/layouts/AuthLayout.tsx')
+  // The big dark panel only from lg (1024px) up; below it a thin strip and the title above the form.
+  assert.match(layout, /<aside className="hidden bg-ink-950 p-10 text-white lg:block">/)
+  assert.match(layout, /<div data-auth-strip className="bg-ink-950 px-5 py-2\.5 lg:hidden">/)
+  assert.match(layout, /<div className="mb-5 lg:hidden">\s*<h1 className="text-2xl/)
+  assert.ok(layout.indexOf('data-auth-strip') < layout.indexOf('{children}'))
+  // Cards are optional and only inside the desktop panel.
+  assert.match(layout, /\{showHighlights \? \(\s*<div className="mt-10 grid gap-4/)
+  assert.ok(layout.indexOf('Triagem inteligente') < layout.indexOf('</aside>'))
+  assert.match(read('src/pages/LoginDoorPage.tsx'), /showHighlights=\{door !== 'equipe'\}/)
+})

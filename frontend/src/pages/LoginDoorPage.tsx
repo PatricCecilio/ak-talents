@@ -48,7 +48,7 @@ export function LoginDoorPage({ door }: { door: LoginDoor }) {
   }
 
   return (
-    <AuthLayout title={copy.title} subtitle={copy.subtitle}>
+    <AuthLayout title={copy.title} subtitle={copy.subtitle} showHighlights={door !== 'equipe'}>
       {door === 'equipe' ? <meta name="robots" content="noindex, nofollow" /> : null}
       <form onSubmit={handleSubmit} className="grid gap-5">
         {successMessage ? <Alert tone="success">{successMessage}</Alert> : null}
