@@ -7,6 +7,7 @@ import { JobsLoading } from '../components/JobsLoading'
 import { LoadErrorState } from '../components/LoadErrorState'
 import { ApiError } from '../services/api'
 import { jobHighlights } from '../services/jobFormat'
+import { buildJobPreviewMeta } from '../services/jobPreviewMeta'
 import { PRIVACY_POLICY_PATH } from '../services/privacyPolicy'
 import { getJobBySlug } from '../services/jobService'
 import { createPublicApplication, getPublicScreening, submitScreeningAnswers } from '../services/applicationService'
@@ -183,6 +184,21 @@ export function JobDetailPage() {
       active = false
     }
   }, [slug, reloadKey])
+
+  // Browser tab and search engines (they run JavaScript): the job's own title and description.
+  useEffect(() => {
+    if (!job) return
+    const meta = buildJobPreviewMeta(job)
+    const description = document.querySelector('meta[name="description"]')
+    const previousTitle = document.title
+    const previousDescription = description?.getAttribute('content') ?? ''
+    document.title = meta.title
+    description?.setAttribute('content', meta.description)
+    return () => {
+      document.title = previousTitle
+      description?.setAttribute('content', previousDescription)
+    }
+  }, [job])
 
   // "Candidatar-se": bring the form into view and put the cursor in the first field (matters on phones).
   useEffect(() => {
