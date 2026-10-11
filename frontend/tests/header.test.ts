@@ -63,3 +63,10 @@ test('every new page opens at the top, section links keep their own scrolling', 
   assert.match(scroll, /if \(!hash\) window\.scrollTo\(0, 0\)/)
   assert.match(read('src/routes/AppRoutes.tsx'), /<ScrollToTop \/>/)
 })
+
+test('home hero starts right below the one-row phone header', () => {
+  const home = read('src/pages/HomePage.tsx')
+  // Header is h-20 below lg: pt-28 leaves a normal gap (the old pt-44 was sized for a two-row header).
+  assert.match(home, /pb-12 pt-28 lg:min-h-\[44rem\]/)
+  assert.doesNotMatch(home, /pt-44|sm:pt-40/)
+})

@@ -558,7 +558,7 @@ function MarketingLanding({ campaign = false }: MarketingLandingProps) {
           <div className="absolute inset-x-0 top-0 h-32 bg-gradient-to-b from-white/70 to-transparent" />
         </div>
 
-        <Container className="relative grid gap-10 pb-12 pt-44 sm:pt-40 lg:min-h-[44rem] lg:grid-cols-[0.9fr_1.1fr] lg:items-center lg:gap-8 lg:pb-14 lg:pt-28">
+        <Container className="relative grid gap-10 pb-12 pt-28 lg:min-h-[44rem] lg:grid-cols-[0.9fr_1.1fr] lg:items-center lg:gap-8 lg:pb-14 lg:pt-28">
           <div className="min-w-0 lg:max-w-[36rem]">
             <p className="text-xs font-semibold uppercase tracking-[0.16em] text-ink-800">
               {campaign ? 'Solução de recrutamento para empresas' : 'Recrutamento para empresas que crescem'}
