@@ -28,20 +28,26 @@ def require_staff(current_user: User) -> None:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=messages.ADMIN_ONLY)
 
 
-def _company_to_admin_read(company: Company) -> AdminCompanyRead:
+def company_to_admin_read(company: Company) -> AdminCompanyRead:
     return AdminCompanyRead(
         id=company.id,
         user_id=company.user_id,
         company_name=company.company_name,
         responsible_name=company.responsible_name,
-        email=company.user.email,
+        email=company.user.email if company.user else None,
         city=company.city,
         state=company.state,
         industry=company.industry,
         company_size=company.company_size,
         status=company.status,
         created_at=company.created_at,
-        is_active=company.user.is_active,
+        is_active=company.is_active,
+        cnpj=company.cnpj,
+        whatsapp=company.phone,
+        contact_email=company.contact_email,
+        notes=company.notes,
+        has_account=company.user_id is not None,
+        jobs_count=len(company.jobs),
     )
 
 
@@ -54,6 +60,8 @@ def job_to_admin_read(job: Job) -> AdminJobRead:
         location=job.location,
         work_mode=job.work_mode,
         status=job.status,
+        openings=job.openings,
+        company_is_active=job.company.is_active,
         is_active=job.is_active,
         created_at=job.created_at,
         recruiter_id=job.recruiter_id,
@@ -101,8 +109,8 @@ def list_admin_candidates(db: Session, current_user: User) -> list[AdminCandidat
 
 def list_admin_companies(db: Session, current_user: User) -> list[AdminCompanyRead]:
     require_admin(current_user)
-    companies = db.query(Company).join(Company.user).order_by(Company.created_at.desc()).all()
-    return [_company_to_admin_read(company) for company in companies]
+    companies = db.query(Company).order_by(Company.is_active.desc(), Company.company_name).all()
+    return [company_to_admin_read(company) for company in companies]
 
 
 def list_admin_jobs(db: Session, current_user: User) -> list[AdminJobRead]:
@@ -150,7 +158,7 @@ def approve_company(db: Session, current_user: User, company_id: int) -> AdminCo
     company.status = "approved"
     db.commit()
     db.refresh(company)
-    return _company_to_admin_read(company)
+    return company_to_admin_read(company)
 
 
 def block_company(db: Session, current_user: User, company_id: int) -> AdminCompanyRead:
@@ -162,7 +170,7 @@ def block_company(db: Session, current_user: User, company_id: int) -> AdminComp
     company.status = "blocked"
     db.commit()
     db.refresh(company)
-    return _company_to_admin_read(company)
+    return company_to_admin_read(company)
 
 
 def approve_job(db: Session, current_user: User, job_id: int) -> AdminJobRead:
@@ -184,7 +192,7 @@ def hide_job(db: Session, current_user: User, job_id: int) -> AdminJobRead:
     if not job:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=messages.JOB_NOT_FOUND)
 
-    job.status = "hidden"
+    job.status = "closed"
     job.is_active = False
     db.commit()
     db.refresh(job)
@@ -192,15 +200,17 @@ def hide_job(db: Session, current_user: User, job_id: int) -> AdminJobRead:
 
 
 def set_company_active(db: Session, current_user: User, company_id: int, is_active: bool) -> AdminCompanyRead:
-    """Deactivate (never delete) a company: login blocked and its jobs leave public and AK lists."""
+    """Deactivate (never delete) a company: its jobs leave public and AK lists (and its old login, if any, is blocked)."""
     require_admin(current_user)
     company = db.query(Company).filter(Company.id == company_id).first()
     if not company:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Empresa não encontrada.")
-    company.user.is_active = is_active
+    company.is_active = is_active
+    if company.user:
+        company.user.is_active = is_active
     db.commit()
     db.refresh(company)
-    return _company_to_admin_read(company)
+    return company_to_admin_read(company)
 
 
 def set_candidate_active(db: Session, current_user: User, candidate_id: int, is_active: bool) -> AdminCandidateRead:

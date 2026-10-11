@@ -102,8 +102,7 @@ def list_recruiter_jobs(db: Session) -> RecruiterJobsResponse:
     jobs = (
         db.query(Job)
         .join(Company, Job.company_id == Company.id)
-        .join(User, Company.user_id == User.id)
-        .filter(User.is_active.is_(True))  # deactivated (test) companies drop out of the AK lists
+        .filter(Company.is_active.is_(True))  # deactivated (test) companies drop out of the AK lists
         .order_by(Job.created_at.desc(), Job.id.desc())
         .all()
     )

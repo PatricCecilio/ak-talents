@@ -40,6 +40,9 @@ INACTIVE_USER = "Usuário inativo."
 COMPANY_PORTAL_CLOSED = (
     "O acesso de empresas foi encerrado. Agora a AK Talent cuida de todo o processo e envia os resultados pelo WhatsApp."
 )
+INVALID_CNPJ = "Confira o CNPJ: são 14 números."
+INVALID_WHATSAPP = "Confira o WhatsApp: informe o DDD e o número."
+INACTIVE_COMPANY = "Esta empresa está desativada. Reative a empresa antes de abrir vagas para ela."
 COMPANY_SIGNUP_CLOSED = "O cadastro de empresas foi encerrado. Para contratar, fale com a AK Talent pelo WhatsApp."
 EMAIL_ALREADY_REGISTERED = "Este e-mail já tem cadastro. Entre com sua senha."
 BLOCKED_COMPANY = "Sua empresa está bloqueada para publicar vagas. Fale com a equipe AK Talent."
@@ -121,6 +124,12 @@ FIELD_LABELS = {
     "benefits": "Benefícios",
     "contract_type": "Tipo de contrato",
     "openings": "Quantidade de vagas",
+    "cnpj": "CNPJ",
+    "whatsapp": "WhatsApp",
+    "contact_email": "E-mail",
+    "notes": "Observações",
+    "company_id": "Empresa",
+    "status": "Status",
 }
 
 VALUE_ERROR_PREFIX = "Value error, "

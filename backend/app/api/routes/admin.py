@@ -8,9 +8,12 @@ from app.schemas.admin import (
     AdminApplicationRead,
     AdminCandidateRead,
     AdminCompanyRead,
+    AdminJobDetail,
     AdminJobRead,
+    AdminJobWrite,
     AdminUserRead,
     ActiveUpdate,
+    CompanyWrite,
     HiddenUpdate,
     RecruiterCreate,
     StaffMemberRead,
@@ -20,6 +23,8 @@ from app.services.admin_service import (
     approve_company,
     approve_job,
     block_company,
+    company_to_admin_read,
+    job_to_admin_read,
     hide_job,
     list_admin_applications,
     list_admin_candidates,
@@ -29,6 +34,13 @@ from app.services.admin_service import (
     set_application_hidden,
     set_candidate_active,
     set_company_active,
+)
+from app.services.client_admin_service import (
+    create_admin_job,
+    create_company,
+    get_admin_job,
+    update_admin_job,
+    update_company,
 )
 from app.services.screening_service import list_admin_screening_questions, replace_admin_screening_questions
 from app.services.staff_service import StaffCreationError, StaffEmailTakenError, create_staff_user, list_staff
@@ -54,6 +66,42 @@ def get_candidates(db: Session = Depends(get_db), current_user: User = Depends(a
 @router.get("/companies", response_model=list[AdminCompanyRead])
 def get_companies(db: Session = Depends(get_db), current_user: User = Depends(admin_only)):
     return list_admin_companies(db, current_user)
+
+
+@router.post("/companies", response_model=AdminCompanyRead, status_code=status.HTTP_201_CREATED)
+def create_company_endpoint(payload: CompanyWrite, db: Session = Depends(get_db), current_user: User = Depends(admin_only)):
+    return company_to_admin_read(create_company(db, payload))
+
+
+@router.put("/companies/{company_id}", response_model=AdminCompanyRead)
+def update_company_endpoint(
+    company_id: int,
+    payload: CompanyWrite,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(admin_only),
+):
+    return company_to_admin_read(update_company(db, company_id, payload))
+
+
+# Creating and editing jobs: admin only (recruiters operate the pipeline of existing jobs).
+@router.post("/jobs", response_model=AdminJobRead, status_code=status.HTTP_201_CREATED)
+def create_job_endpoint(payload: AdminJobWrite, db: Session = Depends(get_db), current_user: User = Depends(admin_only)):
+    return job_to_admin_read(create_admin_job(db, payload))
+
+
+@router.get("/jobs/{job_id}", response_model=AdminJobDetail)
+def get_job_endpoint(job_id: int, db: Session = Depends(get_db), current_user: User = Depends(admin_only)):
+    return get_admin_job(db, job_id)
+
+
+@router.put("/jobs/{job_id}", response_model=AdminJobRead)
+def update_job_endpoint(
+    job_id: int,
+    payload: AdminJobWrite,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(admin_only),
+):
+    return job_to_admin_read(update_admin_job(db, job_id, payload))
 
 
 @router.get("/jobs", response_model=list[AdminJobRead])

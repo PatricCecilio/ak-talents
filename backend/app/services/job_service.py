@@ -42,12 +42,11 @@ def list_company_jobs(db: Session, current_user: User) -> list[Job]:
 
 
 def publishable_jobs(db: Session):
-    """Jobs candidates may see and apply to: approved, active and from an active (not deactivated) company."""
+    """Jobs candidates may see and apply to: published, active and from an active company (with or without login)."""
     return (
         db.query(Job)
         .join(Company, Job.company_id == Company.id)
-        .join(User, Company.user_id == User.id)
-        .filter(Job.is_active.is_(True), Job.status == "approved", User.is_active.is_(True))
+        .filter(Job.is_active.is_(True), Job.status == "approved", Company.is_active.is_(True))
     )
 
 

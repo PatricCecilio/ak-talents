@@ -1,6 +1,12 @@
 from datetime import datetime
+from typing import Literal
 
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, EmailStr, Field, field_validator
+
+from app.schemas.job import JobCreate, JobRead
+
+# Job lifecycle operated by AK: draft (Rascunho), approved (Publicada, the only public one), closed (Encerrada).
+JobStatus = Literal["draft", "approved", "closed"]
 
 
 class AdminUserRead(BaseModel):
@@ -34,10 +40,11 @@ class AdminCandidateRead(BaseModel):
 
 class AdminCompanyRead(BaseModel):
     id: int
-    user_id: int
+    user_id: int | None
     company_name: str
     responsible_name: str | None
-    email: EmailStr
+    # Account e-mail (old portal companies only).
+    email: EmailStr | None
     city: str | None
     state: str | None
     industry: str | None
@@ -45,6 +52,53 @@ class AdminCompanyRead(BaseModel):
     status: str
     created_at: datetime
     is_active: bool = True
+    cnpj: str | None = None
+    whatsapp: str | None = None
+    contact_email: str | None = None
+    notes: str | None = None
+    has_account: bool = False
+    jobs_count: int = 0
+
+
+def _blank_is_none(value):
+    return (value.strip() or None) if isinstance(value, str) else value
+
+
+class CompanyWrite(BaseModel):
+    """Internal client company record (created and edited by the AK admin)."""
+
+    company_name: str = Field(min_length=2, max_length=180)
+    cnpj: str | None = Field(default=None, max_length=20)
+    responsible_name: str | None = Field(default=None, max_length=180)
+    whatsapp: str = Field(min_length=8, max_length=40)
+    contact_email: EmailStr | None = None
+    city: str | None = Field(default=None, max_length=180)
+    state: str | None = Field(default=None, max_length=2)
+    notes: str | None = Field(default=None, max_length=2000)
+
+    @field_validator("cnpj", "responsible_name", "contact_email", "city", "state", "notes", mode="before")
+    @classmethod
+    def _blank(cls, value):
+        return _blank_is_none(value)
+
+    @field_validator("company_name", "whatsapp", mode="before")
+    @classmethod
+    def _strip(cls, value):
+        return value.strip() if isinstance(value, str) else value
+
+
+class AdminJobWrite(JobCreate):
+    """A job opened by AK for a client company: published right away, no approval step."""
+
+    company_id: int
+    recruiter_id: int | None = None
+    status: JobStatus = "draft"
+
+
+class AdminJobDetail(JobRead):
+    company_name: str
+    recruiter_id: int | None = None
+    show_company_to_candidates: bool = False
 
 
 
@@ -56,6 +110,8 @@ class AdminJobRead(BaseModel):
     location: str | None
     work_mode: str | None
     status: str
+    openings: int | None = None
+    company_is_active: bool = True
     is_active: bool
     created_at: datetime
     recruiter_id: int | None = None

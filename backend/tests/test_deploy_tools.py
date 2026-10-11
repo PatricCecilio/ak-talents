@@ -149,8 +149,57 @@ class LoginCodesMigrationTestCase(TempSqliteDatabaseTestCase):
         self.assertTrue({"code_hash", "purpose", "door", "user_id", "expires_at", "used_at"} <= self.columns("login_codes"))
         self.assertIn("ix_login_codes_code_hash", {row[1] for row in self.query("pragma index_list(login_codes)")})
         self.assertEqual(self.query("select email from users"), [("ana@x.com",)])
-        self.assertEqual(self.query("select version_num from alembic_version"), [("0013_login_codes",)])
-        self.assertEqual(HEAD_REVISION, "0013_login_codes")
+        self.assertEqual(self.query("select version_num from alembic_version"), [(HEAD_REVISION,)])
+
+
+class InternalCompaniesMigrationTestCase(TempSqliteDatabaseTestCase):
+    OLD_COMPANIES = (
+        "create table companies (id integer primary key, user_id integer not null unique references users(id) on delete cascade, "
+        "company_name varchar(180) not null, responsible_name varchar(180), phone varchar(40), city varchar(180), state varchar(80), "
+        "industry varchar(180), company_size varchar(80), status varchar(40) not null, website varchar(500), description text, "
+        "created_at datetime not null)"
+    )
+
+    def test_database_at_0013_gets_internal_companies_and_new_job_statuses(self) -> None:
+        engine = create_engine(f"sqlite:///{self.db_path.as_posix()}")
+        Base.metadata.create_all(bind=engine)
+        engine.dispose()
+        with closing(sqlite3.connect(self.db_path)) as connection:
+            # companies as it was at 0013: login required, no internal fields.
+            connection.execute("drop table companies")
+            connection.execute(self.OLD_COMPANIES)
+            connection.execute("insert into users (id, name, email, hashed_password, role, is_active, created_at) values (1, 'A', 'a@x.com', 'x', 'company', 1, '2026-09-01 10:00:00')")
+            connection.execute("insert into users (id, name, email, hashed_password, role, is_active, created_at) values (2, 'B', 'b@x.com', 'x', 'company', 0, '2026-09-01 10:00:00')")
+            connection.execute("insert into companies (id, user_id, company_name, phone, status, created_at) values (1, 1, 'Ativa', '41999990000', 'approved', '2026-09-01 10:00:00')")
+            connection.execute("insert into companies (id, user_id, company_name, status, created_at) values (2, 2, 'Desativada', 'approved', '2026-09-01 10:00:00')")
+            for job_id, status, active in ((1, "pending", 1), (2, "approved", 1), (3, "hidden", 0), (4, "closed", 0)):
+                connection.execute(
+                    "insert into jobs (id, company_id, title, slug, description, status, is_active, created_at) "
+                    f"values ({job_id}, 1, 'V{job_id}', 'v{job_id}', 'Descrição', '{status}', {active}, '2026-09-01 10:00:00')"
+                )
+            connection.execute("create table alembic_version (version_num varchar(32) not null primary key)")
+            connection.execute("insert into alembic_version values ('0013_login_codes')")
+            connection.commit()
+
+        self.assertEqual(migrate_module.migrate(), "upgraded")
+        self.assertTrue({"cnpj", "contact_email", "notes", "is_active"} <= self.columns("companies"))
+        not_null = {row[1]: row[3] for row in self.query("pragma table_info(companies)")}
+        self.assertEqual(not_null["user_id"], 0, "user_id passa a aceitar vazio")
+        # Nothing lost; "deactivated" comes from the company's account.
+        self.assertEqual(
+            self.query("select id, user_id, company_name, phone, is_active from companies order by id"),
+            [(1, 1, "Ativa", "41999990000", 1), (2, 2, "Desativada", None, 0)],
+        )
+        self.assertEqual(
+            self.query("select id, status, is_active from jobs order by id"),
+            [(1, "draft", 1), (2, "approved", 1), (3, "closed", 0), (4, "closed", 0)],
+        )
+        # A company without login can be stored now.
+        with closing(sqlite3.connect(self.db_path)) as connection:
+            connection.execute("insert into companies (company_name, status, is_active, created_at) values ('Interna', 'approved', 1, '2026-10-11 10:00:00')")
+            connection.commit()
+        self.assertEqual(self.query("select version_num from alembic_version"), [(HEAD_REVISION,)])
+        self.assertEqual(HEAD_REVISION, "0014_internal_companies")
 
 
 class PipelineMigrationTestCase(TempSqliteDatabaseTestCase):
