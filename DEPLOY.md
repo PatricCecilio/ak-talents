@@ -162,6 +162,8 @@ $env:DATABASE_URL = [Runtime.InteropServices.Marshal]::PtrToStringBSTR($b)
 Remove-Item Env:DATABASE_URL
 ```
 
+**Onde a equipe entra:** `https://www.aktalent.com.br/equipe` (admin e recrutadores). Essa página não aparece em menus nem no rodapé e não é indexada (meta `noindex` + cabeçalho `X-Robots-Tag`). Candidatos e empresas entram por `/entrar` (o "Entrar" do topo).
+
 O script pede a connection string oculta e mostra só o banco de destino (sem a senha): confira que é a Neon antes de confirmar com `s`. Depois pede nome, e-mail e senha (oculta, mínimo 12, digitada duas vezes). Recrutadores: pelo `/admin` ("Equipe de recrutamento") ou `python -m app.scripts.create_recruiter`.
 
 ---
@@ -183,7 +185,7 @@ Use dados claramente de teste ("TESTE AK"). Celular para a parte pública e para
 3. **Candidato** (celular): `/register` → Candidato → aceitar política.
 4. Ainda logado, em `/candidate`, achar a vaga e tocar **Candidatar-se**. (A candidatura precisa ser feita **logado**: pelo formulário público ela não aparece na conta, por segurança.)
 5. Em `/candidate`, "Minhas candidaturas" mostra **Recebida**.
-6. **Recrutadora**: entrar (vai para `/recrutador`) → definir-se responsável → abrir o pipeline → no candidato, **Mover para… → Em triagem** e depois **→ Entrevista com a AK** (com observação). O candidato passa a ver **Entrevista**.
+6. **Recrutadora**: entrar por `/equipe` (vai para `/recrutador`) → definir-se responsável → abrir o pipeline → no candidato, **Mover para… → Em triagem** e depois **→ Entrevista com a AK** (com observação). O candidato passa a ver **Entrevista**.
 7. **Mover para… → Finalista** (parecer obrigatório, 2 linhas).
 8. **Empresa**: `/company` → "Finalistas para aprovar (1)", com parecer e **sem** telefone → **Aprovar para entrevista** → o contato aparece em "Aprovados".
 9. **Candidato**: vê **Na etapa final**.

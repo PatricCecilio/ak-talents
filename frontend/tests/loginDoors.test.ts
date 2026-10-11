@@ -131,3 +131,17 @@ test('"Entrar" goes to /entrar; signing out returns to the right login; wrong-do
   assert.match(notice, /aria-label="Fechar aviso"/)
   assert.match(read('src/pages/LoginDoorPage.tsx'), /navigate\(decision\.to, decision\.notice \? \{ state: \{ loginNotice: decision\.notice \} \} : undefined\)/)
 })
+
+test('/equipe is also marked noindex by an HTTP header (robots that do not run JavaScript)', () => {
+  const config = JSON.parse(read('vercel.json'))
+  const rule = config.headers.find((entry: { source: string }) => entry.source === '/equipe')
+  assert.deepEqual(rule.headers, [{ key: 'X-Robots-Tag', value: 'noindex, nofollow' }])
+  // Listing it in robots.txt would only advertise the address.
+  let robots = ''
+  try {
+    robots = read('public/robots.txt')
+  } catch {
+    // No robots.txt at all.
+  }
+  assert.doesNotMatch(robots, /equipe/)
+})
