@@ -232,13 +232,62 @@ Hoje as perguntas da vaga são respondidas **na própria página**. Com `VITE_AP
 
 ---
 
+## G) Login com Google (candidatos e empresas)
+
+Fluxo de **ID token** (Google Identity Services): o botão do Google entrega um token ao navegador; a API confere assinatura, audience (= nosso Client ID), emissor do Google, validade e e-mail verificado, e emite o nosso JWT. **Não existe segredo de cliente** nesse fluxo — só o Client ID, que é público.
+
+- Aparece em `/entrar/candidato`, `/entrar/empresa` e `/register`. **Nunca em `/equipe`**: a equipe entra só com e-mail e senha.
+- Conta nova: o papel vem da porta (candidato ou empresa) e a pessoa aceita a Política antes de criar a conta.
+- Conta existente com o mesmo e-mail: passa a entrar com o Google; a **senha antiga deixa de funcionar** e as sessões antigas caem. Contas da equipe nunca são vinculadas ("Use o acesso da equipe em /equipe.").
+- No login com Google, candidaturas feitas pelo formulário público com o mesmo e-mail passam para a conta.
+
+### G1. Google Cloud Console (uma vez)
+
+1. https://console.cloud.google.com → seletor de projetos (topo) → **Novo projeto** → nome `AK Talent` → Criar. Confira que ele ficou selecionado.
+2. **APIs e serviços → Tela de permissão OAuth** (pode aparecer como "Google Auth Platform → Branding"):
+   - Tipo de usuário: **Externo**.
+   - Nome do app: `AK Talent`; e-mail de suporte: o seu.
+   - Logo: `ak-talent-logo-google-120.png` (120×120; gerada do ícone oficial). Opcional — com logo, o Google pode pedir verificação da marca, o que só muda a exibição da logo.
+   - Página inicial: `https://www.aktalent.com.br`; Política de privacidade: `https://www.aktalent.com.br/privacidade`.
+   - Domínios autorizados: `aktalent.com.br`.
+   - Escopos ("Acesso a dados"): **só** `openid`, `.../auth/userinfo.email` e `.../auth/userinfo.profile` (não exigem verificação do Google).
+   - Público-alvo: **Publicar aplicativo** (status "Em produção"). Em "Teste", só os e-mails de teste conseguem entrar.
+3. **APIs e serviços → Credenciais → Criar credenciais → ID do cliente OAuth** (ou "Clientes → Criar cliente"):
+   - Tipo: **Aplicativo da Web**; nome: `AK Talent site`.
+   - **Origens JavaScript autorizadas**: `https://www.aktalent.com.br`, `https://aktalent.com.br` e `http://localhost:5173`.
+   - URIs de redirecionamento: **deixe vazio** (o fluxo de ID token não usa).
+   - Criar → copie o **ID do cliente** (`....apps.googleusercontent.com`). O "segredo do cliente" **não é usado**: não copie para lugar nenhum.
+
+### G2. Variáveis (Production) e redeploy
+
+O Client ID é público (vai no navegador): **não** marque como Sensitive.
+
+| Projeto | Variável | Valor |
+|---|---|---|
+| `ak-talent-api` | `GOOGLE_CLIENT_ID` | o ID do cliente |
+| `ak-talents` | `VITE_GOOGLE_CLIENT_ID` | o mesmo ID do cliente |
+
+Depois de criar, **redeploy** dos dois (a `VITE_*` entra no build do site). Sem a variável, o botão some do site e `POST /auth/google` responde 503 — é assim que se desliga o recurso.
+
+### G3. Banco
+
+A migração `0012_google_sign_in` (só aditiva: `email_verified_at`, `google_sub`, `sessions_valid_after`; senha passa a aceitar vazio) precisa estar aplicada **antes** do deploy desta versão da API: `backend/scripts/migrar-producao.ps1` (seção A5).
+
+### G4. Conferir
+
+- `/entrar/candidato` e `/entrar/empresa` mostram "Continuar com o Google"; `/equipe` não.
+- Conta Google nova pela porta de candidato → pede o aceite → cai em `/candidate`. Pela porta de empresa → `/company` (empresa "Aguardando aprovação").
+- E-mail que já tinha conta com senha → entra pelo Google; a senha antiga passa a responder "Esta conta usa o login com Google. Toque em Entrar com Google."
+
+---
+
 ## Checklist antes de divulgar
 
 - [ ] `/health` da API responde `ok` e a região da função é `gru1`; banco Neon em São Paulo.
 - [ ] `JWT_SECRET_KEY` forte (a API não sobe sem ele).
 - [ ] Migrações aplicadas (A5) e primeiro admin criado (C).
 - [ ] Site com `VITE_API_BASE_URL` e AppIntelli em Production, redeploy feito; `/vagas` sem erro.
-- [x] Política de Privacidade preenchida (razão social, CNPJ, e-mail de contato e prazos de retenção; versão 2026-10-11).
+- [x] Política de Privacidade preenchida (razão social, CNPJ, e-mail de contato, prazos de retenção e login com Google; versão 2026-10-11-2).
 - [ ] Mensagem de boas-vindas do chat ajustada no painel do AppIntelli.
 - [ ] `VITE_APPINTELLI_SCREENING_ENABLED` desligada, a não ser que a verificação F tenha mostrado as chamadas `/integrations/appintelli/...` com 200.
 - [ ] Teste de 15 minutos (E) concluído.
