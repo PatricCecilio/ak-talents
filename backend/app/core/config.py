@@ -33,6 +33,9 @@ class Settings(BaseSettings):
     # Off until e-mail verification exists: typing someone's e-mail (or phone) in the public job form
     # must not attach the application to, or change, that person's account.
     LINK_PUBLIC_APPLICATIONS_BY_EMAIL: bool = False
+    # Sign in with Google (ID token flow): the OAuth "Web application" Client ID. Public value, no secret needed.
+    # Empty = the feature is off (POST /auth/google answers 503 and the site hides the button).
+    GOOGLE_CLIENT_ID: str = ""
 
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
 

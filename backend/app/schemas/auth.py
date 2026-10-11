@@ -1,3 +1,5 @@
+from typing import Literal
+
 from pydantic import BaseModel, EmailStr, Field
 
 from app.models.user import UserRole
@@ -23,3 +25,20 @@ class TokenResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"
     user: UserRead
+
+
+class GoogleSignInRequest(BaseModel):
+    # ID token from Google Identity Services (the browser's "Continuar com o Google" button).
+    credential: str = Field(min_length=20, max_length=4096)
+    # Login door the person used: decides the account type only when a NEW account is created.
+    door: Literal["candidato", "empresa"]
+    # Needed only to create a new account (same rule as the sign-up form).
+    privacy_accepted: bool = False
+
+
+class GoogleSignInResponse(TokenResponse):
+    created: bool = False
+    # An existing e-mail/password account was linked to Google (its password no longer works).
+    linked: bool = False
+    # Public job-form applications with the same (now verified) e-mail moved into this account.
+    linked_applications: int = 0

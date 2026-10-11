@@ -24,6 +24,17 @@ COMPANY_PROFILE_NOT_FOUND = "Perfil da empresa não encontrado."
 CANDIDATE_PROFILE_NOT_FOUND = "Perfil de candidato não encontrado."
 SCREENING_NOT_FOUND = "Triagem não encontrada. Confira o link recebido."
 
+# Sign in with Google
+GOOGLE_LOGIN_UNAVAILABLE = "Login com Google indisponível no momento. Entre com e-mail e senha."
+GOOGLE_TOKEN_INVALID = "Não foi possível confirmar sua conta Google. Tente de novo."
+GOOGLE_EMAIL_NOT_VERIFIED = "Seu e-mail do Google ainda não foi verificado. Verifique-o no Google e tente de novo."
+GOOGLE_STAFF_USE_TEAM_LOGIN = "Use o acesso da equipe em /equipe."
+GOOGLE_OTHER_ACCOUNT = "Este e-mail já está ligado a outra conta Google."
+GOOGLE_ONLY_ACCOUNT = "Esta conta usa o login com Google. Toque em Entrar com Google."
+GOOGLE_CONSENT_REQUIRED = "Para criar sua conta, leia e aceite a Política de Privacidade."
+INVALID_CREDENTIALS = "E-mail ou senha inválidos."
+INACTIVE_USER = "Usuário inativo."
+
 # Accounts and companies
 EMAIL_ALREADY_REGISTERED = "Este e-mail já tem cadastro. Entre com sua senha."
 BLOCKED_COMPANY = "Sua empresa está bloqueada para publicar vagas. Fale com a equipe AK Talent."

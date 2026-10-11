@@ -13,7 +13,8 @@ def create_access_token(subject: str | int, expires_delta: timedelta | None = No
     expire = datetime.now(timezone.utc) + (
         expires_delta or timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
     )
-    payload: dict[str, Any] = {"sub": str(subject), "exp": expire}
+    # "iat" lets sessions opened before a cut-off (users.sessions_valid_after) be refused.
+    payload: dict[str, Any] = {"sub": str(subject), "exp": expire, "iat": int(datetime.now(timezone.utc).timestamp())}
     return jwt.encode(payload, settings.JWT_SECRET_KEY, algorithm=settings.JWT_ALGORITHM)
 
 

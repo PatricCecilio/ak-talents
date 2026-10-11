@@ -1,3 +1,5 @@
+from datetime import timezone
+
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
@@ -29,6 +31,14 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
 
     if user is None:
         raise credentials_exception
+
+    # Sessions opened before the cut-off (e.g. with a password that was invalidated when Google was linked).
+    if user.sessions_valid_after is not None:
+        valid_after = user.sessions_valid_after
+        if valid_after.tzinfo is None:  # SQLite returns naive UTC
+            valid_after = valid_after.replace(tzinfo=timezone.utc)
+        if int(payload.get("iat") or 0) < int(valid_after.timestamp()):
+            raise credentials_exception
 
     # A deactivated account loses access immediately, even with a token that has not expired yet.
     if not user.is_active:
