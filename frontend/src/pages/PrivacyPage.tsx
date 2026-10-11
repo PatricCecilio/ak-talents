@@ -1,12 +1,11 @@
 import type { ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { Container } from '../components/Container'
-import { PRIVACY_POLICY_LAST_UPDATED, PRIVACY_POLICY_VERSION } from '../services/privacyPolicy'
-
-// Highlighted on purpose: these must be filled in by AK Talent before launch.
-function Placeholder({ children }: { children: ReactNode }) {
-  return <mark className="rounded bg-amber-100 px-1 font-semibold text-ink-950">{children}</mark>
-}
+import {
+  PRIVACY_CONTACT_EMAIL,
+  PRIVACY_POLICY_LAST_UPDATED,
+  PRIVACY_POLICY_VERSION,
+} from '../services/privacyPolicy'
 
 function Section({ title, children }: { title: string; children: ReactNode }) {
   return (
@@ -28,7 +27,11 @@ function List({ items }: { items: ReactNode[] }) {
 }
 
 export function PrivacyPage() {
-  const contactEmail = <Placeholder>[E-MAIL DE CONTATO DE PRIVACIDADE]</Placeholder>
+  const contactEmail = (
+    <a href={`mailto:${PRIVACY_CONTACT_EMAIL}`} className="font-semibold text-gold-800 underline underline-offset-2 hover:text-ink-950">
+      {PRIVACY_CONTACT_EMAIL}
+    </a>
+  )
 
   return (
     <Container className="py-12 sm:py-16">
@@ -47,8 +50,8 @@ export function PrivacyPage() {
 
         <Section title="1. Quem somos">
           <p>
-            A AK Talent é operada por <Placeholder>[RAZÃO SOCIAL]</Placeholder>, inscrita no CNPJ sob o nº{' '}
-            <Placeholder>[CNPJ]</Placeholder>. Somos uma empresa de recrutamento: nossa equipe conduz processos seletivos
+            A AK Talent é operada por AK Talent (63.263.799 PATRIC CECILIO), Microempreendedor Individual, inscrita no
+            CNPJ sob o nº 63.263.799/0001-29. Somos uma empresa de recrutamento: nossa equipe conduz processos seletivos
             para empresas clientes usando a plataforma AK Talent. Somos responsáveis (controladores) pelos dados tratados
             nesta plataforma.
           </p>
@@ -133,10 +136,17 @@ export function PrivacyPage() {
 
         <Section title="5. Por quanto tempo guardamos">
           <p>
-            Guardamos os dados de candidatura por <Placeholder>[PRAZO DE RETENÇÃO]</Placeholder> após o fim do processo
-            seletivo, para que você possa ser considerado em novas vagas parecidas. Dados de contas ficam guardados enquanto a
-            conta existir. Depois desses prazos, os dados são apagados ou anonimizados, exceto quando a lei exigir que sejam
-            mantidos por mais tempo.
+            <strong>Candidatos:</strong> guardamos os dados de candidatura por até 24 meses após o encerramento do último
+            processo seletivo de que você participou, para que você possa ser considerado em novas vagas parecidas. Se você
+            pedir a exclusão antes disso, apagamos antes.
+          </p>
+          <p>
+            <strong>Empresas clientes:</strong> guardamos os dados durante a relação comercial e, depois, pelo prazo exigido
+            por obrigações legais e fiscais.
+          </p>
+          <p>
+            Dados de contas ficam guardados enquanto a conta existir. Depois desses prazos, os dados são apagados ou
+            anonimizados, exceto quando a lei exigir que sejam mantidos por mais tempo.
           </p>
         </Section>
 

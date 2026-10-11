@@ -236,7 +236,7 @@ Hoje as perguntas da vaga são respondidas **na própria página**. Com `VITE_AP
 - [ ] `JWT_SECRET_KEY` forte (a API não sobe sem ele).
 - [ ] Migrações aplicadas (A5) e primeiro admin criado (C).
 - [ ] Site com `VITE_API_BASE_URL` e AppIntelli em Production, redeploy feito; `/vagas` sem erro.
-- [ ] Política de Privacidade com `[RAZÃO SOCIAL]`, `[CNPJ]`, `[E-MAIL DE CONTATO DE PRIVACIDADE]` e `[PRAZO DE RETENÇÃO]` preenchidos.
+- [x] Política de Privacidade preenchida (razão social, CNPJ, e-mail de contato e prazos de retenção; versão 2026-10-11).
 - [ ] Mensagem de boas-vindas do chat ajustada no painel do AppIntelli.
 - [ ] `VITE_APPINTELLI_SCREENING_ENABLED` desligada, a não ser que a verificação F tenha mostrado as chamadas `/integrations/appintelli/...` com 200.
 - [ ] Teste de 15 minutos (E) concluído.

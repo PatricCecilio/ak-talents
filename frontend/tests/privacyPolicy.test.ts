@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import { test } from 'node:test'
-import { PRIVACY_POLICY_PATH, PRIVACY_POLICY_VERSION } from '../src/services/privacyPolicy.ts'
+import { PRIVACY_CONTACT_EMAIL, PRIVACY_POLICY_PATH, PRIVACY_POLICY_VERSION } from '../src/services/privacyPolicy.ts'
 
 const root = new URL('../', import.meta.url)
 const read = (path: string) => readFileSync(new URL(path, root), 'utf8')
@@ -13,14 +13,25 @@ test('privacy policy version matches the version the backend stores with each co
   assert.equal(PRIVACY_POLICY_VERSION, match[1])
 })
 
-test('privacy page is routed and covers the required topics with clear placeholders', () => {
+test('privacy page is routed and covers the required topics, with the real company data', () => {
   assert.equal(PRIVACY_POLICY_PATH, '/privacidade')
   assert.match(read('src/routes/AppRoutes.tsx'), /<Route path="\/privacidade" element=\{<PrivacyPage \/>\} \/>/)
 
   const page = read('src/pages/PrivacyPage.tsx')
-  for (const placeholder of ['[RAZÃO SOCIAL]', '[CNPJ]', '[E-MAIL DE CONTATO DE PRIVACIDADE]', '[PRAZO DE RETENÇÃO]']) {
-    assert.ok(page.includes(placeholder), `missing placeholder ${placeholder}`)
+  // No placeholder left: no [UPPERCASE TEXT] and no highlighted <mark>/Placeholder component.
+  assert.doesNotMatch(page, /\[[A-ZÀ-Ú][A-ZÀ-Ú0-9 _\-/]*\]/)
+  assert.doesNotMatch(page, /Placeholder|<mark|bg-amber-100/)
+  for (const fact of [
+    'AK Talent (63.263.799 PATRIC CECILIO), Microempreendedor Individual',
+    '63.263.799/0001-29',
+    'até 24 meses após o encerramento do último',
+    'pelo prazo exigido',
+    'obrigações legais e fiscais',
+  ]) {
+    assert.ok(page.includes(fact), `missing ${fact}`)
   }
+  assert.equal(PRIVACY_CONTACT_EMAIL, 'contato@aktalent.com.br')
+  assert.match(page, /href=\{`mailto:\$\{PRIVACY_CONTACT_EMAIL\}`\}/)
   for (const topic of [
     'Quais dados coletamos',
     'Para que usamos seus dados',
