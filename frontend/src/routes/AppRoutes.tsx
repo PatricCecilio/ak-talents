@@ -10,6 +10,7 @@ import { AdminPage } from '../pages/AdminPage'
 import { HomePage, RecruitmentSolutionPage } from '../pages/HomePage'
 import { JobDetailPage } from '../pages/JobDetailPage'
 import { JobsPage } from '../pages/JobsPage'
+import { GoogleReturnPage } from '../pages/GoogleReturnPage'
 import { LoginChooserPage } from '../pages/LoginChooserPage'
 import { LoginDoorPage } from '../pages/LoginDoorPage'
 import { NotFoundPage } from '../pages/NotFoundPage'
@@ -53,6 +54,8 @@ export function AppRoutes() {
           <Route path="/entrar" element={<LoginChooserPage />} />
           <Route path="/entrar/candidato" element={<LoginDoorPage key="candidato" door="candidato" />} />
           <Route path="/entrar/empresa" element={<LoginDoorPage key="empresa" door="empresa" />} />
+          {/* Back from Google (redirect mode): one-time code exchange or the consent step for a new account. */}
+          <Route path="/entrar/google" element={<GoogleReturnPage />} />
           {/* AK team login: not linked from any menu or footer; kept out of search engines. */}
           <Route path="/equipe" element={<LoginDoorPage key="equipe" door="equipe" />} />
           <Route path="/login" element={<LegacyLoginRedirect />} />

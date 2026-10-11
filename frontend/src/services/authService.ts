@@ -1,4 +1,4 @@
-import type { AuthResponse, GoogleSignInPayload, GoogleSignInResponse, LoginPayload, RegisterPayload, User } from '../types/user'
+import type { AuthResponse, GoogleSignInResponse, LoginPayload, RegisterPayload, User } from '../types/user'
 import { apiRequest } from './api'
 
 const TOKEN_KEY = 'ak_talent_access_token'
@@ -30,11 +30,16 @@ export async function authenticate(payload: LoginPayload): Promise<AuthResponse>
   })
 }
 
-/** Checks a Google ID token in the API WITHOUT signing in (the page decides where to go, then starts the session). */
-export async function authenticateWithGoogle(payload: GoogleSignInPayload): Promise<GoogleSignInResponse> {
-  return apiRequest<GoogleSignInResponse>('/auth/google', {
+/** Redirect flow: trades the one-time code the API put in the return URL for the session (the token never travels in a URL). */
+export async function exchangeGoogleCode(codigo: string): Promise<GoogleSignInResponse> {
+  return apiRequest<GoogleSignInResponse>('/auth/google/codigo', { method: 'POST', body: { codigo }, auth: false })
+}
+
+/** Redirect flow, new account: creates it only after the privacy consent. */
+export async function completeGoogleConsent(codigo: string): Promise<GoogleSignInResponse> {
+  return apiRequest<GoogleSignInResponse>('/auth/google/consentimento', {
     method: 'POST',
-    body: payload,
+    body: { codigo, privacy_accepted: true },
     auth: false,
   })
 }

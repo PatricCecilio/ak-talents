@@ -1,13 +1,13 @@
 import type { FormEvent } from 'react'
 import { useState } from 'react'
-import { Link, useLocation, useNavigate } from 'react-router-dom'
+import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import { GoogleSignInButton } from '../components/auth/GoogleSignInButton'
 import { FormField } from '../components/FormField'
 import { Alert, Button } from '../components/ui'
 import { useFormState } from '../hooks/useFormState'
 import { AuthLayout } from '../layouts/AuthLayout'
 import { authenticate, startSession } from '../services/authService'
-import { isGoogleButtonAvailable, isGoogleLoginEnabled } from '../services/googleIdentity'
+import { googleErrorMessage, isGoogleLoginEnabled } from '../services/googleIdentity'
 import { DOOR_COPY, LOGIN_CHOOSER_PATH, decideAfterLogin, type LoginDoor } from '../services/loginDoors'
 
 const linkClass = 'font-bold text-brand-700 underline underline-offset-2 hover:text-brand-600'
@@ -19,7 +19,9 @@ export function LoginDoorPage({ door }: { door: LoginDoor }) {
   const copy = DOOR_COPY[door]
   const { values, updateField } = useFormState({ email: '', password: '' })
   const [isLoading, setIsLoading] = useState(false)
-  const [error, setError] = useState('')
+  // Coming back from Google with a refusal (?erro=...): shown once, in Portuguese.
+  const [searchParams] = useSearchParams()
+  const [error, setError] = useState(() => googleErrorMessage(searchParams.get('erro')))
   const [refusal, setRefusal] = useState<{ message: string; link: { label: string; to: string } } | null>(null)
   const successMessage =
     typeof location.state === 'object' && location.state !== null && 'message' in location.state
@@ -102,11 +104,7 @@ export function LoginDoorPage({ door }: { door: LoginDoor }) {
           </p>
         ) : null}
         {door !== 'equipe' && isGoogleLoginEnabled() ? (
-          <p className="text-center text-xs text-ink-600">
-            {isGoogleButtonAvailable()
-              ? 'Criou a conta com o Google? Use o botão "Continuar com o Google".'
-              : 'Criou a conta com o Google? Por enquanto, entre pelo computador. No celular, o login com Google volta em breve.'}
-          </p>
+          <p className="text-center text-xs text-ink-600">Criou a conta com o Google? Use o botão "Continuar com o Google".</p>
         ) : null}
         {door !== 'equipe' ? (
           <p className="text-center text-sm">

@@ -318,14 +318,10 @@ export interface AdminApplication {
   stage_label?: string
 }
 
-export interface GoogleSignInPayload {
-  credential: string
-  door: 'candidato' | 'empresa'
-  privacy_accepted?: boolean
-}
-
 export interface GoogleSignInResponse extends AuthResponse {
   created: boolean
   linked: boolean
   linked_applications: number
+  /** Redirect flow: the login door the person started from. */
+  door?: 'candidato' | 'empresa' | null
 }

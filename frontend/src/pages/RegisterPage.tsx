@@ -164,11 +164,8 @@ export function RegisterPage() {
           Cadastrar
         </Button>
 
-        <GoogleSignInButton
-          door={values.role === 'company' ? 'empresa' : 'candidato'}
-          externalConsent={privacyAccepted}
-          divider="above"
-        />
+        {/* New accounts accept the policy on the way back from Google (GoogleReturnPage). */}
+        <GoogleSignInButton door={values.role === 'company' ? 'empresa' : 'candidato'} divider="above" />
 
         <p className="text-center text-sm text-ink-600">
           Já tem conta?{' '}

@@ -12,21 +12,25 @@ export function isGoogleLoginEnabled(env: ImportMetaEnv = import.meta.env): bool
   return googleClientId(env).length > 0
 }
 
-/**
- * Phones and tablets open Google's popup as a separate tab that never hands the result back to the site (blank page
- * at accounts.google.com on Android Chrome and Edge). Until the redirect flow ships, the button is not shown there.
- */
-export function isPopupUnreliable(userAgent: string, maxTouchPoints = 0): boolean {
-  if (/Android|iPhone|iPad|iPod|Mobile|Silk|Kindle/i.test(userAgent)) return true
-  // iPadOS reports itself as a Mac; touch support gives it away.
-  return /Macintosh/i.test(userAgent) && maxTouchPoints > 1
+/** Google sends people back here (a POST with the ID token); the site forwards it to the API (vercel.json / vite proxy). */
+export function googleReturnUri(door: 'candidato' | 'empresa', origin: string = window.location.origin): string {
+  return `${origin}/auth/google/retorno/${door}`
 }
 
-/** The Google button is offered only when configured and on browsers where the popup works. */
-export function isGoogleButtonAvailable(env: ImportMetaEnv = import.meta.env): boolean {
-  if (!isGoogleLoginEnabled(env)) return false
-  if (typeof navigator === 'undefined') return true
-  return !isPopupUnreliable(navigator.userAgent, navigator.maxTouchPoints)
+/** ?erro=<code> on the login door after the redirect flow (the API never shows an error page of its own). */
+export const GOOGLE_ERROR_MESSAGES: Record<string, string> = {
+  csrf: 'Não foi possível confirmar o login com o Google. Toque de novo em "Continuar com o Google".',
+  token: 'Não foi possível confirmar sua conta Google. Tente de novo.',
+  email_nao_verificado: 'Seu e-mail do Google ainda não foi verificado. Verifique-o no Google e tente de novo.',
+  equipe: 'Use o acesso da equipe em /equipe.',
+  inativo: 'Usuário inativo.',
+  outra_conta: 'Este e-mail já está ligado a outra conta Google.',
+  indisponivel: 'Login com Google indisponível no momento. Entre com e-mail e senha.',
+}
+
+export function googleErrorMessage(code: string | null): string {
+  if (!code) return ''
+  return GOOGLE_ERROR_MESSAGES[code] ?? GOOGLE_ERROR_MESSAGES.token
 }
 
 interface GoogleCredentialResponse {
@@ -36,8 +40,9 @@ interface GoogleCredentialResponse {
 interface GoogleAccountsId {
   initialize: (options: {
     client_id: string
-    callback: (response: GoogleCredentialResponse) => void
+    callback?: (response: GoogleCredentialResponse) => void
     ux_mode?: 'popup' | 'redirect'
+    login_uri?: string
     context?: 'signin' | 'signup' | 'use'
     auto_select?: boolean
     cancel_on_tap_outside?: boolean

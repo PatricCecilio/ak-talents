@@ -12,6 +12,10 @@
   ],
   "rewrites": [
     {
+      "source": "/auth/google/retorno/:door",
+      "destination": "https://ak-talent-api.vercel.app/auth/google/redirect/:door"
+    },
+    {
       "source": "/vagas/:slug",
       "has": [
         {

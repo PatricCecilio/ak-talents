@@ -99,7 +99,9 @@ test('robot request: job found -> job tags; anything else -> the plain site prev
 
 test('only link-preview robots are routed to the function; people keep the static site', () => {
   const config = JSON.parse(read('vercel.json'))
-  const [botRule, catchAll] = config.rewrites
+  const botRule = config.rewrites.find((rule: { source: string }) => rule.source === '/vagas/:slug')
+  const catchAll = config.rewrites.find((rule: { destination: string }) => rule.destination === '/index.html')
+  assert.ok(config.rewrites.indexOf(botRule) < config.rewrites.indexOf(catchAll), 'regra dos robôs antes da regra do SPA')
   assert.equal(botRule.source, '/vagas/:slug')
   assert.equal(botRule.destination, '/api/vaga-preview?slug=:slug')
   const agents = new RegExp(botRule.has[0].value)
