@@ -18,6 +18,7 @@ from app.schemas.panel import (
     JobsListResponse,
     ManualCandidateCreate,
     OverviewResponse,
+    PanelJobDetail,
     ReferRequest,
     ReferResponse,
     SearchResponse,
@@ -38,7 +39,7 @@ from app.services.panel_people_service import (
     update_candidate,
     update_team_member,
 )
-from app.services.panel_service import list_jobs, overview, search
+from app.services.panel_service import job_detail, list_jobs, overview, search
 from app.services.recruiter_service import set_job_responsible
 
 router = APIRouter()
@@ -61,6 +62,7 @@ def get_jobs(
     no_recruiter: bool = Query(default=False),
     mine: bool = Query(default=False),
     include_archived: bool = Query(default=False),
+    focus: str | None = Query(default=None, max_length=20),
     page: int = Query(default=1, ge=1, le=1000),
     db: Session = Depends(get_db),
     current_user: User = Depends(staff),
@@ -74,8 +76,15 @@ def get_jobs(
         no_recruiter=no_recruiter,
         mine=mine,
         include_archived=include_archived,
+        focus=focus,
         page=page,
     )
+
+
+@router.get("/jobs/{job_id}", response_model=PanelJobDetail)
+def get_job(job_id: int, db: Session = Depends(get_db), current_user: User = Depends(staff)):
+    """Header and "Detalhes da vaga" for the whole team (editing stays admin-only in /admin/jobs/{id})."""
+    return job_detail(db, job_id)
 
 
 @router.put("/jobs/{job_id}/responsible", response_model=AdminJobRead)

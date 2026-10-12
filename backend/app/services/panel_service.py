@@ -7,9 +7,11 @@ the jobs list shows every job (recruiters operate all of them) and filters to "m
 from collections import defaultdict
 from datetime import datetime, timedelta, timezone
 
+from fastapi import HTTPException, status
 from sqlalchemy import func, or_
 from sqlalchemy.orm import Session
 
+from app.core import messages
 from app.core.config import settings
 from app.core.pipeline import STAGE_LABELS, Stage
 from app.models.application import Application
@@ -24,6 +26,7 @@ from app.schemas.panel import (
     JobsSummary,
     OverviewCards,
     OverviewResponse,
+    PanelJobDetail,
     PanelJobRow,
     SearchHit,
     SearchResponse,
@@ -286,6 +289,7 @@ def list_jobs(
     no_recruiter: bool = False,
     mine: bool = False,
     include_archived: bool = False,
+    focus: str | None = None,
     page: int = 1,
 ) -> JobsListResponse:
     query = db.query(Job).join(Company, Job.company_id == Company.id)
@@ -312,10 +316,41 @@ def list_jobs(
         query.all(),
         key=lambda job: (STATUS_ORDER.get(job.status, 9), -(as_utc(job.published_at or job.created_at).timestamp())),
     )
+    rows = job_rows(db, jobs)
+    # Overview cards: jobs with someone to triage, with the client, or published with nobody yet.
+    if focus == "to_triage":
+        rows = [row for row in rows if row.to_triage > 0]
+    elif focus == "with_client":
+        rows = [row for row in rows if row.with_client > 0]
+    elif focus == "empty":
+        rows = [row for row in rows if row.status == "approved" and row.applications == 0]
     page = max(page, 1)
-    window = jobs[(page - 1) * PAGE_SIZE : page * PAGE_SIZE]
     return JobsListResponse(
-        items=job_rows(db, window), total=len(jobs), page=page, page_size=PAGE_SIZE, archived_hidden=archived_hidden
+        items=rows[(page - 1) * PAGE_SIZE : page * PAGE_SIZE],
+        total=len(rows),
+        page=page,
+        page_size=PAGE_SIZE,
+        archived_hidden=archived_hidden,
+    )
+
+
+def job_detail(db: Session, job_id: int) -> PanelJobDetail:
+    job = db.get(Job, job_id)
+    if job is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=messages.JOB_NOT_FOUND)
+    row = job_rows(db, [job])[0]
+    return PanelJobDetail(
+        **row.model_dump(),
+        description=job.description,
+        requirements=job.requirements,
+        salary_min=job.salary_min,
+        salary_max=job.salary_max,
+        work_mode=job.work_mode,
+        schedule=job.schedule,
+        benefits=job.benefits,
+        contract_type=job.contract_type,
+        show_company_to_candidates=job.show_company_to_candidates,
+        closed_at=job.closed_at,
     )
 
 

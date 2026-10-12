@@ -187,6 +187,21 @@ class PanelTestCase(unittest.TestCase):
         # Recruiters see every job (they operate all of them); "mine" is just the default filter on screen.
         self.assertEqual(len(titles("", who="rita")), 4)
 
+    def test_jobs_list_focus_for_the_overview_cards(self) -> None:
+        titles = lambda focus: [row["title"] for row in self.call("GET", f"/panel/jobs?focus={focus}").json()["items"]]
+        self.assertEqual(titles("to_triage"), ["Atendente de loja"])
+        self.assertEqual(titles("with_client"), ["Atendente de loja", "Recepcionista"])
+        self.assertEqual(titles("empty"), ["Operador de caixa"])
+
+    def test_job_detail_for_the_whole_team(self) -> None:
+        body = self.call("GET", f"/panel/jobs/{self.rita_job.id}", who="caio").json()
+        self.assertEqual((body["title"], body["company_name"], body["recruiter_name"]), ("Atendente de loja", "Loja Exemplo", "Pessoa Rita"))
+        self.assertEqual((body["applications"], body["to_triage"], body["with_client"]), (3, 2, 1))
+        self.assertEqual(body["description"], "Descrição da vaga.")
+        self.assertIsNotNone(body["published_at"])
+        self.assertEqual(self.call("GET", "/panel/jobs/9999").status_code, 404)
+        self.assertEqual(self.call("GET", f"/panel/jobs/{self.rita_job.id}", who="account").status_code, 403)
+
     def test_jobs_list_pages_of_ten(self) -> None:
         with self.SessionLocal() as db:
             for index in range(12):

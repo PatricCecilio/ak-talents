@@ -37,6 +37,19 @@ class PanelJobRow(BaseModel):
     company_is_active: bool
 
 
+class PanelJobDetail(PanelJobRow):
+    description: str
+    requirements: str | None
+    salary_min: float | None
+    salary_max: float | None
+    work_mode: str | None
+    schedule: str | None
+    benefits: str | None
+    contract_type: str | None
+    show_company_to_candidates: bool
+    closed_at: datetime | None
+
+
 class Page(BaseModel):
     total: int
     page: int

@@ -152,6 +152,7 @@ def get_job_pipeline(db: Session, job_id: int, actor: User, stage: str | None = 
                 candidate_name=_candidate_name(application.candidate),
                 city=application.candidate.city,
                 neighborhood=application.candidate.neighborhood,
+                experience_years=application.candidate.experience_years,
                 stage=application.stage,
                 stage_label=stage_label(application.stage),
                 stage_updated_at=application.stage_updated_at,

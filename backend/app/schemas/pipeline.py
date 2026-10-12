@@ -95,6 +95,7 @@ class ApplicationCard(BaseModel):
     candidate_name: str
     city: str | None
     neighborhood: str | None
+    experience_years: float | None = None
     stage: str
     stage_label: str
     stage_updated_at: datetime
