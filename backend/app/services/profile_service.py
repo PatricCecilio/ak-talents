@@ -65,7 +65,7 @@ def get_candidate_profile(db: Session, current_user: User) -> CandidateProfileRe
     candidate = db.query(Candidate).filter(Candidate.user_id == current_user.id).first()
 
     if not candidate:
-        candidate = Candidate(user_id=current_user.id, full_name=current_user.name)
+        candidate = Candidate(user_id=current_user.id, full_name=current_user.name, source="conta")
         db.add(candidate)
         db.commit()
         db.refresh(candidate)
@@ -82,7 +82,7 @@ def update_candidate_profile(
     candidate = db.query(Candidate).filter(Candidate.user_id == current_user.id).first()
 
     if not candidate:
-        candidate = Candidate(user_id=current_user.id)
+        candidate = Candidate(user_id=current_user.id, source="conta")
         db.add(candidate)
 
     update_data = payload.model_dump(exclude_unset=True)

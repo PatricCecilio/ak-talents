@@ -7,8 +7,10 @@ from app.core.pipeline import (
     ACTIVE_STAGES,
     AK_TRANSITIONS,
     CLIENT_RESPONSES,
+    DEFAULT_NOTE_KIND,
     COMPANY_TRANSITIONS,
     FILLED_JOB_NOTE,
+    NOTE_KINDS,
     STAGE_LABELS,
     SYSTEM_ROLE,
     Stage,
@@ -115,11 +117,13 @@ def move_application(
             raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="O parecer está muito longo.")
         application.finalist_summary = summary
 
+    client_answer = None
     if actor.role in STAFF_ROLES and application.stage == Stage.finalist.value and to_stage in CLIENT_RESPONSES:
         observation = (note or "").strip()
         if not observation:
             raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=CLIENT_RESPONSE_NOTE_REQUIRED)
         note = f"Resposta do cliente: {CLIENT_RESPONSES[to_stage]}. {observation}"
+        client_answer = note
 
     if close_other_active and to_stage != Stage.hired:
         raise HTTPException(
@@ -133,6 +137,11 @@ def move_application(
         )
 
     _apply(db, application, to_stage, actor, note)
+    # The opinion and the client's answer also become typed notes ("Anotações recentes" of the panel).
+    if to_stage == Stage.finalist:
+        db.add(ApplicationNote(application_id=application.id, author_user_id=actor.id, kind="parecer", body=application.finalist_summary))
+    if client_answer:
+        db.add(ApplicationNote(application_id=application.id, author_user_id=actor.id, kind="retorno_cliente", body=client_answer))
 
     closed = 0
     if close_other_active:
@@ -153,19 +162,22 @@ def move_application(
     if close_job:
         # Leaves the public site (only "approved" jobs are listed); staff can publish it again.
         application.job.status = JOB_CLOSED_STATUS
+        application.job.closed_at = _now()
 
     db.commit()
     db.refresh(application)
     return closed
 
 
-def add_note(db: Session, application: Application, author: User, body: str) -> ApplicationNote:
+def add_note(db: Session, application: Application, author: User, body: str, kind: str = DEFAULT_NOTE_KIND) -> ApplicationNote:
+    if kind not in NOTE_KINDS:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Tipo de anotação inválido.")
     text = (body or "").strip()
     if not text:
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Escreva a nota antes de salvar.")
     if len(text) > MAX_NOTE_LENGTH:
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="A nota está muito longa.")
-    note = ApplicationNote(application_id=application.id, author_user_id=author.id, body=text)
+    note = ApplicationNote(application_id=application.id, author_user_id=author.id, kind=kind, body=text)
     db.add(note)
     db.commit()
     db.refresh(note)

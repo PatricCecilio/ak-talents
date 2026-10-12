@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 
-from app.api.routes import admin, ai, applications, auth, candidates, companies, integrations, jobs, public, recruiter
+from app.api.routes import admin, ai, applications, auth, candidates, companies, integrations, jobs, panel, public, recruiter
 
 api_router = APIRouter()
 api_router.include_router(auth.router, prefix="/auth", tags=["auth"])
@@ -13,3 +13,5 @@ api_router.include_router(admin.router, prefix="/admin", tags=["admin"])
 api_router.include_router(public.router, prefix="/public", tags=["public"])
 api_router.include_router(integrations.router, prefix="/integrations", tags=["integrations"])
 api_router.include_router(recruiter.router, prefix="/recruiter", tags=["recruiter"])
+# New AK team panel (/painel), built next to /admin and /recrutador until it replaces them.
+api_router.include_router(panel.router, prefix="/panel", tags=["panel"])

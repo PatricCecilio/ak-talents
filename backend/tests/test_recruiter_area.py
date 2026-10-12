@@ -56,7 +56,7 @@ class RecruiterAreaTestCase(unittest.TestCase):
 
             self.new = application("Ana", "new")
             self.screening = application("Bruno", "screening")
-            self.old_finalist = application("Carla", "finalist", updated_days_ago=5)
+            self.old_finalist = application("Carla", "finalist", updated_days_ago=6)
             self.recent_finalist = application("Davi", "finalist", updated_days_ago=1)
             self.rejected = application("Elisa", "rejected")
             self.hidden = application("Fábio", "screening", hidden=True)
@@ -100,7 +100,7 @@ class RecruiterAreaTestCase(unittest.TestCase):
         response = self.get("/recruiter/jobs")
         self.assertEqual(response.status_code, 200, response.text)
         body = response.json()
-        self.assertEqual(body["finalist_alert_days"], 3)
+        self.assertEqual(body["finalist_alert_days"], 5)
 
         job = next(item for item in body["jobs"] if item["id"] == self.job.id)
         self.assertEqual(job["company_name"], "Mercado Bom")

@@ -1,3 +1,5 @@
+from datetime import datetime, timezone
+
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
@@ -195,6 +197,7 @@ def approve_job(db: Session, current_user: User, job_id: int) -> AdminJobRead:
 
     job.status = "approved"
     job.is_active = True
+    job.published_at = datetime.now(timezone.utc)
     db.commit()
     db.refresh(job)
     return job_to_admin_read(job)
@@ -209,6 +212,7 @@ def hide_job(db: Session, current_user: User, job_id: int) -> AdminJobRead:
 
     job.status = "closed"
     job.is_active = False
+    job.closed_at = datetime.now(timezone.utc)
     db.commit()
     db.refresh(job)
     return job_to_admin_read(job)

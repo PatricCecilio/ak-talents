@@ -39,6 +39,9 @@ class Job(Base):
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False
     )
+    # Last time it went to "Publicada" / "Encerrada" (migration 0015): "publicada há X dias", activity, monthly numbers.
+    published_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    closed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
     company = relationship("Company", back_populates="jobs")
     recruiter = relationship("User", foreign_keys=[recruiter_id])

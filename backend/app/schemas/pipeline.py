@@ -44,6 +44,8 @@ class StageMoveResponse(BaseModel):
 
 class NoteCreate(BaseModel):
     body: str = Field(max_length=4000)
+    # anotacao (default), triagem, entrevista, parecer or retorno_cliente.
+    kind: str = Field(default="anotacao", max_length=20)
 
 
 class NoteRead(BaseModel):
@@ -51,6 +53,8 @@ class NoteRead(BaseModel):
     body: str
     author_name: str | None
     created_at: datetime
+    kind: str = "anotacao"
+    kind_label: str = "Anotação"
 
 
 class StageHistoryRead(BaseModel):

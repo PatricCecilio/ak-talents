@@ -4,6 +4,8 @@ Companies are internal records (no login needed). Jobs opened here skip the old 
 draft, published ("approved", the only public status) or closed.
 """
 
+from datetime import datetime, timezone
+
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
@@ -74,6 +76,18 @@ def update_company(db: Session, company_id: int, payload: CompanyWrite) -> Compa
     return company
 
 
+def delete_company(db: Session, company_id: int) -> None:
+    """Really deletes a client company, but only one without any job (archived ones count)."""
+    company = _company_or_404(db, company_id)
+    if db.query(Job.id).filter(Job.company_id == company.id).first() is not None:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=messages.COMPANY_HAS_JOBS)
+    if company.user_id is not None:
+        # Old portal account: kept (deactivate it instead), so the account history is not lost.
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=messages.COMPANY_HAS_ACCOUNT)
+    db.delete(company)
+    db.commit()
+
+
 def _check_recruiter(db: Session, recruiter_id: int | None) -> None:
     if recruiter_id is None:
         return
@@ -93,6 +107,11 @@ def _apply_job_fields(db: Session, job: Job, payload: AdminJobWrite) -> None:
         setattr(job, field, value)
     job.company_id = company.id
     job.recruiter_id = payload.recruiter_id
+    now = datetime.now(timezone.utc)
+    if payload.status == "approved" and job.status != "approved":
+        job.published_at = now
+    if payload.status == "closed" and job.status != "closed":
+        job.closed_at = now
     job.status = payload.status
     # Only published jobs are active; closing a job takes it off the site.
     job.is_active = payload.status != "closed"

@@ -59,6 +59,16 @@ STAGE_LABELS: dict[Stage, str] = {
 
 FILLED_JOB_NOTE = "Vaga preenchida"
 
+# Kinds of notes on an application (shown on the recruiter page and in "Anotações recentes").
+NOTE_KINDS: dict[str, str] = {
+    "anotacao": "Anotação",
+    "triagem": "Triagem",
+    "entrevista": "Entrevista",
+    "parecer": "Parecer",
+    "retorno_cliente": "Retorno do cliente",
+}
+DEFAULT_NOTE_KIND = "anotacao"
+
 SYSTEM_ROLE = "system"
 
 

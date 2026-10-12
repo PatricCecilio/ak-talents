@@ -42,5 +42,5 @@ class User(Base):
         DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False
     )
 
-    candidate_profile = relationship("Candidate", back_populates="user", uselist=False)
+    candidate_profile = relationship("Candidate", back_populates="user", uselist=False, foreign_keys="Candidate.user_id")
     company_profile = relationship("Company", back_populates="user", uselist=False)

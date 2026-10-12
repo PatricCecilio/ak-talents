@@ -199,7 +199,77 @@ class InternalCompaniesMigrationTestCase(TempSqliteDatabaseTestCase):
             connection.execute("insert into companies (company_name, status, is_active, created_at) values ('Interna', 'approved', 1, '2026-10-11 10:00:00')")
             connection.commit()
         self.assertEqual(self.query("select version_num from alembic_version"), [(HEAD_REVISION,)])
-        self.assertEqual(HEAD_REVISION, "0014_internal_companies")
+
+
+class PanelDataMigrationTestCase(TempSqliteDatabaseTestCase):
+    def test_database_at_0014_gets_note_kinds_job_dates_and_erasure_log(self) -> None:
+        engine = create_engine(f"sqlite:///{self.db_path.as_posix()}")
+        Base.metadata.create_all(bind=engine)
+        engine.dispose()
+        with closing(sqlite3.connect(self.db_path)) as connection:
+            # Tables as they were at 0014.
+            connection.execute("drop table data_deletion_log")
+            connection.execute("alter table application_notes drop column kind")
+            for column in ("published_at", "closed_at"):
+                connection.execute(f"alter table jobs drop column {column}")
+            connection.execute("drop table candidates")
+            connection.execute(
+                "create table candidates (id integer primary key, user_id integer references users(id), full_name varchar(180), "
+                "email varchar(255), phone varchar(40), state varchar(80), desired_role varchar(180), headline varchar(180), bio text, "
+                "skills text, city varchar(180), neighborhood varchar(180), work_mode varchar(80), salary_expectation float, "
+                "experience_years float, linkedin_url varchar(500), portfolio_url varchar(500), resume_url varchar(500), created_at datetime not null)"
+            )
+            connection.execute("insert into users (id, name, email, hashed_password, role, is_active, created_at) values (1, 'Rita', 'rita@x.com', 'x', 'recruiter', 1, '2026-09-01 10:00:00')")
+            connection.execute("insert into users (id, name, email, hashed_password, role, is_active, created_at) values (2, 'Ana', 'ana@x.com', 'x', 'candidate', 1, '2026-09-01 10:00:00')")
+            connection.execute("insert into companies (id, company_name, status, is_active, created_at) values (1, 'Cliente', 'approved', 1, '2026-09-01 10:00:00')")
+            for job_id, status in ((1, "approved"), (2, "draft"), (3, "closed")):
+                connection.execute(
+                    "insert into jobs (id, company_id, title, slug, description, status, is_active, created_at) "
+                    f"values ({job_id}, 1, 'V{job_id}', 'v{job_id}', 'Descrição', '{status}', 1, '2026-09-0{job_id} 10:00:00')"
+                )
+            connection.execute("insert into candidates (id, user_id, full_name, created_at) values (1, 2, 'Ana', '2026-09-01 10:00:00')")
+            connection.execute("insert into candidates (id, full_name, created_at) values (2, 'Bruno', '2026-09-01 10:00:00')")
+            for app_id, candidate_id, stage, summary in ((1, 1, "finalist", "'Ótima comunicação.'"), (2, 2, "client_approved", "'Experiente.'")):
+                connection.execute(
+                    "insert into applications (id, candidate_id, job_id, status, appintelli_reference, screening_status, stage, stage_updated_at, finalist_summary, is_hidden, created_at) "
+                    f"values ({app_id}, {candidate_id}, 1, 'submitted', 'ref-{app_id}', 'REVIEW', '{stage}', '2026-09-05 10:00:00', {summary}, 0, '2026-09-02 10:00:00')"
+                )
+            for app_id in (1, 2):
+                connection.execute(
+                    "insert into application_stage_history (application_id, from_stage, to_stage, changed_by_user_id, changed_by_role, created_at) "
+                    f"values ({app_id}, 'ak_interview', 'finalist', 1, 'recruiter', '2026-09-04 09:00:00')"
+                )
+            connection.execute(
+                "insert into application_stage_history (application_id, from_stage, to_stage, changed_by_user_id, changed_by_role, note, created_at) "
+                "values (2, 'finalist', 'client_approved', 1, 'recruiter', 'Resposta do cliente: aprovou. Começa dia 20.', '2026-09-06 15:00:00')"
+            )
+            connection.execute("insert into application_notes (application_id, author_user_id, body, created_at) values (1, 1, 'Nota antiga.', '2026-09-03 08:00:00')")
+            connection.execute("create table alembic_version (version_num varchar(32) not null primary key)")
+            connection.execute("insert into alembic_version values ('0014_internal_companies')")
+            connection.commit()
+
+        self.assertEqual(migrate_module.migrate(), "upgraded")
+        notes = self.query("select application_id, author_user_id, kind, body, created_at from application_notes order by application_id, created_at")
+        self.assertEqual(
+            [(row[0], row[1], row[2], row[3]) for row in notes],
+            [
+                (1, 1, "anotacao", "Nota antiga."),
+                (1, 1, "parecer", "Ótima comunicação."),
+                (2, 1, "parecer", "Experiente."),
+                (2, 1, "retorno_cliente", "Resposta do cliente: aprovou. Começa dia 20."),
+            ],
+        )
+        self.assertTrue(notes[1][4].startswith("2026-09-04 09:00:00"))
+        # Only published (or once published) jobs get a publish date.
+        self.assertEqual(
+            [(row[0], (row[1] or "")[:10]) for row in self.query("select id, published_at from jobs order by id")],
+            [(1, "2026-09-01"), (2, ""), (3, "2026-09-03")],
+        )
+        self.assertEqual(self.query("select id, source from candidates order by id"), [(1, "conta"), (2, "site")])
+        self.assertTrue({"created_by_user_id", "authorization_recorded_at", "anonymized_at"} <= self.columns("candidates"))
+        self.assertEqual(self.query("select count(*) from data_deletion_log"), [(0,)])
+        self.assertEqual(self.query("select version_num from alembic_version"), [(HEAD_REVISION,)])
+        self.assertEqual(HEAD_REVISION, "0015_panel_data")
 
 
 class PipelineMigrationTestCase(TempSqliteDatabaseTestCase):

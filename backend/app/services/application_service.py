@@ -156,6 +156,7 @@ def _resolve_public_candidate(
         phone=normalized_phone,
         city=payload.city.strip(),
         neighborhood=payload.neighborhood,
+        source="site",
     )
     db.add(candidate)
     db.flush()

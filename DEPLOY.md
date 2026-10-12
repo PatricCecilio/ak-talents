@@ -306,6 +306,10 @@ A empresa cliente não usa mais a plataforma. A AK cadastra a empresa, abre e op
 - **Admin (`/admin`):** empresas (nova, editar, desativar) e vagas (nova, editar, Publicar, Encerrar) com recrutador e status. A vaga criada pela AK não passa por aprovação.
 - **Pipeline:** Nova → Em triagem → Entrevista AK → Enviado ao cliente (parecer obrigatório) → Aprovado pelo cliente → Contratado; saídas Reprovado e Desistiu. A resposta do cliente é registrada pela recrutadora, com observação obrigatória, no histórico. As candidaturas existentes mantêm as etapas e o histórico.
 
+### H0. Painel novo (/painel), migração 0015
+
+O painel novo da equipe é construído ao lado do atual (`/admin` e `/recrutador` continuam funcionando até a troca final). A migração `0015_panel_data` precisa estar aplicada **antes** do deploy da API que traz `/panel/*` (`backend/scripts/migrar-producao.ps1`, seção A5). Ela só acrescenta: tipo das anotações (os pareceres e as respostas do cliente já registrados viram anotações "Parecer" e "Retorno do cliente"), datas de publicação e encerramento das vagas, origem e autorização do candidato cadastrado à mão, marca de dados excluídos e a tabela `data_deletion_log` (quem excluiu dados de candidato e quando, sem os dados).
+
 ### H1. Conferir
 
 - `/entrar`: "Sou candidato" e "Quero contratar"; `/entrar/empresa` volta para `/entrar` com o aviso.

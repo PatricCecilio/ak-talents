@@ -35,6 +35,8 @@ class ApplicationNote(Base):
     id: Mapped[int] = mapped_column(primary_key=True, index=True)
     application_id: Mapped[int] = mapped_column(ForeignKey("applications.id", ondelete="CASCADE"), index=True, nullable=False)
     author_user_id: Mapped[int | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    # anotacao, triagem, entrevista, parecer or retorno_cliente (app/core/pipeline.py NOTE_KINDS). Migration 0015.
+    kind: Mapped[str] = mapped_column(String(20), default="anotacao", server_default="anotacao", nullable=False)
     body: Mapped[str] = mapped_column(Text, nullable=False)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False

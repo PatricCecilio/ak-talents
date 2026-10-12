@@ -40,6 +40,7 @@ from app.services.client_admin_service import (
     create_admin_job,
     create_company,
     delete_admin_job,
+    delete_company,
     get_admin_job,
     set_job_archived,
     update_admin_job,
@@ -84,6 +85,12 @@ def update_company_endpoint(
     current_user: User = Depends(admin_only),
 ):
     return company_to_admin_read(update_company(db, company_id, payload))
+
+
+@router.delete("/companies/{company_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_company_endpoint(company_id: int, db: Session = Depends(get_db), current_user: User = Depends(admin_only)):
+    """Only companies without any job; the others answer 409 and can be deactivated instead."""
+    delete_company(db, company_id)
 
 
 # Creating and editing jobs: admin only (recruiters operate the pipeline of existing jobs).

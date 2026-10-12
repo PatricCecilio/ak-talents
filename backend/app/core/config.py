@@ -28,8 +28,8 @@ class Settings(BaseSettings):
     RATE_LIMIT_ENABLED: bool = True
     # True only when running behind Vercel: take the client IP from Vercel's (non-spoofable) headers.
     TRUST_PROXY_HEADERS: bool = False
-    # Recruiter home highlights finalists waiting longer than this for the client decision.
-    FINALIST_ALERT_DAYS: int = 3
+    # Candidates "Enviado ao cliente" for longer than this are highlighted ("cobrar retorno").
+    FINALIST_ALERT_DAYS: int = 5
     # Off until e-mail verification exists: typing someone's e-mail (or phone) in the public job form
     # must not attach the application to, or change, that person's account.
     LINK_PUBLIC_APPLICATIONS_BY_EMAIL: bool = False

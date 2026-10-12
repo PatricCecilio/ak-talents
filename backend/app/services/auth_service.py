@@ -70,7 +70,7 @@ def _create_account(
         db.add(Company(user_id=user.id, company_name=company_name or display_name))
     elif role == UserRole.candidate:
         # Same e-mail on the candidate profile, so applications can be linked to the account.
-        db.add(Candidate(user_id=user.id, full_name=display_name, email=normalize_email(user.email)))
+        db.add(Candidate(user_id=user.id, full_name=display_name, email=normalize_email(user.email), source="conta"))
     db.flush()
     return user
 

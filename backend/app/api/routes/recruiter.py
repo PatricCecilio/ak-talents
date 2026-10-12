@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.orm import Session
 
 from app.api.deps import require_role
+from app.core.pipeline import NOTE_KINDS
 from app.database.session import get_db
 from app.models.user import User, UserRole
 from app.schemas.admin import AdminJobRead, JobResponsibleUpdate, StaffMemberRead
@@ -80,8 +81,10 @@ def create_application_note(
     db: Session = Depends(get_db),
     current_user: User = Depends(staff),
 ):
-    note = add_note(db, get_application_or_404(db, application_id), current_user, payload.body)
-    return NoteRead(id=note.id, body=note.body, author_name=current_user.name, created_at=note.created_at)
+    note = add_note(db, get_application_or_404(db, application_id), current_user, payload.body, payload.kind)
+    return NoteRead(
+        id=note.id, body=note.body, author_name=current_user.name, created_at=note.created_at, kind=note.kind, kind_label=NOTE_KINDS[note.kind]
+    )
 
 
 @router.get("/jobs", response_model=RecruiterJobsResponse)

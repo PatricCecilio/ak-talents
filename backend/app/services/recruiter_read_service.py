@@ -8,7 +8,7 @@ from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
-from app.core.pipeline import ACTIVE_STAGES, Stage
+from app.core.pipeline import ACTIVE_STAGES, NOTE_KINDS, Stage
 from app.models.application import Application
 from app.models.candidate import Candidate
 from app.models.company import Company
@@ -243,7 +243,14 @@ def get_application_detail(db: Session, application_id: int, actor: User) -> App
             for entry in application.stage_history
         ],
         notes=[
-            NoteRead(id=note.id, body=note.body, author_name=note.author.name if note.author else None, created_at=note.created_at)
+            NoteRead(
+                id=note.id,
+                body=note.body,
+                author_name=note.author.name if note.author else None,
+                created_at=note.created_at,
+                kind=note.kind,
+                kind_label=NOTE_KINDS.get(note.kind, NOTE_KINDS["anotacao"]),
+            )
             for note in reversed(application.notes)
         ],
         allowed_next_stages=stage_options(allowed_next_stages(application, actor.role)),
