@@ -1,11 +1,12 @@
 import type { PropsWithChildren } from 'react'
 
 interface BadgeProps extends PropsWithChildren {
-  status?: 'pending' | 'approved' | 'blocked' | 'hidden' | 'closed' | 'default'
+  status?: 'draft' | 'pending' | 'approved' | 'blocked' | 'hidden' | 'closed' | 'default'
   className?: string
 }
 
 const variants = {
+  draft: 'border-sky-200 bg-sky-50 text-sky-800',
   pending: 'border-amber-200 bg-amber-50 text-amber-700',
   approved: 'border-emerald-200 bg-emerald-50 text-emerald-700',
   blocked: 'border-red-200 bg-red-50 text-red-700',

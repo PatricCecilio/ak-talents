@@ -1,4 +1,16 @@
-import type { AdminApplication, AdminCandidate, AdminCompany, AdminJob, AdminScreeningQuestion, AdminUser, RecruiterCreatePayload, StaffMember } from '../types/user'
+import type {
+  AdminApplication,
+  AdminCandidate,
+  AdminCompany,
+  AdminJob,
+  AdminJobDetail,
+  AdminJobPayload,
+  AdminScreeningQuestion,
+  AdminUser,
+  CompanyPayload,
+  RecruiterCreatePayload,
+  StaffMember,
+} from '../types/user'
 import { apiRequest } from './api'
 
 export function getAdminUsers(): Promise<AdminUser[]> {
@@ -15,6 +27,28 @@ export function getAdminCompanies(): Promise<AdminCompany[]> {
 
 export function getAdminJobs(): Promise<AdminJob[]> {
   return apiRequest<AdminJob[]>('/admin/jobs')
+}
+
+/** Client companies are internal records (no login): the admin creates and edits them. */
+export function createCompany(payload: CompanyPayload): Promise<AdminCompany> {
+  return apiRequest<AdminCompany>('/admin/companies', { method: 'POST', body: payload })
+}
+
+export function updateCompany(companyId: number, payload: CompanyPayload): Promise<AdminCompany> {
+  return apiRequest<AdminCompany>(`/admin/companies/${companyId}`, { method: 'PUT', body: payload })
+}
+
+/** Jobs opened by AK: no approval step; the status (draft / published / closed) is chosen in the form. */
+export function createAdminJob(payload: AdminJobPayload): Promise<AdminJob> {
+  return apiRequest<AdminJob>('/admin/jobs', { method: 'POST', body: payload })
+}
+
+export function getAdminJob(jobId: number): Promise<AdminJobDetail> {
+  return apiRequest<AdminJobDetail>(`/admin/jobs/${jobId}`)
+}
+
+export function updateAdminJob(jobId: number, payload: AdminJobPayload): Promise<AdminJob> {
+  return apiRequest<AdminJob>(`/admin/jobs/${jobId}`, { method: 'PUT', body: payload })
 }
 
 export function getAdminApplications(includeHidden = false): Promise<AdminApplication[]> {
@@ -70,7 +104,7 @@ export function createRecruiter(payload: RecruiterCreatePayload): Promise<StaffM
   })
 }
 
-/** Deactivate (never delete) a company: login blocked and its jobs leave the public and AK lists. */
+/** Deactivate (never delete) a company: its jobs leave the public and AK lists (and an old login is blocked). */
 export function setCompanyActive(companyId: number, isActive: boolean): Promise<AdminCompany> {
   return apiRequest<AdminCompany>(`/admin/companies/${companyId}/active`, {
     method: 'PUT',

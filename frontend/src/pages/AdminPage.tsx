@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
+import { CompanyForm } from '../components/admin/CompanyForm'
+import { JobForm } from '../components/admin/JobForm'
 import { RecruiterTeamSection } from '../components/admin/RecruiterTeamSection'
-import { Alert, Badge, Button, Card, EmptyState, LoadingSpinner, PageHeader } from '../components/ui'
+import { Alert, Badge, Button, Card, EmptyState, LoadingSpinner, PageHeader, Select } from '../components/ui'
 import { DashboardShell } from '../layouts/DashboardShell'
 import {
   approveCompany,
@@ -18,14 +20,16 @@ import {
   setCompanyActive,
   updateJobScreeningQuestions,
 } from '../services/adminService'
+import { JOB_STATUS_OPTIONS, filterJobs, formatCnpj, formatPhone, normalizeJobStatus, type JobStatusValue } from '../services/adminForms'
 import { logout } from '../services/authService'
-import { formatCompanyStatus, formatJobStatus } from '../services/jobFormat'
+import { isCompanyPortalEnabled } from '../services/companyPortal'
+import { formatCompanyStatus, formatJobStatus, formatOpenings } from '../services/jobFormat'
 import { STAFF_LOGIN_PATH } from '../services/loginDoors'
-import { formatScreeningStatus } from '../services/pipelineFormat'
+import { formatScreeningStatus, whatsappLink } from '../services/pipelineFormat'
 import type { AdminApplication, AdminCandidate, AdminCompany, AdminJob, AdminUser } from '../types/user'
 
 function StatusBadge({ status, label }: { status: string; label: string }) {
-  return <Badge status={status as 'pending' | 'approved' | 'blocked' | 'hidden' | 'closed'}>{label}</Badge>
+  return <Badge status={status as 'draft' | 'pending' | 'approved' | 'blocked' | 'hidden' | 'closed'}>{label}</Badge>
 }
 
 export function AdminPage() {
@@ -41,6 +45,14 @@ export function AdminPage() {
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
   const [showHiddenApplications, setShowHiddenApplications] = useState(false)
+  // Which form is open: 'new', the id being edited, or none.
+  const [companyForm, setCompanyForm] = useState<'new' | number | null>(null)
+  const [jobForm, setJobForm] = useState<'new' | number | null>(null)
+  const [jobStatusFilter, setJobStatusFilter] = useState<JobStatusValue | ''>('')
+  const [jobCompanyFilter, setJobCompanyFilter] = useState('')
+  // Old self-service portal (approve/block company accounts): only with VITE_COMPANY_PORTAL_ENABLED.
+  const companyPortal = isCompanyPortalEnabled()
+  const visibleJobs = filterJobs(jobs, jobStatusFilter, jobCompanyFilter)
 
   async function refreshAdminData(includeHidden = showHiddenApplications) {
     const [usersData, candidatesData, companiesData, jobsData, applicationsData] = await Promise.all([
@@ -168,7 +180,7 @@ export function AdminPage() {
         <PageHeader
           eyebrow="Painel Admin"
           title="Controle interno AK Talent."
-          description="Gerencie empresas, vagas, candidatos, usuários e candidaturas da plataforma."
+          description="Cadastre as empresas clientes, abra as vagas e acompanhe candidatos e candidaturas."
           action={
             <Button
             type="button"
@@ -211,100 +223,227 @@ export function AdminPage() {
 
         <div className="mt-10 grid gap-8">
           <Card id="empresas" className="scroll-mt-28 p-6">
-            <h2 className="text-2xl font-black text-ink-950">Empresas</h2>
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <h2 className="text-2xl font-black text-ink-950">Empresas</h2>
+              {companyForm === null ? (
+                <Button type="button" onClick={() => setCompanyForm('new')}>
+                  Nova empresa
+                </Button>
+              ) : null}
+            </div>
+            <p className="mt-2 text-sm text-ink-600">Clientes da AK. Eles não entram no sistema: os relatórios vão pelo WhatsApp.</p>
             <div className="mt-5 grid gap-3">
-              {companies.length === 0 ? <EmptyState title="Nenhuma empresa cadastrada." /> : null}
-              {companies.map((company) => (
-                <article key={company.id} className="rounded-lg border border-slate-200 p-4">
-                  <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-                    <div>
-                      <h3 className="font-black text-ink-950">
-                        {company.company_name}
-                        {company.is_active === false ? <span className="ml-2 text-sm font-bold text-red-700">(desativada)</span> : null}
-                      </h3>
-                      <p className="mt-1 text-sm text-ink-600">{company.email}</p>
-                      <p className="mt-1 text-sm text-ink-600">{company.city || 'Cidade não informada'}</p>
+              {companyForm === 'new' ? (
+                <CompanyForm
+                  onCancel={() => setCompanyForm(null)}
+                  onSaved={(saved) => {
+                    setCompanyForm(null)
+                    setSuccess(`Empresa ${saved.company_name} cadastrada.`)
+                    void refreshAdminData()
+                  }}
+                />
+              ) : null}
+              {companies.length === 0 && companyForm !== 'new' ? <EmptyState title="Nenhuma empresa cadastrada." /> : null}
+              {companies.map((company) =>
+                companyForm === company.id ? (
+                  <CompanyForm
+                    key={company.id}
+                    company={company}
+                    onCancel={() => setCompanyForm(null)}
+                    onSaved={(saved) => {
+                      setCompanyForm(null)
+                      setSuccess(`Empresa ${saved.company_name} atualizada.`)
+                      void refreshAdminData()
+                    }}
+                  />
+                ) : (
+                  <article key={company.id} className="rounded-lg border border-slate-200 p-4">
+                    <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+                      <div className="min-w-0">
+                        <h3 className="font-black text-ink-950">
+                          {company.company_name}
+                          {company.is_active === false ? <span className="ml-2 text-sm font-bold text-red-700">(desativada)</span> : null}
+                        </h3>
+                        <p className="mt-1 text-sm text-ink-600">
+                          {[company.responsible_name, [company.city, company.state].filter(Boolean).join('/')].filter(Boolean).join(' · ') ||
+                            'Responsável e cidade não informados'}
+                        </p>
+                        {company.whatsapp ? (
+                          <a
+                            href={whatsappLink(company.whatsapp)}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="mt-1 inline-block text-sm font-bold text-brand-700 underline underline-offset-2"
+                          >
+                            WhatsApp {formatPhone(company.whatsapp)}
+                          </a>
+                        ) : null}
+                        <p className="mt-1 text-sm text-ink-600">
+                          {[company.cnpj ? `CNPJ ${formatCnpj(company.cnpj)}` : '', company.contact_email ?? '', `${company.jobs_count ?? 0} ${company.jobs_count === 1 ? 'vaga' : 'vagas'}`]
+                            .filter(Boolean)
+                            .join(' · ')}
+                        </p>
+                        {company.notes ? <p className="mt-2 whitespace-pre-line text-sm text-ink-700">{company.notes}</p> : null}
+                        {company.has_account ? (
+                          <p className="mt-1 text-xs text-ink-500">Tinha conta no portal antigo ({company.email}). O login está desligado.</p>
+                        ) : null}
+                      </div>
+                      <div className="flex flex-wrap items-center gap-2">
+                        {companyPortal ? (
+                          <>
+                            <StatusBadge status={company.status} label={formatCompanyStatus(company.status)} />
+                            <Button
+                              type="button"
+                              isLoading={actionId === `company-approve-${company.id}`}
+                              disabled={actionId === `company-approve-${company.id}`}
+                              onClick={() =>
+                                void runAction(`company-approve-${company.id}`, () => approveCompany(company.id), 'Empresa aprovada.')
+                              }
+                            >
+                              Aprovar
+                            </Button>
+                            <Button
+                              type="button"
+                              variant="danger"
+                              isLoading={actionId === `company-block-${company.id}`}
+                              disabled={actionId === `company-block-${company.id}`}
+                              onClick={() =>
+                                void runAction(`company-block-${company.id}`, () => blockCompany(company.id), 'Empresa bloqueada.')
+                              }
+                            >
+                              Bloquear
+                            </Button>
+                          </>
+                        ) : null}
+                        <Button type="button" variant="secondary" onClick={() => setCompanyForm(company.id)}>
+                          Editar
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="secondary"
+                          isLoading={actionId === `company-active-${company.id}`}
+                          disabled={actionId === `company-active-${company.id}`}
+                          onClick={() =>
+                            void runAction(
+                              `company-active-${company.id}`,
+                              () => setCompanyActive(company.id, company.is_active === false),
+                              company.is_active === false ? 'Empresa reativada.' : 'Empresa desativada (nada foi apagado).',
+                            )
+                          }
+                        >
+                          {company.is_active === false ? 'Reativar' : 'Desativar'}
+                        </Button>
+                      </div>
                     </div>
-                    <div className="flex flex-wrap items-center gap-2">
-                      <StatusBadge status={company.status} label={formatCompanyStatus(company.status)} />
-                      <Button
-                        type="button"
-                        isLoading={actionId === `company-approve-${company.id}`}
-                        disabled={actionId === `company-approve-${company.id}`}
-                        onClick={() =>
-                          void runAction(
-                            `company-approve-${company.id}`,
-                            () => approveCompany(company.id),
-                            'Empresa aprovada.',
-                          )
-                        }
-                      >
-                        Aprovar
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="danger"
-                        isLoading={actionId === `company-block-${company.id}`}
-                        disabled={actionId === `company-block-${company.id}`}
-                        onClick={() =>
-                          void runAction(`company-block-${company.id}`, () => blockCompany(company.id), 'Empresa bloqueada.')
-                        }
-                      >
-                        Bloquear
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="secondary"
-                        isLoading={actionId === `company-active-${company.id}`}
-                        disabled={actionId === `company-active-${company.id}`}
-                        onClick={() =>
-                          void runAction(
-                            `company-active-${company.id}`,
-                            () => setCompanyActive(company.id, company.is_active === false),
-                            company.is_active === false ? 'Empresa reativada.' : 'Empresa desativada (nada foi apagado).',
-                          )
-                        }
-                      >
-                        {company.is_active === false ? 'Reativar' : 'Desativar'}
-                      </Button>
-                    </div>
-                  </div>
-                </article>
-              ))}
+                  </article>
+                ),
+              )}
             </div>
           </Card>
 
           <Card id="vagas" className="scroll-mt-28 p-6">
-            <h2 className="text-2xl font-black text-ink-950">Vagas</h2>
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <h2 className="text-2xl font-black text-ink-950">Vagas</h2>
+              {jobForm === null ? (
+                <Button type="button" onClick={() => setJobForm('new')} disabled={!companies.some((company) => company.is_active !== false)}>
+                  Nova vaga
+                </Button>
+              ) : null}
+            </div>
+            {!companies.some((company) => company.is_active !== false) ? (
+              <p className="mt-2 text-sm text-ink-600">Cadastre uma empresa antes de abrir a primeira vaga.</p>
+            ) : null}
+            <div className="mt-4 grid gap-3 sm:grid-cols-2">
+              <Select
+                id="job-status-filter"
+                label="Status"
+                value={jobStatusFilter}
+                onChange={(event) => setJobStatusFilter(event.target.value as JobStatusValue | '')}
+              >
+                <option value="">Todos</option>
+                {JOB_STATUS_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </Select>
+              <Select id="job-company-filter" label="Empresa" value={jobCompanyFilter} onChange={(event) => setJobCompanyFilter(event.target.value)}>
+                <option value="">Todas</option>
+                {companies.map((company) => (
+                  <option key={company.id} value={company.id}>
+                    {company.company_name}
+                  </option>
+                ))}
+              </Select>
+            </div>
             <div className="mt-5 grid gap-3">
-              {jobs.length === 0 ? <EmptyState title="Nenhuma vaga cadastrada." /> : null}
-              {jobs.map((job) => (
+              {jobForm === 'new' ? (
+                <JobForm
+                  companies={companies}
+                  onCancel={() => setJobForm(null)}
+                  onSaved={(saved) => {
+                    setJobForm(null)
+                    setSuccess(`Vaga ${saved.title} criada (${formatJobStatus(saved.status).toLowerCase()}).`)
+                    void refreshAdminData()
+                  }}
+                />
+              ) : null}
+              {visibleJobs.length === 0 && jobForm !== 'new' ? (
+                <EmptyState title={jobs.length === 0 ? 'Nenhuma vaga cadastrada.' : 'Nenhuma vaga com esses filtros.'} />
+              ) : null}
+              {visibleJobs.map((job) =>
+                jobForm === job.id ? (
+                  <JobForm
+                    key={job.id}
+                    jobId={job.id}
+                    companies={companies}
+                    onCancel={() => setJobForm(null)}
+                    onSaved={(saved) => {
+                      setJobForm(null)
+                      setSuccess(`Vaga ${saved.title} salva.`)
+                      void refreshAdminData()
+                    }}
+                  />
+                ) : (
                 <article key={job.id} className="rounded-lg border border-slate-200 p-4">
                   <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-                    <div>
+                    <div className="min-w-0">
                       <h3 className="font-black text-ink-950">{job.title}</h3>
-                      <p className="mt-1 text-sm text-ink-600">{job.company_name}</p>
-                      <p className="mt-1 text-sm text-ink-600">{job.location || 'Local não informado'}</p>
+                      <p className="mt-1 text-sm text-ink-600">
+                        {job.company_name}
+                        {job.company_is_active === false ? <span className="ml-1 font-bold text-red-700">(empresa desativada)</span> : null}
+                      </p>
+                      <p className="mt-1 text-sm text-ink-600">
+                        {[job.location || 'Local não informado', formatOpenings(job.openings)].filter(Boolean).join(' · ')}
+                      </p>
+                      <p className="mt-1 text-sm text-ink-600">Responsável: {job.recruiter_name ?? 'ninguém'}</p>
                     </div>
                     <div className="flex flex-wrap items-center gap-2">
-                      <StatusBadge status={job.status} label={formatJobStatus(job.status)} />
-                      <Button
-                        type="button"
-                        isLoading={actionId === `job-approve-${job.id}`}
-                        disabled={actionId === `job-approve-${job.id}`}
-                        onClick={() => void runAction(`job-approve-${job.id}`, () => approveJob(job.id), 'Vaga aprovada.')}
-                      >
-                        Aprovar
+                      <StatusBadge status={normalizeJobStatus(job.status)} label={formatJobStatus(job.status)} />
+                      <Button type="button" variant="secondary" onClick={() => setJobForm(job.id)}>
+                        Editar
                       </Button>
-                      <Button
-                        type="button"
-                        variant="secondary"
-                        isLoading={actionId === `job-hide-${job.id}`}
-                        disabled={actionId === `job-hide-${job.id}`}
-                        onClick={() => void runAction(`job-hide-${job.id}`, () => hideJob(job.id), 'Vaga ocultada.')}
-                      >
-                        Ocultar
-                      </Button>
+                      {normalizeJobStatus(job.status) !== 'approved' ? (
+                        <Button
+                          type="button"
+                          isLoading={actionId === `job-approve-${job.id}`}
+                          disabled={actionId === `job-approve-${job.id}`}
+                          onClick={() => void runAction(`job-approve-${job.id}`, () => approveJob(job.id), 'Vaga publicada no site.')}
+                        >
+                          Publicar
+                        </Button>
+                      ) : null}
+                      {normalizeJobStatus(job.status) !== 'closed' ? (
+                        <Button
+                          type="button"
+                          variant="secondary"
+                          isLoading={actionId === `job-hide-${job.id}`}
+                          disabled={actionId === `job-hide-${job.id}`}
+                          onClick={() => void runAction(`job-hide-${job.id}`, () => hideJob(job.id), 'Vaga encerrada (saiu do site).')}
+                        >
+                          Encerrar
+                        </Button>
+                      ) : null}
                       <Button
                         type="button"
                         variant="secondary"
@@ -346,7 +485,8 @@ export function AdminPage() {
                     </div>
                   ) : null}
                 </article>
-              ))}
+                ),
+              )}
             </div>
           </Card>
 

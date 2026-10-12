@@ -30,6 +30,7 @@ export function formatOpenings(openings: number | null | undefined): string {
 }
 
 const JOB_STATUS_LABELS: Record<string, string> = {
+  draft: 'Rascunho',
   pending: 'Aguardando aprovação',
   approved: 'Publicada',
   hidden: 'Oculta',

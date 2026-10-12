@@ -257,10 +257,12 @@ export interface AdminCandidate {
 
 export interface AdminCompany {
   id: number
-  user_id: number
+  /** Only companies from the old self-service portal have an account. */
+  user_id: number | null
   company_name: string
   responsible_name: string | null
-  email: string
+  /** Account e-mail (old portal companies only). */
+  email: string | null
   city: string | null
   state: string | null
   industry: string | null
@@ -268,6 +270,41 @@ export interface AdminCompany {
   status: string
   created_at: string
   is_active?: boolean
+  cnpj?: string | null
+  whatsapp?: string | null
+  contact_email?: string | null
+  notes?: string | null
+  has_account?: boolean
+  jobs_count?: number
+}
+
+/** Internal client company record, created and edited by the AK admin. */
+export interface CompanyPayload {
+  company_name: string
+  cnpj: string | null
+  responsible_name: string | null
+  whatsapp: string
+  contact_email: string | null
+  city: string | null
+  state: string | null
+  notes: string | null
+}
+
+/** draft = Rascunho, approved = Publicada (the only status on the site), closed = Encerrada. */
+export type AdminJobStatus = 'draft' | 'approved' | 'closed'
+
+export interface AdminJobPayload extends JobPayload {
+  company_id: number
+  recruiter_id: number | null
+  status: AdminJobStatus
+}
+
+export interface AdminJobDetail extends Job {
+  company_id: number
+  company_name: string
+  status: string
+  is_active: boolean
+  recruiter_id: number | null
 }
 
 export interface AdminJob {
@@ -282,6 +319,8 @@ export interface AdminJob {
   created_at: string
   recruiter_id?: number | null
   recruiter_name?: string | null
+  openings?: number | null
+  company_is_active?: boolean
 }
 
 export interface StaffMember {
