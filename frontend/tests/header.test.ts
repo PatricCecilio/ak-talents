@@ -7,8 +7,8 @@ const root = new URL('../', import.meta.url)
 const read = (path: string) => readFileSync(new URL(path, root), 'utf8')
 
 test('each account type has its own panel', () => {
-  assert.equal(roleHome('admin'), '/admin')
-  assert.equal(roleHome('recruiter'), '/recrutador')
+  assert.equal(roleHome('admin'), '/painel')
+  assert.equal(roleHome('recruiter'), '/painel')
   assert.equal(roleHome('company'), '/company')
   assert.equal(roleHome('candidate'), '/candidate')
   assert.equal(roleHome(undefined), '/candidate')

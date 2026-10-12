@@ -13,18 +13,6 @@ export const AK_STAGE_LABELS: Record<StageValue, string> = {
   withdrawn: 'Desistiu',
 }
 
-/** Short column titles for the pipeline board. */
-export const STAGE_SHORT_LABELS: Record<StageValue, string> = {
-  new: 'Novas',
-  screening: 'Em triagem',
-  ak_interview: 'Entrevista AK',
-  finalist: 'Enviados ao cliente',
-  client_approved: 'Aprovados',
-  hired: 'Contratados',
-  rejected: 'Reprovados',
-  withdrawn: 'Desistiram',
-}
-
 // The client no longer uses the system: AK records the client's answer when leaving "Enviado ao cliente".
 // Mirrors CLIENT_RESPONSES in backend/app/core/pipeline.py (the API requires the observation).
 const CLIENT_RESPONSE_LABELS: Partial<Record<StageValue, string>> = {

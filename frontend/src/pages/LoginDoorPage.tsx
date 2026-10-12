@@ -10,7 +10,7 @@ import { AuthLayout } from '../layouts/AuthLayout'
 import { authenticate, startSession } from '../services/authService'
 import { COMPANY_CLOSED_PATH, COMPANY_PORTAL_CLOSED_MESSAGE, isCompanyPortalEnabled } from '../services/companyPortal'
 import { googleErrorMessage, isGoogleLoginEnabled } from '../services/googleIdentity'
-import { DOOR_COPY, LOGIN_CHOOSER_PATH, decideAfterLogin, isStaffDoor, type LoginDoor } from '../services/loginDoors'
+import { DOOR_COPY, LOGIN_CHOOSER_PATH, decideAfterLogin, isStaffDoor, returnPathAfterLogin, type LoginDoor } from '../services/loginDoors'
 
 const linkClass = 'font-bold text-brand-700 underline underline-offset-2 hover:text-brand-600'
 
@@ -50,7 +50,9 @@ export function LoginDoorPage({ door }: { door: LoginDoor }) {
         return
       }
       startSession(response)
-      navigate(decision.to, decision.notice ? { state: { loginNotice: decision.notice } } : undefined)
+      const from = typeof location.state === 'object' && location.state !== null && 'from' in location.state ? location.state.from : null
+      const to = returnPathAfterLogin(from, response.user.role) ?? decision.to
+      navigate(to, decision.notice ? { state: { loginNotice: decision.notice } } : undefined)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Não foi possível entrar.')
     } finally {

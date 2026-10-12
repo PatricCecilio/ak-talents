@@ -93,7 +93,7 @@ export function CandidatesPage() {
   }
 
   return (
-    <div className="flex flex-col gap-4 xl:h-full xl:min-h-0">
+    <div className="flex flex-col gap-3 fit:h-full fit:min-h-0">
       <PanelPageHeader title="Candidatos" subtitle={`Banco de talentos da AK${data ? ` · ${data.total} ${data.total === 1 ? 'pessoa' : 'pessoas'}` : ''}`} />
 
       <div className="flex flex-wrap items-center gap-2">
@@ -119,13 +119,13 @@ export function CandidatesPage() {
       {error ? <p role="alert" className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm font-semibold text-red-700">{error}</p> : null}
       {message ? <p role="status" className="rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-sm font-semibold text-emerald-800">{message}</p> : null}
 
-      <PanelCard className="xl:min-h-0 xl:flex-1">
-        <div className="overflow-x-auto xl:min-h-0 xl:flex-1 xl:overflow-y-auto">
+      <PanelCard className="fit:min-h-0 fit:flex-1">
+        <div className="overflow-x-auto fit:min-h-0 fit:flex-1 fit:overflow-y-auto">
           <table className="w-full min-w-[52rem] text-left text-sm">
             <thead className="sticky top-0 z-10 bg-[#faf8f4] text-xs font-semibold text-ink-600">
               <tr>
                 {['Nome', 'WhatsApp', 'Cidade', 'Etapa mais recente', 'Candidaturas', 'Ações'].map((label) => (
-                  <th key={label} className="px-4 py-3 font-semibold first:pl-5">{label}</th>
+                  <th key={label} className="px-4 py-2.5 font-semibold first:pl-5">{label}</th>
                 ))}
               </tr>
             </thead>
@@ -137,20 +137,20 @@ export function CandidatesPage() {
               ) : null}
               {data?.items.map((row) => (
                 <tr key={row.id}>
-                  <td className="px-4 py-2.5 pl-5">
+                  <td className="px-4 py-2 pl-5">
                     <Link to={`${PANEL_BASE}/candidatos/${row.id}`} className={`flex items-center gap-3 ${panelFocus}`}>
-                      <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-gold-300 text-xs font-bold text-ink-950">{initials(row.name)}</span>
+                      <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-gold-300 text-xs font-bold text-ink-950">{initials(row.name)}</span>
                       <span className="min-w-0">
                         <span className="block font-semibold text-ink-950">{row.name}</span>
                         <span className="block truncate text-xs text-ink-600">{row.email ?? 'sem e-mail'}</span>
                       </span>
                     </Link>
                   </td>
-                  <td className="px-4 py-2.5 text-ink-700">{maskPhone(row.phone)}</td>
-                  <td className="px-4 py-2.5 text-ink-700">{row.city ?? '—'}</td>
-                  <td className="px-4 py-2.5"><Pill tone={row.latest_stage ? STAGE_TONES[row.latest_stage] : 'bg-slate-100 text-ink-600'}>{row.latest_stage_label}</Pill></td>
-                  <td className="px-4 py-2.5">{row.applications}</td>
-                  <td className="px-4 py-2.5"><ActionsMenu label={`Ações de ${row.name}`} actions={actionsFor(row)} /></td>
+                  <td className="px-4 py-2 text-ink-700">{maskPhone(row.phone)}</td>
+                  <td className="px-4 py-2 text-ink-700">{row.city ?? '—'}</td>
+                  <td className="px-4 py-2"><Pill tone={row.latest_stage ? STAGE_TONES[row.latest_stage] : 'bg-slate-100 text-ink-600'}>{row.latest_stage_label}</Pill></td>
+                  <td className="px-4 py-2">{row.applications}</td>
+                  <td className="px-4 py-2"><ActionsMenu label={`Ações de ${row.name}`} actions={actionsFor(row)} /></td>
                 </tr>
               ))}
             </tbody>

@@ -13,7 +13,7 @@ function StatCard({ title, value, detail, action, to, highlight }: { title: stri
   return (
     <Link
       to={to}
-      className={`group flex flex-col rounded-2xl border bg-white px-5 py-4 transition hover:-translate-y-0.5 hover:shadow-md ${panelFocus} ${
+      className={`group flex flex-col rounded-2xl border bg-white px-5 py-3 transition hover:-translate-y-0.5 hover:shadow-md ${panelFocus} ${
         highlight ? 'border-gold-300 border-l-4' : 'border-[#e7e1d6]'
       }`}
     >
@@ -62,7 +62,7 @@ export function OverviewPage() {
   const maxStage = Math.max(1, ...(data?.stage_counts.map((row) => row.count) ?? [1]))
 
   return (
-    <div className="flex flex-col gap-4 xl:h-full xl:min-h-0">
+    <div className="flex flex-col gap-3 fit:h-full fit:min-h-0">
       <PanelPageHeader
         title={`${greeting()}, ${firstName}`}
         subtitle={`O que precisa da sua atenção hoje · ${longDate()}${data?.scope === 'mine' ? ' · suas vagas' : ''}`}
@@ -106,7 +106,7 @@ export function OverviewPage() {
             />
           </div>
 
-          <div className="grid gap-3 xl:h-[min(17.5rem,36vh)] xl:grid-cols-[1.35fr_1fr_1.15fr]">
+          <div className="grid gap-3 fit:h-[min(17.5rem,36vh)] xl:grid-cols-[1.35fr_1fr_1.15fr]">
             <PanelCard title="Candidaturas por etapa" action={<span className="text-xs text-ink-600">{data.scope === 'mine' ? 'suas vagas' : 'todas as vagas'}</span>}>
               <ul className="grid content-start gap-2.5 overflow-y-auto px-5 pb-4 pt-1">
                 {data.stage_counts.map((row) => (
@@ -171,9 +171,9 @@ export function OverviewPage() {
           <PanelCard
             title="Vagas em andamento"
             action={<Link to={`${PANEL_BASE}/vagas?status=approved`} className={panelButton.link}>Ver todas <PanelIcon name="arrow" className="h-4 w-4" /></Link>}
-            className="xl:min-h-[10.5rem] xl:flex-1"
+            className="fit:min-h-[10.5rem] fit:flex-1"
           >
-            <div className="overflow-x-auto xl:min-h-0 xl:flex-1 xl:overflow-y-auto">
+            <div className="overflow-x-auto fit:min-h-0 fit:flex-1 fit:overflow-y-auto">
               <table className="w-full min-w-[46rem] text-left text-sm">
                 <thead className="sticky top-0 bg-[#faf8f4] text-xs font-semibold text-ink-600">
                   <tr>
@@ -190,17 +190,17 @@ export function OverviewPage() {
                   ) : null}
                   {data.jobs_in_progress.map((job) => (
                     <tr key={job.id} className="cursor-pointer transition hover:bg-[#faf8f4]" onClick={() => navigate(`${PANEL_BASE}/vagas/${job.id}`)}>
-                      <td className="px-5 py-3 font-semibold text-ink-950">
+                      <td className="px-5 py-2.5 font-semibold text-ink-950">
                         <Link to={`${PANEL_BASE}/vagas/${job.id}`} className={panelFocus} onClick={(event) => event.stopPropagation()}>
                           {job.title}
                         </Link>
                       </td>
-                      <td className="px-5 py-3 text-ink-700">{job.company_name}</td>
-                      <td className="px-5 py-3">{job.applications}</td>
-                      <td className="px-5 py-3"><CountBadge value={job.to_triage} tone="bg-gold-50 text-gold-800" /></td>
-                      <td className="px-5 py-3"><CountBadge value={job.with_client} tone="bg-blue-50 text-blue-700" /></td>
-                      <td className="px-5 py-3 text-ink-700">{publishedFor(job.published_at)}</td>
-                      <td className="px-5 py-3"><Pill tone={jobStatus(job.status).tone}>{jobStatus(job.status).label}</Pill></td>
+                      <td className="px-5 py-2.5 text-ink-700">{job.company_name}</td>
+                      <td className="px-5 py-2.5">{job.applications}</td>
+                      <td className="px-5 py-2.5"><CountBadge value={job.to_triage} tone="bg-gold-50 text-gold-800" /></td>
+                      <td className="px-5 py-2.5"><CountBadge value={job.with_client} tone="bg-blue-50 text-blue-700" /></td>
+                      <td className="px-5 py-2.5 text-ink-700">{publishedFor(job.published_at)}</td>
+                      <td className="px-5 py-2.5"><Pill tone={jobStatus(job.status).tone}>{jobStatus(job.status).label}</Pill></td>
                     </tr>
                   ))}
                 </tbody>

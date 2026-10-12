@@ -14,7 +14,7 @@ import {
 const root = new URL('../', import.meta.url)
 const read = (path: string) => readFileSync(new URL(path, root), 'utf8')
 
-const HOME = { candidate: '/candidate', company: '/company', admin: '/admin', recruiter: '/recrutador' } as const
+const HOME = { candidate: '/candidate', company: '/company', admin: '/painel', recruiter: '/painel' } as const
 
 test('each door x each role: right door enters quietly, wrong door enters with a notice', () => {
   const ownDoor: Record<keyof typeof HOME, LoginDoor> = { candidate: 'candidato', company: 'empresa', admin: 'equipe', recruiter: 'recrutamento' }
@@ -29,7 +29,7 @@ test('each door x each role: right door enters quietly, wrong door enters with a
       assert.equal(decision.action, 'enter', label)
       if (decision.action !== 'enter') continue
       assert.equal(decision.to, HOME[role], label)
-      if (door === ownDoor[role]) assert.equal(decision.notice, undefined, label)
+      if (door === ownDoor[role] || (isStaffDoor(door) && isStaffDoor(ownDoor[role]))) assert.equal(decision.notice, undefined, label)
       else assert.ok(decision.notice && decision.notice.length > 20, label)
     }
   }
@@ -58,17 +58,9 @@ test('notices and refusals say what happened, in Portuguese', () => {
     link: { label: 'Entrar como candidato', to: '/entrar/candidato' },
   })
   assert.equal(decideAfterLogin('recrutamento', 'candidate').action, 'refuse')
-  // Between the two internal doors: each one goes to its own area with a discreet notice.
-  assert.deepEqual(decideAfterLogin('equipe', 'recruiter'), {
-    action: 'enter',
-    to: '/recrutador',
-    notice: 'Este é o acesso da administração. Abrimos a área de recrutamento.',
-  })
-  assert.deepEqual(decideAfterLogin('recrutamento', 'admin'), {
-    action: 'enter',
-    to: '/admin',
-    notice: 'Este é o acesso do recrutamento. Abrimos o painel da administração.',
-  })
+  // Both internal doors lead to the same panel: no notice either way.
+  assert.deepEqual(decideAfterLogin('equipe', 'recruiter'), { action: 'enter', to: '/painel' })
+  assert.deepEqual(decideAfterLogin('recrutamento', 'admin'), { action: 'enter', to: '/painel' })
   // Staff using a public door is not blocked either.
   assert.equal(decideAfterLogin('candidato', 'admin').action, 'enter')
 })
@@ -120,14 +112,17 @@ test('sign-up preselects the account type from ?tipo=', () => {
   assert.match(register, /return tipo === 'empresa' && isCompanyPortalEnabled\(\) \? 'company' : 'candidate'/)
 })
 
-test('private areas send signed-out visitors straight to the right door', () => {
+test('private areas send signed-out visitors straight to the right door (the panel lets them pick)', () => {
   const privateRoute = read('src/components/PrivateRoute.tsx')
+  assert.match(privateRoute, /if \(signedOut\) return signedOut/)
   assert.match(privateRoute, /<Navigate to=\{doorPathForRole\(allowedRoles\?\.\[0\]\)\} replace state=\{\{ from: location\.pathname \}\} \/>/)
-  // The first allowed role of each private area decides the door.
+  // The first allowed role of each private area decides the door; /painel shows "Sou da administração" / "Sou recrutadora".
   const routes = read('src/routes/AppRoutes.tsx')
-  assert.match(routes, /allowedRoles=\{\['recruiter', 'admin'\]\}/)
+  assert.match(routes, /<PrivateRoute allowedRoles=\{\['recruiter', 'admin'\]\} signedOut=\{<PanelSignedOut \/>\}>/)
+  const chooser = read('src/panel/PanelSignedOut.tsx')
+  assert.match(chooser, /<Link to=\{STAFF_LOGIN_PATH\} state=\{\{ from \}\}[^>]*>\s*Sou da administração/)
+  assert.match(chooser, /<Link to=\{RECRUITER_LOGIN_PATH\} state=\{\{ from \}\}[^>]*>\s*Sou recrutadora/)
   assert.equal(doorPathForRole('recruiter'), '/recrutamento')
-  assert.match(routes, /allowedRoles=\{\['admin'\]\}/)
   assert.equal(doorPathForRole('admin'), '/equipe')
   assert.match(routes, /allowedRoles=\{\['company'\]\}/)
   assert.equal(doorPathForRole('company'), '/entrar/empresa')
@@ -139,22 +134,22 @@ test('private areas send signed-out visitors straight to the right door', () => 
 test('"Entrar" goes to /entrar; signing out returns to the right login; wrong-door notice on the panels', () => {
   assert.equal((read('src/components/Header.tsx').match(/href=\{LOGIN_CHOOSER_PATH\}/g) ?? []).length, 2)
   assert.doesNotMatch(read('src/components/Header.tsx'), /href="\/login"/)
-  assert.match(read('src/layouts/WorkspaceLayout.tsx'), /window\.location\.href = doorPathForRole\(user\?\.role\)/)
-  assert.match(read('src/pages/AdminPage.tsx'), /window\.location\.href = STAFF_LOGIN_PATH/)
+  assert.match(read('src/panel/PanelLayout.tsx'), /window\.location\.href = doorPathForRole\(role\)/)
   assert.match(read('src/pages/CandidatePage.tsx'), /window\.location\.href = LOGIN_CHOOSER_PATH/)
   assert.match(read('src/pages/CompanyPage.tsx'), /window\.location\.href = LOGIN_CHOOSER_PATH/)
 
   assert.match(read('src/layouts/DashboardShell.tsx'), /<LoginNotice \/>/)
-  assert.match(read('src/layouts/WorkspaceLayout.tsx'), /<LoginNotice \/>\s*<Outlet \/>/)
+  assert.match(read('src/panel/PanelLayout.tsx'), /<LoginNotice \/>\s*<Outlet /)
   const notice = read('src/components/LoginNotice.tsx')
   assert.match(notice, /state\?\.loginNotice/)
   assert.match(notice, /aria-label="Fechar aviso"/)
-  assert.match(read('src/pages/LoginDoorPage.tsx'), /navigate\(decision\.to, decision\.notice \? \{ state: \{ loginNotice: decision\.notice \} \} : undefined\)/)
+  assert.match(read('src/pages/LoginDoorPage.tsx'), /const to = returnPathAfterLogin\(from, response\.user\.role\) \?\? decision\.to/)
+  assert.match(read('src/pages/LoginDoorPage.tsx'), /navigate\(to, decision\.notice \? \{ state: \{ loginNotice: decision\.notice \} \} : undefined\)/)
 })
 
 test('/equipe and /recrutamento are also marked noindex by an HTTP header (robots that do not run JavaScript)', () => {
   const config = JSON.parse(read('vercel.json'))
-  for (const source of ['/equipe', '/recrutamento']) {
+  for (const source of ['/equipe', '/recrutamento', '/painel/:path*']) {
     const rule = config.headers.find((entry: { source: string }) => entry.source === source)
     assert.deepEqual(rule.headers, [{ key: 'X-Robots-Tag', value: 'noindex, nofollow' }], source)
   }

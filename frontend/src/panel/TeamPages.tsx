@@ -137,39 +137,39 @@ export function TeamPage() {
   }
 
   return (
-    <div className="flex flex-col gap-4 xl:h-full xl:min-h-0">
+    <div className="flex flex-col gap-3 fit:h-full fit:min-h-0">
       <PanelPageHeader title="Recrutadoras" subtitle="Clique em uma pessoa para ver as vagas, o andamento e as anotações" />
       {error ? <p role="alert" className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm font-semibold text-red-700">{error}</p> : null}
       {message ? <p role="status" className="rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-sm font-semibold text-emerald-800">{message}</p> : null}
-      <PanelCard className="xl:min-h-0">
-        <div className="overflow-x-auto xl:min-h-0 xl:overflow-y-auto">
+      <PanelCard className="fit:min-h-0">
+        <div className="overflow-x-auto fit:min-h-0 fit:overflow-y-auto">
           <table className="w-full min-w-[56rem] text-left text-sm">
             <thead className="sticky top-0 bg-[#faf8f4] text-xs font-semibold text-ink-600">
               <tr>
                 {['Nome', 'Função', 'Vagas ativas', 'Candidatos em andamento', 'Contratações no mês', 'Última atividade', 'Status', 'Ações'].map((label) => (
-                  <th key={label} className="px-4 py-3 font-semibold first:pl-5">{label}</th>
+                  <th key={label} className="px-4 py-2.5 font-semibold first:pl-5">{label}</th>
                 ))}
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
               {members?.map((member) => (
                 <tr key={member.id} className="cursor-pointer hover:bg-[#faf8f4]" onClick={() => navigate(`${PANEL_BASE}/recrutadoras/${member.id}`)}>
-                  <td className="px-4 py-2.5 pl-5">
+                  <td className="px-4 py-2 pl-5">
                     <Link to={`${PANEL_BASE}/recrutadoras/${member.id}`} className={`flex items-center gap-3 ${panelFocus}`} onClick={(event) => event.stopPropagation()}>
-                      <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-gold-300 text-xs font-bold text-ink-950">{initials(member.name)}</span>
+                      <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-gold-300 text-xs font-bold text-ink-950">{initials(member.name)}</span>
                       <span className="min-w-0">
                         <span className="block font-semibold text-ink-950">{member.name}</span>
                         <span className="block truncate text-xs text-ink-600">{member.email}</span>
                       </span>
                     </Link>
                   </td>
-                  <td className="px-4 py-2.5 text-ink-700">{member.role_label}</td>
-                  <td className="px-4 py-2.5">{member.active_jobs}</td>
-                  <td className="px-4 py-2.5">{member.candidates_in_progress}</td>
-                  <td className="px-4 py-2.5">{member.hires_this_month}</td>
-                  <td className="px-4 py-2.5 text-ink-700">{lastActivity(member.last_activity_at)}</td>
-                  <td className="px-4 py-2.5">{member.is_active ? <Pill tone="bg-emerald-50 text-emerald-800">Ativa</Pill> : <Pill tone="bg-slate-100 text-ink-600">Inativa</Pill>}</td>
-                  <td className="px-4 py-2.5">
+                  <td className="px-4 py-2 text-ink-700">{member.role_label}</td>
+                  <td className="px-4 py-2">{member.active_jobs}</td>
+                  <td className="px-4 py-2">{member.candidates_in_progress}</td>
+                  <td className="px-4 py-2">{member.hires_this_month}</td>
+                  <td className="px-4 py-2 text-ink-700">{lastActivity(member.last_activity_at)}</td>
+                  <td className="px-4 py-2">{member.is_active ? <Pill tone="bg-emerald-50 text-emerald-800">Ativa</Pill> : <Pill tone="bg-slate-100 text-ink-600">Inativa</Pill>}</td>
+                  <td className="px-4 py-2">
                     <ActionsMenu label={`Ações de ${member.name}`} actions={memberActions(member, user?.id, () => setEditing(member), () => void toggle(member))} />
                   </td>
                 </tr>
@@ -270,7 +270,7 @@ export function TeamMemberPage() {
   }
 
   return (
-    <div className="flex flex-col gap-4 xl:h-full xl:min-h-0">
+    <div className="flex flex-col gap-3 fit:h-full fit:min-h-0">
       <nav aria-label="Caminho" className="text-sm text-ink-600">
         <Link to={`${PANEL_BASE}/recrutadoras`} className={`font-semibold text-gold-800 hover:text-ink-950 ${panelFocus}`}>Recrutadoras</Link> › {member.name}
       </nav>
@@ -301,15 +301,15 @@ export function TeamMemberPage() {
         />
       </div>
 
-      <div className="grid gap-3 xl:min-h-0 xl:flex-1 xl:grid-cols-[1.45fr_1fr]">
-        <PanelCard title={`Vagas da ${firstName}`} action={<span className="text-xs text-ink-600">clique para abrir a vaga</span>} className="xl:min-h-0">
-          <div className="overflow-x-auto xl:min-h-0 xl:flex-1 xl:overflow-y-auto">
+      <div className="grid gap-3 fit:min-h-0 fit:flex-1 xl:grid-cols-[1.45fr_1fr]">
+        <PanelCard title={`Vagas da ${firstName}`} action={<span className="text-xs text-ink-600">clique para abrir a vaga</span>} className="fit:min-h-0">
+          <div className="overflow-x-auto fit:min-h-0 fit:flex-1 fit:overflow-y-auto">
             <table className="w-full min-w-[38rem] text-left text-sm">
               <thead className="sticky top-0 bg-[#faf8f4] text-xs font-semibold text-ink-600">
                 <tr>
-                  <th className="px-5 py-3 font-semibold">Vaga</th>
+                  <th className="px-5 py-2.5 font-semibold">Vaga</th>
                   {STAGE_COLUMNS.map(([, label]) => (
-                    <th key={label} className="px-2 py-3 text-center font-semibold">{label}</th>
+                    <th key={label} className="px-2 py-2.5 text-center font-semibold">{label}</th>
                   ))}
                 </tr>
               </thead>
@@ -321,14 +321,14 @@ export function TeamMemberPage() {
                 ) : null}
                 {data.jobs.map((job) => (
                   <tr key={job.id} className="cursor-pointer hover:bg-[#faf8f4]" onClick={() => navigate(`${PANEL_BASE}/vagas/${job.id}`)}>
-                    <td className="px-5 py-3">
+                    <td className="px-5 py-2.5">
                       <Link to={`${PANEL_BASE}/vagas/${job.id}`} className={`block font-semibold text-ink-950 ${panelFocus}`} onClick={(event) => event.stopPropagation()}>{job.title}</Link>
                       <span className="block text-xs text-ink-600">
                         {job.company_name} · {job.status === 'approved' && job.published_at ? `${relativeTime(job.published_at).replace(/^há /, '')}` : jobStatus(job.status).label}
                       </span>
                     </td>
                     {STAGE_COLUMNS.map(([stage, , tone]) => (
-                      <td key={stage} className="px-2 py-3 text-center">
+                      <td key={stage} className="px-2 py-2.5 text-center">
                         {job.stage_counts[stage] ? <CountBadge value={job.stage_counts[stage]} tone={tone} /> : <span className="text-ink-400">·</span>}
                       </td>
                     ))}
@@ -339,8 +339,8 @@ export function TeamMemberPage() {
           </div>
         </PanelCard>
 
-        <PanelCard title="Anotações recentes" className="xl:min-h-0">
-          <ul className="grid gap-0 divide-y divide-slate-100 overflow-y-auto px-5 pb-4 xl:min-h-0">
+        <PanelCard title="Anotações recentes" className="fit:min-h-0">
+          <ul className="grid gap-0 divide-y divide-slate-100 overflow-y-auto px-5 pb-4 fit:min-h-0">
             {data.notes.length === 0 ? <li className="py-3 text-sm text-ink-600">Nenhuma anotação ainda.</li> : null}
             {data.notes.map((note) => (
               <li key={note.id} className="py-3">

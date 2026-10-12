@@ -14,34 +14,23 @@ test('recruiter is an internal role that public sign-up never offers', () => {
   assert.doesNotMatch(register, /value: 'recruiter'|value: 'admin'/)
 })
 
-test('recruiters land on /recrutador after login', () => {
-  assert.equal(roleHome('recruiter'), '/recrutador')
-  assert.deepEqual(decideAfterLogin('recrutamento', 'recruiter'), { action: 'enter', to: '/recrutador' })
+test('recruiters land on /painel after login', () => {
+  assert.equal(roleHome('recruiter'), '/painel')
+  assert.deepEqual(decideAfterLogin('recrutamento', 'recruiter'), { action: 'enter', to: '/painel' })
 })
 
-test('/recrutador is private to admin and recruiter and uses the internal layout', () => {
+test('the panel is private to admin and recruiter and lives outside the public layout', () => {
   const routes = read('src/routes/AppRoutes.tsx')
-  assert.match(routes, /<PrivateRoute allowedRoles=\{\['recruiter', 'admin'\]\}>\s*<WorkspaceLayout \/>/)
-  assert.match(routes, /<Route path="\/recrutador" element=\{<RecruiterHomePage \/>\} \/>/)
+  assert.match(routes, /<PrivateRoute allowedRoles=\{\['recruiter', 'admin'\]\} signedOut=\{<PanelSignedOut \/>\}>\s*<PanelLayout \/>/)
   // Must not live inside the public layout (public header/footer).
-  assert.ok(routes.indexOf('path="/recrutador"') < routes.indexOf('<Route element={<MainLayout />}>'))
+  assert.ok(routes.indexOf('path="/painel"') < routes.indexOf('<Route element={<MainLayout />}>'))
 })
 
-test('admin manages the recruiting team; recruiters set the responsible person per job', () => {
-  const service = read('src/services/adminService.ts')
-  assert.match(service, /'\/admin\/recruiters'/)
-  assert.match(read('src/pages/AdminPage.tsx'), /<RecruiterTeamSection \/>/)
-  assert.match(read('src/services/recruiterService.ts'), /\/recruiter\/jobs\/\$\{jobId\}\/responsible/)
-  assert.match(read('src/pages/recruiter/RecruiterHomePage.tsx'), /<ResponsibleSelect/)
-})
-
-test('new screens use the landing look (brand components), not the old dashboard UI kit', () => {
-  for (const path of [
-    'src/pages/recruiter/RecruiterHomePage.tsx',
-    'src/components/admin/RecruiterTeamSection.tsx',
-    'src/components/recruiter/ResponsibleSelect.tsx',
-    'src/layouts/WorkspaceLayout.tsx',
-  ]) {
-    assert.doesNotMatch(read(path), /components\/ui'/, path)
-  }
+test('only the admin manages the team and assigns the responsible recruiter', () => {
+  assert.match(read('src/services/adminService.ts'), /'\/admin\/recruiters'/)
+  const team = read('src/panel/TeamPages.tsx')
+  assert.match(team, /createRecruiter\(/)
+  assert.match(read('src/panel/panelApi.ts'), /`\/panel\/jobs\/\$\{jobId\}\/responsible`/)
+  const jobs = read('src/panel/JobsPage.tsx')
+  assert.match(jobs, /if \(isAdmin\) \{\s*list\.push\(\{ label: 'Trocar recrutadora'/)
 })

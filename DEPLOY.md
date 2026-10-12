@@ -165,7 +165,7 @@ Remove-Item Env:DATABASE_URL
 
 **Onde a equipe entra:** admin em `https://www.aktalent.com.br/equipe`; recrutadores em `https://www.aktalent.com.br/recrutamento`. Nenhuma das duas aparece em menus ou no rodapé, e nenhuma é indexada (meta `noindex` + cabeçalho `X-Robots-Tag`). Quem usa a porta do outro entra na própria área, com um aviso. Candidatos entram por `/entrar` (o "Entrar" do topo); empresas não entram (seção H).
 
-O script pede a connection string oculta e mostra só o banco de destino (sem a senha): confira que é a Neon antes de confirmar com `s`. Depois pede nome, e-mail e senha (oculta, mínimo 12, digitada duas vezes). Recrutadores: pelo `/admin` ("Equipe de recrutamento") ou `python -m app.scripts.create_recruiter`.
+O script pede a connection string oculta e mostra só o banco de destino (sem a senha): confira que é a Neon antes de confirmar com `s`. Depois pede nome, e-mail e senha (oculta, mínimo 12, digitada duas vezes). Recrutadoras: pelo `/painel/recrutadoras` ("+ Nova recrutadora") ou `python -m app.scripts.create_recruiter`.
 
 ---
 
@@ -181,20 +181,20 @@ O script pede a connection string oculta e mostra só o banco de destino (sem a 
 
 Use dados claramente de teste ("TESTE AK"). Celular para a parte pública e para o candidato; computador para empresa e AK.
 
-1. **Admin** (computador): `/admin` → **Nova empresa** "TESTE AK Mercado" (nome e WhatsApp) → **Nova vaga** "TESTE Operador de Caixa" para ela, status **Publicada** (salário mínimo menor que o máximo). A vaga aparece em `/vagas` na hora.
-2. Em "Equipe de recrutamento", criar uma recrutadora de teste e escolhê-la como responsável na vaga (**Editar**).
+1. **Admin** (computador): `/equipe` → `/painel/empresas` → **+ Nova empresa** "TESTE AK Mercado" (nome e WhatsApp) → em `/painel/vagas`, **+ Nova vaga** "TESTE Operador de Caixa" para ela, status **Publicada** (salário mínimo menor que o máximo). A vaga aparece em `/vagas` na hora.
+2. Em `/painel/recrutadoras`, criar uma recrutadora de teste e, na vaga, **⋯ → Trocar recrutadora** para ela (a recrutadora só vê as vagas em que é a responsável).
 3. **Candidato** (celular): `/register` → Candidato → aceitar política.
 4. Ainda logado, em `/candidate`, achar a vaga e tocar **Candidatar-se**. (A candidatura precisa ser feita **logado**: pelo formulário público ela não aparece na conta, por segurança.)
 5. Em `/candidate`, "Minhas candidaturas" mostra **Recebida**.
-6. **Recrutadora**: entrar por `/recrutamento` (vai para `/recrutador`) → abrir o pipeline → no candidato, **Mover para… → Em triagem** e depois **→ Entrevista AK** (com observação). O candidato passa a ver **Entrevista**.
+6. **Recrutadora**: entrar por `/recrutamento` (vai para `/painel`) → abrir a vaga → no candidato, **Mover para… → Em triagem** e depois **→ Entrevista AK** (com observação). O candidato passa a ver **Entrevista**.
 7. **Mover para… → Enviado ao cliente** (parecer obrigatório, 2 linhas). Mandar o relatório ao cliente pelo WhatsApp (fora do sistema).
 8. **Recrutadora**: quando o cliente responder, **Mover para… → Cliente aprovou**, escrevendo o que ele respondeu (obrigatório).
 9. **Candidato**: vê **Na etapa final**.
 10. **Recrutadora**: no detalhe, o histórico mostra "Resposta do cliente: aprovou. …". **Mover para… → Contratado**.
 11. **Candidato**: vê **"Parabéns, você foi selecionado(a)!"**.
 12. Público: `/vagas/vaga-que-nao-existe` → "Esta vaga não está mais disponível". `/privacidade` abre.
-    Numa vaga aberta, **deslogado** (celular): **Candidatar-se** rola até o formulário com o cursor no "Nome completo". Enviar → vaga sem perguntas: "Candidatura enviada!" na hora; vaga com perguntas: as perguntas aparecem na página e, depois de "Concluir candidatura", a mesma confirmação. Nenhum chat abre sozinho. Em `/recrutador`, a candidatura aparece em **Nova** (sem perguntas: "Sem perguntas de triagem").
-13. **Limpeza**: `/admin` → **Desativar** a empresa e o candidato de teste (a vaga some do site; nada é apagado).
+    Numa vaga aberta, **deslogado** (celular): **Candidatar-se** rola até o formulário com o cursor no "Nome completo". Enviar → vaga sem perguntas: "Candidatura enviada!" na hora; vaga com perguntas: as perguntas aparecem na página e, depois de "Concluir candidatura", a mesma confirmação. Nenhum chat abre sozinho. Em `/painel/vagas/<id>`, a candidatura aparece em **Nova** (sem perguntas: "Sem perguntas de triagem").
+13. **Limpeza**: `/painel/empresas` → **⋯ → Desativar** a empresa de teste (a vaga some do site; nada é apagado). O candidato de teste: `/painel/candidatos` → **⋯ → Excluir dados (LGPD)** (não dá para desfazer).
 
 Se algo falhar: anote o passo e o horário, e veja **Vercel → ak-talent-api → Logs**.
 
@@ -225,7 +225,7 @@ Hoje as perguntas da vaga são respondidas **na própria página**. Com `VITE_AP
    ```powershell
    vercel logs --project ak-talent-api --environment production --no-branch --since 30m
    ```
-   O que precisa aparecer: `GET /integrations/appintelli/applications/<ref>/screening` **200** e, depois das respostas, `POST .../screening/answers` **200**. Em `/recrutador`, a candidatura mostra o resultado da triagem.
+   O que precisa aparecer: `GET /integrations/appintelli/applications/<ref>/screening` **200** e, depois das respostas, `POST .../screening/answers` **200**. Em `/painel`, a candidatura mostra o resultado da triagem.
    - Nenhuma linha `/integrations/...`: o AppIntelli não está chamando a nossa API. **Não ligue a flag.**
    - `401`: segredo diferente dos dois lados. `404`: referência errada.
 4. Só então: no projeto **ak-talents** (site), Production, `VITE_APPINTELLI_SCREENING_ENABLED=true` (não é segredo, pode ser tipo normal) e **redeploy**. Repita o teste pelo celular, agora tocando em "Abrir o chat", e confira os mesmos logs.
@@ -303,19 +303,20 @@ A empresa cliente não usa mais a plataforma. A AK cadastra a empresa, abre e op
 - **Flags:** `COMPANY_PORTAL_ENABLED` (API) e `VITE_COMPANY_PORTAL_ENABLED` (site). Padrão: desligadas, sem precisar criar variável. Desligadas, não há cadastro nem login de empresa (senha ou Google), sessões de empresa já abertas são recusadas e `/entrar/empresa` e `/company` levam a `/entrar` com o aviso. Para religar o portal, crie as duas como `true` e faça redeploy dos dois projetos.
 - **"Quero contratar"** (em `/entrar` e no cadastro): abre `VITE_WHATSAPP_URL` com uma mensagem pronta; sem a variável, abre um e-mail.
 - **Banco:** a migração `0014_internal_companies` precisa estar aplicada **antes** do deploy da API (`backend/scripts/migrar-producao.ps1`, seção A5). Ela deixa `companies.user_id` opcional, cria `cnpj`, `contact_email`, `notes` e `is_active` (copiado da conta de cada empresa) e converte as vagas `pending` → `draft` (Rascunho) e `hidden` → `closed` (Encerrada).
-- **Admin (`/admin`):** empresas (nova, editar, desativar) e vagas (nova, editar, Publicar, Encerrar) com recrutador e status. A vaga criada pela AK não passa por aprovação.
+- **Admin (`/painel`):** empresas (nova, editar, desativar) e vagas (nova, editar, Publicar, Encerrar) com recrutadora e status. A vaga criada pela AK não passa por aprovação.
 - **Pipeline:** Nova → Em triagem → Entrevista AK → Enviado ao cliente (parecer obrigatório) → Aprovado pelo cliente → Contratado; saídas Reprovado e Desistiu. A resposta do cliente é registrada pela recrutadora, com observação obrigatória, no histórico. As candidaturas existentes mantêm as etapas e o histórico.
 
 ### H0. Painel novo (/painel), migração 0015
 
-O painel novo da equipe é construído ao lado do atual (`/admin` e `/recrutador` continuam funcionando até a troca final). A migração `0015_panel_data` precisa estar aplicada **antes** do deploy da API que traz `/panel/*` (`backend/scripts/migrar-producao.ps1`, seção A5). Ela só acrescenta: tipo das anotações (os pareceres e as respostas do cliente já registrados viram anotações "Parecer" e "Retorno do cliente"), datas de publicação e encerramento das vagas, origem e autorização do candidato cadastrado à mão, marca de dados excluídos e a tabela `data_deletion_log` (quem excluiu dados de candidato e quando, sem os dados).
+O painel da equipe (admin e recrutadoras) fica em `/painel`; os endereços antigos `/admin` e `/recrutador/...` abrem a mesma página no painel. A recrutadora só vê as vagas em que é a responsável (e as candidaturas e candidatos delas); vaga sem responsável é do admin. A migração `0015_panel_data` precisa estar aplicada **antes** do deploy da API que traz `/panel/*` (`backend/scripts/migrar-producao.ps1`, seção A5). Ela só acrescenta: tipo das anotações (os pareceres e as respostas do cliente já registrados viram anotações "Parecer" e "Retorno do cliente"), datas de publicação e encerramento das vagas, origem e autorização do candidato cadastrado à mão, marca de dados excluídos e a tabela `data_deletion_log` (quem excluiu dados de candidato e quando, sem os dados).
 
 ### H1. Conferir
 
 - `/entrar`: "Sou candidato" e "Quero contratar"; `/entrar/empresa` volta para `/entrar` com o aviso.
 - Login de uma conta antiga de empresa: aviso "O acesso de empresas foi encerrado…" e nenhuma sessão.
-- `/recrutamento` com uma recrutadora → `/recrutador`; com o admin → `/admin` (com aviso).
-- `/admin`: criar uma empresa de teste e uma vaga **Publicada** → ela aparece em `/vagas`. Depois, **Desativar** a empresa (a vaga some do site).
+- `/painel` sem login: "Sou da administração" (`/equipe`) e "Sou recrutadora" (`/recrutamento`); os dois levam ao painel.
+- `/admin` e `/recrutador` → `/painel`; `/recrutador/vagas/<id>` → `/painel/vagas/<id>`.
+- `/painel/empresas`: criar uma empresa de teste e uma vaga **Publicada** → ela aparece em `/vagas`. Depois, **Desativar** a empresa (a vaga some do site).
 
 ---
 

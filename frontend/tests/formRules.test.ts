@@ -133,14 +133,12 @@ test('admin jobs: delete only without applications, otherwise archive; archived 
   assert.deepEqual(filterJobs(jobs, 'closed', '').map((job) => job.id), [1])
   assert.deepEqual(filterJobs(jobs, '', '').map((job) => job.id), [1, 2])
 
-  const page = read('src/pages/AdminPage.tsx')
+  const page = read('src/panel/JobsPage.tsx')
   assert.match(page, /Mostrar arquivadas/)
-  assert.match(page, /getAdminJobs\(includeArchived\)/)
-  assert.match(page, /\{deleteJobConfirmation\(job\.title\)\}/)
-  assert.match(page, /Sim, excluir/)
+  assert.match(page, /\{deleteJobConfirmation\(deleting\.title\)\}/)
   assert.match(page, /setJobArchived\(job\.id, true\)/)
   assert.match(page, /setJobArchived\(job\.id, false\)/)
   // Delete is offered only through jobRemovalAction (never for a job with applications).
-  assert.match(page, /\{jobRemovalAction\(job\) === 'delete' \? \(/)
+  assert.match(page, /if \(removal === 'delete'\) list\.push\(\{ label: 'Excluir'/)
   assert.match(read('src/services/adminService.ts'), /`\/admin\/jobs\/\$\{jobId\}\/archived`, \{ method: 'PUT', body: \{ archived \} \}/)
 })

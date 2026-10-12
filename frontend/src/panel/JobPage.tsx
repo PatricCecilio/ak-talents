@@ -155,7 +155,7 @@ export function JobPage() {
     .join(' · ')
 
   return (
-    <div className="flex flex-col gap-3 xl:h-full xl:min-h-0">
+    <div className="flex flex-col gap-3 fit:h-full fit:min-h-0">
       <nav aria-label="Caminho" className="text-sm text-ink-600">
         <Link to={`${PANEL_BASE}/vagas`} className={`font-semibold text-gold-800 hover:text-ink-950 ${panelFocus}`}>Vagas</Link> › {job.title}
       </nav>
@@ -243,7 +243,7 @@ export function JobPage() {
       </div>
 
       {tab === 'candidatos' && view === 'quadro' ? (
-        <div className="flex gap-3 overflow-x-auto pb-2 xl:min-h-0 xl:flex-1" data-board>
+        <div className="flex gap-3 overflow-x-auto pb-2 fit:min-h-0 fit:flex-1" data-board>
           {columns.map((stage) => {
             const columnCards = visibleCards.filter((card) => card.stage === stage)
             const droppable = dragged ? dragged.allowed_next_stages.some((option) => option.value === stage) : false
@@ -256,13 +256,13 @@ export function JobPage() {
                   if (dragged) event.preventDefault()
                 }}
                 onDrop={() => onDrop(stage)}
-                className={`flex w-64 shrink-0 flex-col rounded-2xl bg-[#efe9df] p-2.5 transition xl:min-h-0 xl:w-auto xl:min-w-[11rem] xl:flex-1 xl:shrink ${droppable ? 'ring-2 ring-gold-400' : ''} ${dragged && !droppable && dragged.stage !== stage ? 'opacity-60' : ''}`}
+                className={`flex w-64 shrink-0 flex-col rounded-2xl bg-[#efe9df] p-2.5 transition fit:min-h-0 xl:w-auto xl:min-w-[11rem] xl:flex-1 xl:shrink ${droppable ? 'ring-2 ring-gold-400' : ''} ${dragged && !droppable && dragged.stage !== stage ? 'opacity-60' : ''}`}
               >
                 <header className="flex items-center justify-between px-1.5 pb-2 pt-1">
                   <h3 className="truncate text-[13px] font-bold text-ink-950" title={COLUMN_TITLES[stage]}>{COLUMN_TITLES[stage]}</h3>
                   <span className="grid h-6 min-w-6 place-items-center rounded-full bg-white px-1.5 text-xs font-bold text-ink-700">{columnCards.length}</span>
                 </header>
-                <div className="grid content-start gap-2 overflow-y-auto xl:min-h-0 xl:flex-1">
+                <div className="grid content-start gap-2 overflow-y-auto fit:min-h-0 fit:flex-1">
                   {columnCards.length === 0 ? (
                     <p className="rounded-xl border border-dashed border-slate-300 p-3 text-center text-xs text-ink-400">
                       {stage === 'client_approved' ? 'Arraste para cá quando o cliente aprovar' : 'Ninguém nesta etapa'}
@@ -282,6 +282,7 @@ export function JobPage() {
                           {card.candidate_name}
                         </Link>
                         <p className="mt-0.5 text-xs text-ink-600">{cardSubtitle(card.city, card.experience_years)}</p>
+                        {card.possible_duplicate ? <DuplicateBadge /> : null}
                         <div className="mt-2 flex items-center justify-between gap-2">
                           <span className={`text-xs ${late ? 'font-semibold text-gold-800' : 'text-ink-600'}`}>
                             {late ? (
@@ -305,13 +306,13 @@ export function JobPage() {
       ) : null}
 
       {tab === 'candidatos' && view === 'lista' ? (
-        <PanelCard className="xl:min-h-0 xl:flex-1">
-          <div className="overflow-x-auto xl:min-h-0 xl:flex-1 xl:overflow-y-auto">
+        <PanelCard className="fit:min-h-0 fit:flex-1">
+          <div className="overflow-x-auto fit:min-h-0 fit:flex-1 fit:overflow-y-auto">
             <table className="w-full min-w-[40rem] text-left text-sm">
               <thead className="sticky top-0 bg-[#faf8f4] text-xs font-semibold text-ink-600">
                 <tr>
                   {['Candidato', 'Cidade e experiência', 'Etapa', 'Na etapa há', 'Ações'].map((label) => (
-                    <th key={label} className="px-4 py-3 font-semibold first:pl-5">{label}</th>
+                    <th key={label} className="px-4 py-2.5 font-semibold first:pl-5">{label}</th>
                   ))}
                 </tr>
               </thead>
@@ -323,15 +324,16 @@ export function JobPage() {
                 ) : null}
                 {visibleCards.map((card) => (
                   <tr key={card.id} className={card.waiting_client_too_long ? 'bg-gold-50/60' : ''}>
-                    <td className="px-4 py-3 pl-5 font-semibold text-ink-950">
+                    <td className="px-4 py-2.5 pl-5 font-semibold text-ink-950">
                       <Link to={`${PANEL_BASE}/candidaturas/${card.id}`} className={panelFocus}>{card.candidate_name}</Link>
+                      {card.possible_duplicate ? <DuplicateBadge /> : null}
                     </td>
-                    <td className="px-4 py-3 text-ink-700">{cardSubtitle(card.city, card.experience_years)}</td>
-                    <td className="px-4 py-3"><Pill>{COLUMN_TITLES[card.stage]}</Pill></td>
-                    <td className="px-4 py-3 text-ink-700">
+                    <td className="px-4 py-2.5 text-ink-700">{cardSubtitle(card.city, card.experience_years)}</td>
+                    <td className="px-4 py-2.5"><Pill>{COLUMN_TITLES[card.stage]}</Pill></td>
+                    <td className="px-4 py-2.5 text-ink-700">
                       {card.waiting_client_too_long ? <span className="font-semibold text-gold-800">⚠ {daysAgo(card.stage_updated_at)} dias · cobrar retorno</span> : shortAge(card.stage_updated_at)}
                     </td>
-                    <td className="px-4 py-3"><ActionsMenu label={`Ações de ${card.candidate_name}`} actions={cardActions(card)} /></td>
+                    <td className="px-4 py-2.5"><ActionsMenu label={`Ações de ${card.candidate_name}`} actions={cardActions(card)} /></td>
                   </tr>
                 ))}
               </tbody>
@@ -407,6 +409,18 @@ export function JobPage() {
   )
 }
 
+// Same phone or e-mail as another application of this job: a warning only, nothing is blocked.
+function DuplicateBadge() {
+  return (
+    <span
+      title="Outra candidatura desta vaga tem o mesmo telefone ou e-mail. Confira antes de seguir (nada foi bloqueado)."
+      className="mt-1 inline-flex w-fit rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-semibold text-amber-800"
+    >
+      Possível duplicado
+    </span>
+  )
+}
+
 function JobDetails({ job }: { job: PanelJobDetail }) {
   const rows: Array<[string, string]> = [
     ['Empresa', job.company_name],
@@ -419,7 +433,7 @@ function JobDetails({ job }: { job: PanelJobDetail }) {
     ['Benefícios', job.benefits ?? '—'],
   ]
   return (
-    <PanelCard className="xl:min-h-0 xl:flex-1">
+    <PanelCard className="fit:min-h-0 fit:flex-1">
       <div className="grid gap-6 overflow-y-auto p-5 lg:grid-cols-[1fr_1.4fr]">
         <dl className="grid content-start gap-3 text-sm">
           {rows.map(([label, value]) => (
@@ -487,8 +501,8 @@ function ScreeningEditor({ jobId }: { jobId: number }) {
   }
 
   return (
-    <PanelCard className="xl:min-h-0 xl:flex-1">
-      <div className="flex flex-col gap-3 p-5 xl:min-h-0 xl:flex-1">
+    <PanelCard className="fit:min-h-0 fit:flex-1">
+      <div className="flex flex-col gap-3 p-5 fit:min-h-0 fit:flex-1">
         <p className="text-sm text-ink-700">Lista JSON de perguntas (YES_NO, SINGLE_SELECT ou TEXT). As respostas aparecem para a equipe na candidatura.</p>
         {error ? <p role="alert" className="text-sm font-semibold text-red-700">{error}</p> : null}
         {message ? <p role="status" className="text-sm font-semibold text-emerald-800">{message}</p> : null}

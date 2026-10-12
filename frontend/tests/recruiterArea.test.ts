@@ -58,26 +58,10 @@ test('friendly date, screening and WhatsApp helpers', () => {
   assert.equal(whatsappLink('123'), '')
 })
 
-test('recruiter area routes: home, job pipeline and application detail', () => {
+test('panel routes: job pipeline and application detail', () => {
   const routes = read('src/routes/AppRoutes.tsx')
-  assert.match(routes, /path="\/recrutador\/vagas\/:jobId" element=\{<RecruiterJobPage \/>\}/)
-  assert.match(routes, /path="\/recrutador\/candidaturas\/:applicationId" element=\{<RecruiterApplicationPage \/>\}/)
-})
-
-test('home highlights finalists waiting for the client and shows counts per stage', () => {
-  const home = read('src/pages/recruiter/RecruiterHomePage.tsx')
-  assert.match(home, /getRecruiterJobs\(\)/)
-  assert.match(home, /aguardam`\} o cliente há mais de \{alertDays\} dias/)
-  assert.match(home, /job\.stage_counts\[stage\]/)
-})
-
-test('pipeline: columns on desktop, stage filter list on phones, "Mover para…" button', () => {
-  const page = read('src/pages/recruiter/RecruiterJobPage.tsx')
-  assert.match(page, /lg:hidden/)
-  assert.match(page, /hidden lg:block/)
-  assert.match(page, /role="tablist" aria-label="Filtrar por etapa"/)
-  assert.match(page, /Mover para…/)
-  assert.doesNotMatch(page, /draggable|onDrag/)
+  assert.match(routes, /path="\/painel\/vagas\/:jobId" element=\{<JobPage \/>\}/)
+  assert.match(routes, /path="\/painel\/candidaturas\/:applicationId" element=\{<ApplicationPage \/>\}/)
 })
 
 test('move dialog: finalist needs a summary, hiring can close the others after confirmation', () => {
@@ -91,9 +75,9 @@ test('move dialog: finalist needs a summary, hiring can close the others after c
   assert.match(dialog, /role="dialog"/)
 })
 
-test('application detail shows contact, screening, history and internal notes', () => {
-  const detail = read('src/pages/recruiter/RecruiterApplicationPage.tsx')
-  for (const text of ['Contato', 'Triagem', 'Histórico', 'Notas internas', 'Só a equipe AK Talent vê estas notas']) {
+test('application detail shows the candidate, the job, screening, history and internal notes', () => {
+  const detail = read('src/panel/ApplicationPage.tsx')
+  for (const text of ['Candidato', 'Sobre a vaga', 'Triagem', 'Histórico', 'Notas internas', 'Só a equipe AK Talent vê estas notas']) {
     assert.ok(detail.includes(text), text)
   }
   assert.match(detail, /addApplicationNote\(/)
@@ -101,8 +85,7 @@ test('application detail shows contact, screening, history and internal notes', 
 
 test('recruiter screens use the landing look', () => {
   for (const path of [
-    'src/pages/recruiter/RecruiterJobPage.tsx',
-    'src/pages/recruiter/RecruiterApplicationPage.tsx',
+    'src/panel/ApplicationPage.tsx',
     'src/components/recruiter/MoveStageDialog.tsx',
   ]) {
     assert.doesNotMatch(read(path), /components\/ui'/, path)
@@ -131,8 +114,8 @@ test('the hire dialog uses those defaults and asks what to do with the job', () 
   assert.match(dialog, /Encerrar a vaga \(sai do site\)/)
   assert.match(dialog, /Manter aberta \(há mais posições\)/)
   assert.match(dialog, /close_job: willCloseJob \? true : undefined/)
-  assert.match(read('src/pages/recruiter/RecruiterJobPage.tsx'), /openings=\{job\.openings\}/)
-  assert.match(read('src/pages/recruiter/RecruiterApplicationPage.tsx'), /openings=\{detail\.job_openings\}/)
+  assert.match(read('src/panel/JobPage.tsx'), /openings=\{job\.openings\}/)
+  assert.match(read('src/panel/ApplicationPage.tsx'), /openings=\{detail\.job_openings\}/)
 })
 
 test('finalists show how long the client company has been deciding', () => {
@@ -141,23 +124,22 @@ test('finalists show how long the client company has been deciding', () => {
   assert.equal(finalistWaitingLabel(new Date(2026, 9, 9, 9, 0).toISOString(), now), 'Aguardando o cliente há 1 dia')
   assert.equal(finalistWaitingLabel(new Date(2026, 9, 6, 9, 0).toISOString(), now), 'Aguardando o cliente há 4 dias')
 
-  const page = read('src/pages/recruiter/RecruiterJobPage.tsx')
-  assert.match(page, /card\.stage === 'finalist' \? \(/)
-  assert.match(page, /\{finalistWaitingLabel\(card\.stage_updated_at\)\}/)
-  assert.match(page, /card\.waiting_client_too_long \? ' · cobrar retorno' : ''/)
+  const page = read('src/panel/JobPage.tsx')
+  assert.match(page, /const late = card\.waiting_client_too_long/)
+  assert.match(page, /cobrar · \{daysAgo\(card\.stage_updated_at\)\} dias/)
 
   const dialog = read('src/components/recruiter/MoveStageDialog.tsx')
   assert.match(dialog, /currentStage === 'finalist' \? \(/)
   assert.match(dialog, /Aguardando a resposta do cliente\{companyName \? <strong> \{companyName\}<\/strong> : null\}/)
   assert.match(page, /companyName=\{job\.company_name\}/)
-  assert.match(read('src/pages/recruiter/RecruiterApplicationPage.tsx'), /companyName=\{detail\.company_name\}/)
+  assert.match(read('src/panel/ApplicationPage.tsx'), /companyName=\{detail\.company_name\}/)
 })
 
 test('possible duplicates are flagged on the card and the detail, without blocking', () => {
-  const page = read('src/pages/recruiter/RecruiterJobPage.tsx')
-  assert.match(page, /\{card\.possible_duplicate \? <DuplicateBadge \/> : null\}/)
+  const page = read('src/panel/JobPage.tsx')
+  assert.equal(page.match(/\{card\.possible_duplicate \? <DuplicateBadge \/> : null\}/g)?.length, 2)
   assert.match(page, /Possível duplicado/)
-  const detail = read('src/pages/recruiter/RecruiterApplicationPage.tsx')
+  const detail = read('src/panel/ApplicationPage.tsx')
   assert.match(detail, /detail\.possible_duplicate \? \(/)
   assert.match(detail, /nada foi bloqueado/)
 })

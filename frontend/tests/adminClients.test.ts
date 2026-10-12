@@ -134,7 +134,7 @@ test('job statuses: Rascunho, Publicada, Encerrada (old ones read as the closest
   assert.deepEqual(filterJobs(jobs, '', '').length, 3)
 })
 
-test('admin page: create/edit/deactivate companies and jobs; portal approvals only with the flag', () => {
+test('panel: create/edit/deactivate companies and jobs, publish and close', () => {
   const service = read('src/services/adminService.ts')
   assert.match(service, /apiRequest<AdminCompany>\('\/admin\/companies', \{ method: 'POST'/)
   assert.match(service, /`\/admin\/companies\/\$\{companyId\}`, \{ method: 'PUT'/)
@@ -142,15 +142,16 @@ test('admin page: create/edit/deactivate companies and jobs; portal approvals on
   assert.match(service, /`\/admin\/jobs\/\$\{jobId\}`, \{ method: 'PUT'/)
   assert.equal((service.match(/method: 'DELETE'/g) ?? []).length, 1)
 
-  const page = read('src/pages/AdminPage.tsx')
-  assert.match(page, /<CompanyForm/)
-  assert.match(page, /<JobForm/)
-  assert.match(page, /Nova empresa/)
-  assert.match(page, /Nova vaga/)
-  assert.match(page, /\{companyPortal \? \(/)
-  assert.match(page, /Publicar/)
-  assert.match(page, /Encerrar/)
-  assert.doesNotMatch(page, /Vaga aprovada\./)
+  const companies = read('src/panel/CompaniesPage.tsx')
+  assert.match(companies, /<CompanyForm/)
+  assert.match(companies, /\+ Nova empresa/)
+  assert.match(companies, /setCompanyActive\(company\.id, false\)/)
+  const jobs = read('src/panel/JobsPage.tsx')
+  assert.match(jobs, /<JobForm/)
+  assert.match(jobs, /\+ Nova vaga/)
+  assert.match(jobs, /label: 'Publicar'/)
+  assert.match(jobs, /label: 'Encerrar'/)
+  assert.doesNotMatch(jobs, /Vaga aprovada\./)
 
   const jobForm = read('src/components/admin/JobForm.tsx')
   for (const field of ['salary-min', 'salary-max', 'contract', 'openings', 'schedule', 'benefits', 'recruiter', 'company']) {

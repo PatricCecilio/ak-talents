@@ -1,8 +1,8 @@
 // Where each kind of account lands (after login, after sign-up and from "Meu painel"). No runtime imports.
 
 const ROLE_HOME: Record<string, string> = {
-  admin: '/admin',
-  recruiter: '/recrutador',
+  admin: '/painel',
+  recruiter: '/painel',
   company: '/company',
   candidate: '/candidate',
 }

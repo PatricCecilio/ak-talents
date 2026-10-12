@@ -4,7 +4,7 @@ import { LoginNotice } from '../components/LoginNotice'
 import { getCurrentUser } from '../services/authService'
 
 interface DashboardShellProps extends PropsWithChildren {
-  active: 'candidate' | 'company' | 'admin'
+  active: 'candidate' | 'company'
 }
 
 // Each item jumps to a section of the same page.
@@ -19,19 +19,11 @@ const navItems = {
     { href: '#nova-vaga', label: 'Nova vaga' },
     { href: '#suas-vagas', label: 'Suas vagas' },
   ],
-  admin: [
-    { href: '#resumo', label: 'Resumo' },
-    { href: '#empresas', label: 'Empresas' },
-    { href: '#vagas', label: 'Vagas' },
-    { href: '#candidatos', label: 'Candidatos' },
-    { href: '#candidaturas', label: 'Candidaturas' },
-  ],
 }
 
 const roleLabels = {
   candidate: 'Candidato',
   company: 'Empresa',
-  admin: 'Administração',
 }
 
 export function DashboardShell({ active, children }: DashboardShellProps) {

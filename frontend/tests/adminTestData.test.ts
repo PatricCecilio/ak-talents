@@ -10,18 +10,14 @@ test('admin service exposes deactivate/hide endpoints (never delete)', () => {
   assert.match(service, /\/admin\/companies\/\$\{companyId\}\/active/)
   assert.match(service, /\/admin\/candidates\/\$\{candidateId\}\/active/)
   assert.match(service, /\/admin\/applications\/\$\{applicationId\}\/hidden/)
-  assert.match(service, /include_hidden=true/)
   // The only DELETE: a job nobody applied to (the API refuses the others with 409).
   assert.deepEqual(service.match(/method: 'DELETE'/g), ["method: 'DELETE'"])
   assert.match(service, /`\/admin\/jobs\/\$\{jobId\}`, \{ method: 'DELETE' \}/)
 })
 
-test('admin page: deactivate/reactivate companies and candidates, hide applications, show hidden filter', () => {
-  const page = read('src/pages/AdminPage.tsx')
-  assert.match(page, /setCompanyActive\(company\.id, company\.is_active === false\)/)
-  assert.match(page, /setCandidateActive\(candidate\.id, candidate\.is_active === false\)/)
-  assert.match(page, /setApplicationHidden\(application\.id, !application\.is_hidden\)/)
-  assert.match(page, /Mostrar candidaturas ocultas/)
+test('panel: companies are deactivated or reactivated, never deleted when they have jobs', () => {
+  const page = read('src/panel/CompaniesPage.tsx')
+  assert.match(page, /setCompanyActive\(company\.id, true\)/)
+  assert.match(page, /setCompanyActive\(company\.id, false\)/)
   assert.match(page, /nada foi apagado/)
-  assert.match(page, /Etapa: \{application\.stage_label \?\? application\.status\}/)
 })

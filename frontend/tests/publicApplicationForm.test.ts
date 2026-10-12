@@ -155,13 +155,13 @@ test('application service uses public screening token endpoints', () => {
   assert.doesNotMatch(source, /\/applications\/\$\{applicationId\}\/screening/)
 })
 
-test('admin page wires configurable screening questions per job', () => {
+test('the panel job page wires configurable screening questions per job', () => {
   const root = new URL('../', import.meta.url)
-  const source = readFileSync(new URL('src/pages/AdminPage.tsx', root), 'utf8')
+  const source = readFileSync(new URL('src/panel/JobPage.tsx', root), 'utf8')
 
   assert.match(source, /getJobScreeningQuestions/)
   assert.match(source, /updateJobScreeningQuestions/)
-  assert.match(source, /Salvar triagem/)
+  assert.match(source, /Salvar perguntas/)
   assert.match(source, /lista JSON de perguntas/)
 })
 

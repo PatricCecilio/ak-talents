@@ -7,6 +7,7 @@ import {
   COLUMN_TITLES,
   EXIT_STAGES,
   STAGE_TONES,
+  candidateLinks,
   cardSubtitle,
   daysAgo,
   erasureConfirmed,
@@ -14,14 +15,17 @@ import {
   initials,
   jobsQuery,
   jobStatus,
+  legacyPanelPath,
   longDate,
   maskPhone,
   panelMenu,
   publicJobUrl,
   publishedFor,
   relativeTime,
+  safeExternalUrl,
   shortAge,
 } from '../src/panel/panelFormat.ts'
+import { returnPathAfterLogin } from '../src/services/loginDoors.ts'
 import { AK_STAGE_LABELS } from '../src/services/pipelineFormat.ts'
 
 const root = new URL('../', import.meta.url)
@@ -82,25 +86,97 @@ test('jobs list query only sends what is set', () => {
   assert.equal(jobsQuery({ focus: 'to_triage', company_id: 3 }), '?focus=to_triage&company_id=3')
 })
 
-test('/painel lives next to /admin and /recrutador (no redirect yet), private to the team, noindex', () => {
+test('/painel is the only team area: /admin and /recrutador open the same item there; private, noindex', () => {
   const routes = read('src/routes/AppRoutes.tsx')
-  assert.match(routes, /<PrivateRoute allowedRoles=\{\['recruiter', 'admin'\]\}>\s*<PanelLayout \/>/)
+  assert.match(routes, /<PrivateRoute allowedRoles=\{\['recruiter', 'admin'\]\} signedOut=\{<PanelSignedOut \/>\}>\s*<PanelLayout \/>/)
   for (const path of ['/painel', '/painel/vagas', '/painel/vagas/:jobId', '/painel/candidaturas/:applicationId']) {
     assert.ok(routes.includes(`path="${path}"`), path)
   }
-  assert.match(routes, /path="\/admin"/)
-  assert.match(routes, /path="\/recrutador"/)
-  assert.doesNotMatch(routes, /Navigate to="\/painel/)
+  assert.match(routes, /<Route path="\/admin\/\*" element=\{<LegacyPanelRedirect \/>\} \/>/)
+  assert.match(routes, /<Route path="\/recrutador\/\*" element=\{<LegacyPanelRedirect \/>\} \/>/)
+  assert.doesNotMatch(routes, /AdminPage|RecruiterHomePage|RecruiterJobPage|WorkspaceLayout/)
+  assert.equal(legacyPanelPath('/admin'), '/painel')
+  assert.equal(legacyPanelPath('/recrutador'), '/painel')
+  assert.equal(legacyPanelPath('/recrutador/vagas/12'), '/painel/vagas/12')
+  assert.equal(legacyPanelPath('/recrutador/candidaturas/7/'), '/painel/candidaturas/7')
+  assert.equal(legacyPanelPath('/recrutador/vagas/abc'), '/painel')
   const layout = read('src/panel/PanelLayout.tsx')
   assert.match(layout, /<meta name="robots" content="noindex, nofollow" \/>/)
-  // Desktop: the page never scrolls; phones: normal scroll with a ☰ menu.
-  assert.match(layout, /xl:h-svh xl:overflow-hidden/)
   assert.match(layout, /aria-label="Abrir menu"/)
+  assert.match(read('src/panel/PanelSignedOut.tsx'), /<meta name="robots" content="noindex, nofollow" \/>/)
 })
 
-test('recruiters: own jobs by default, no new/edit job, team page hidden', () => {
+test('after the login the team goes back to the panel page that was asked for, and nowhere else', () => {
+  assert.equal(returnPathAfterLogin('/painel/vagas/12', 'admin'), '/painel/vagas/12')
+  assert.equal(returnPathAfterLogin('/painel', 'recruiter'), '/painel')
+  assert.equal(returnPathAfterLogin('/painel/vagas/12', 'candidate'), null)
+  assert.equal(returnPathAfterLogin('https://outro.site/painel', 'admin'), null)
+  assert.equal(returnPathAfterLogin('/candidate', 'admin'), null)
+  assert.equal(returnPathAfterLogin('/painelx', 'admin'), null)
+  assert.equal(returnPathAfterLogin(undefined, 'admin'), null)
+})
+
+test('desktop keeps the page still only when the window is tall enough; shorter windows scroll the page', () => {
+  const css = read('src/index.css')
+  assert.match(css, /@custom-variant fit \(@media \(min-width: 80rem\) and \(min-height: 46rem\)\);/)
+  const layout = read('src/panel/PanelLayout.tsx')
+  assert.match(layout, /xl:flex fit:h-svh fit:overflow-hidden/)
+  assert.match(layout, /xl:sticky xl:top-0 xl:block xl:h-svh/)
+  // No panel screen locks its height with plain xl: anymore (that is what cut the screens at 1366x768).
+  for (const file of ['CandidateProfilePage', 'CandidatesPage', 'CompaniesPage', 'JobPage', 'JobsPage', 'OverviewPage', 'PanelLayout', 'TeamPages']) {
+    // (The sidebar's own height is fine: it stays put while the page scrolls.)
+    const source = read(`src/panel/${file}.tsx`).replace('xl:sticky xl:top-0 xl:block xl:h-svh', '')
+    assert.doesNotMatch(source, /xl:(h-full|h-svh|min-h-0|overflow-hidden|overflow-y-auto)\b/, file)
+  }
+})
+
+test('the panel is a separate chunk: the public site does not download it', () => {
+  const routes = read('src/routes/AppRoutes.tsx')
+  assert.match(routes, /lazy\(\(\) => import\('\.\.\/panel'\)/)
+  assert.doesNotMatch(routes, /from '\.\.\/panel\/(?!panelFormat')/)
+  assert.match(routes, /<Suspense fallback=\{null\}>/)
+})
+
+test('candidate links: only http(s), new tab, no opener; LinkedIn, portfólio and currículo', () => {
+  assert.equal(safeExternalUrl('https://linkedin.com/in/ana'), 'https://linkedin.com/in/ana')
+  assert.equal(safeExternalUrl('http://exemplo.com.br/cv.pdf'), 'http://exemplo.com.br/cv.pdf')
+  assert.equal(safeExternalUrl('javascript:alert(1)'), null)
+  assert.equal(safeExternalUrl('data:text/html,oi'), null)
+  assert.equal(safeExternalUrl('linkedin.com/in/ana'), null)
+  assert.equal(safeExternalUrl('  '), null)
+  assert.equal(safeExternalUrl(null), null)
+  assert.deepEqual(
+    candidateLinks({ linkedin_url: 'https://linkedin.com/in/ana', portfolio_url: 'javascript:x', resume_url: 'https://drive.google.com/cv' }),
+    [
+      { label: 'LinkedIn', href: 'https://linkedin.com/in/ana' },
+      { label: 'Currículo', href: 'https://drive.google.com/cv' },
+    ],
+  )
+  const ui = read('src/panel/PanelUi.tsx')
+  assert.match(ui, /<a key=\{link\.label\} href=\{link\.href\} target="_blank" rel="noopener noreferrer"/)
+  assert.match(read('src/panel/ApplicationPage.tsx'), /<CandidateLinks candidate=\{candidate\} \/>/)
+  assert.match(read('src/panel/CandidateProfilePage.tsx'), /<CandidateLinks candidate=\{candidate\} \/>/)
+  assert.doesNotMatch(read('src/panel/CandidateProfilePage.tsx'), /href=\{candidate\.(linkedin|resume|portfolio)_url\}/)
+})
+
+test('application screen: "Sobre a vaga" with company, city, mode, salary, schedule, description, requirements, benefits', () => {
+  const about = read('src/panel/AboutJob.tsx')
+  for (const label of ['Empresa', 'Cidade', 'Modelo', 'Salário', 'Horário', 'Descrição', 'Requisitos', 'Benefícios']) {
+    assert.ok(about.includes(`'${label}'`), label)
+  }
+  const page = read('src/panel/ApplicationPage.tsx')
+  assert.match(page, /<Section title="Sobre a vaga">/)
+  assert.match(page, /getPanelJob\(response\.job_id\)/)
+})
+
+test('recruiters: only their own jobs (no recruiter filter), no new/edit job, team page hidden', () => {
   const jobs = read('src/panel/JobsPage.tsx')
-  assert.match(jobs, /params\.get\('recrutadora'\) \?\? \(isAdmin \? '' : 'minhas'\)/)
+  assert.match(jobs, /const recruiter = isAdmin \? \(params\.get\('recrutadora'\) \?\? ''\) : ''/)
+  assert.match(jobs, /\{isAdmin \? \(\s*<PanelSelect label="Recrutadora"/)
+  // Manual registration: a recruiter must pick one of their jobs.
+  const dialog = read('src/panel/AddCandidateDialog.tsx')
+  assert.match(dialog, /const jobRequired = getCurrentUser\(\)\?\.role !== 'admin'/)
+  assert.match(dialog, /if \(jobRequired && !values\.job_id\) next\.job_id = 'Escolha uma das suas vagas\.'/)
   assert.match(jobs, /isAdmin \? \(\s*<button type="button" className=\{panelButton\.navy\} onClick=\{\(\) => setEditing\('new'\)\}>/)
   assert.match(read('src/panel/JobPage.tsx'), /\{isAdmin && job\.status !== 'archived' \? \(/)
 })

@@ -51,9 +51,12 @@ export const DOOR_COPY: Record<LoginDoor, DoorCopy> = {
   },
 }
 
+/** The whole AK team (admin and recruiters) works in the panel. */
+export const PANEL_HOME = '/painel'
+
 const ROLE_HOME: Record<Role, string> = {
-  admin: '/admin',
-  recruiter: '/recrutador',
+  admin: PANEL_HOME,
+  recruiter: PANEL_HOME,
   company: '/company',
   candidate: '/candidate',
 }
@@ -86,17 +89,21 @@ const DOOR_AREA: Record<LoginDoor, string> = {
   recrutamento: 'pela área de recrutamento',
 }
 
-// Discreet notices between the two internal doors (both kinds of staff still get in).
-const STAFF_DOOR_NOTICE: Partial<Record<LoginDoor, string>> = {
-  equipe: 'Este é o acesso da administração. Abrimos a área de recrutamento.',
-  recrutamento: 'Este é o acesso do recrutamento. Abrimos o painel da administração.',
-}
-
 export const STAFF_ONLY_MESSAGE = 'Esta área é só para a equipe AK Talent.'
 
 export type LoginDecision =
   | { action: 'enter'; to: string; notice?: string }
   | { action: 'refuse'; message: string; link: { label: string; to: string } }
+
+/**
+ * Back to the panel page that asked for the login (e.g. a link to /painel/vagas/12), for the team only. Anything else
+ * (another site, another area) is ignored and the person lands on their home.
+ */
+export function returnPathAfterLogin(from: unknown, role: string): string | null {
+  if (role !== 'admin' && role !== 'recruiter') return null
+  if (typeof from !== 'string' || !/^\/painel(\/[\w\-/]*)?$/.test(from)) return null
+  return from
+}
 
 /** The door a role belongs to (used for "Já tem conta? Entrar", sign-out and private routes). */
 export function doorForRole(role: string | null | undefined): LoginDoor {
@@ -110,7 +117,8 @@ export function doorPathForRole(role: string | null | undefined): string {
 /**
  * What happens after a successful login. Never blocks someone who used the wrong public door (they go to their own
  * panel with a short notice). The only refusal: a candidate or company account at a staff door (/equipe,
- * /recrutamento). A recruiter at /equipe (or an admin at /recrutamento) goes to their own area with a discreet notice.
+ * /recrutamento). Both staff doors lead to the same panel, so a recruiter at /equipe (or an admin at /recrutamento)
+ * simply enters.
  */
 export function decideAfterLogin(door: LoginDoor, role: string): LoginDecision {
   const knownRole = role as Role
@@ -121,8 +129,7 @@ export function decideAfterLogin(door: LoginDoor, role: string): LoginDecision {
     const label = ownDoor === 'empresa' ? 'Entrar como empresa' : 'Entrar como candidato'
     return { action: 'refuse', message: STAFF_ONLY_MESSAGE, link: { label, to: DOOR_PATHS[ownDoor] } }
   }
-  if (door === ownDoor) return { action: 'enter', to: home }
-  if (isStaffDoor(door)) return { action: 'enter', to: home, notice: STAFF_DOOR_NOTICE[door] }
+  if (door === ownDoor || isStaffDoor(door)) return { action: 'enter', to: home }
   return {
     action: 'enter',
     to: home,

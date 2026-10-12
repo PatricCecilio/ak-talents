@@ -2,6 +2,7 @@ import type { ReactNode } from 'react'
 import { useCallback, useEffect, useState } from 'react'
 import type { PanelContext } from './panelContext'
 import { NavLink, Outlet } from 'react-router-dom'
+import { LoginNotice } from '../components/LoginNotice'
 import { getCurrentUser, logout } from '../services/authService'
 import { doorPathForRole } from '../services/loginDoors'
 import { getOverview } from './panelApi'
@@ -43,8 +44,9 @@ function MenuLink({ item, count, onNavigate }: { item: PanelMenuItem; count: num
   )
 }
 
-// New AK team panel (admin and recruiters). Desktop (>=1280px): fixed sidebar and top bar, the page itself never
-// scrolls (lists page, board columns scroll inside). Phones and tablets: the menu becomes ☰ and the page scrolls.
+// AK team panel (admin and recruiters). Desktop (>=1280px): fixed sidebar; when the window is also tall enough ("fit",
+// see index.css) the page stays still and lists/board columns scroll inside; shorter windows scroll the page normally.
+// Phones and tablets: the menu becomes ☰ and the page scrolls.
 export function PanelLayout() {
   const user = getCurrentUser()
   const role = user?.role ?? 'recruiter'
@@ -103,9 +105,9 @@ export function PanelLayout() {
   )
 
   return (
-    <div className="min-h-svh bg-[#f6f3ee] xl:flex xl:h-svh xl:overflow-hidden">
+    <div className="min-h-svh bg-[#f6f3ee] xl:flex fit:h-svh fit:overflow-hidden">
       <meta name="robots" content="noindex, nofollow" />
-      <aside className="hidden w-64 shrink-0 xl:block">{sidebar}</aside>
+      <aside className="hidden w-64 shrink-0 xl:sticky xl:top-0 xl:block xl:h-svh">{sidebar}</aside>
 
       {drawer ? (
         <div className="fixed inset-0 z-50 flex xl:hidden" onClick={() => setDrawer(false)}>
@@ -116,8 +118,8 @@ export function PanelLayout() {
         </div>
       ) : null}
 
-      <div className="flex min-w-0 flex-1 flex-col xl:min-h-0">
-        <header className="sticky top-0 z-30 flex min-h-16 flex-wrap items-center gap-3 border-b border-[#e7e1d6] bg-white px-4 py-2.5 sm:px-6">
+      <div className="flex min-w-0 flex-1 flex-col fit:min-h-0">
+        <header className="sticky top-0 z-30 flex min-h-14 flex-wrap items-center gap-3 border-b border-[#e7e1d6] bg-white px-4 py-2 sm:px-6">
           <button
             type="button"
             aria-label="Abrir menu"
@@ -131,7 +133,8 @@ export function PanelLayout() {
           </div>
           <div className="ml-auto flex flex-wrap items-center gap-2">{actions}</div>
         </header>
-        <main className="flex min-w-0 flex-col gap-4 px-4 py-5 sm:px-6 xl:min-h-0 xl:flex-1 xl:overflow-hidden">
+        <main className="relative flex min-w-0 flex-col gap-3 px-4 py-4 sm:px-6 fit:min-h-0 fit:flex-1 fit:overflow-y-auto">
+          <LoginNotice />
           <Outlet context={{ setActions, refreshCounts } satisfies PanelContext} />
         </main>
       </div>

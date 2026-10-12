@@ -5,6 +5,12 @@ import type { JobsListFilters } from './types'
 
 export const PANEL_BASE = '/painel'
 
+/** Old team addresses: /admin and /recrutador open the panel; job and application links keep pointing at the same item. */
+export function legacyPanelPath(pathname: string): string {
+  const match = /^\/recrutador\/(vagas|candidaturas)\/(\d+)\/?$/.exec(pathname)
+  return match ? `${PANEL_BASE}/${match[1]}/${match[2]}` : PANEL_BASE
+}
+
 /** Query string with only the filters that are set. */
 export function queryString(filters: object): string {
   const params = new URLSearchParams()
@@ -54,6 +60,31 @@ export const CANDIDATE_STAGE_FILTERS = [
   { value: 'withdrawn', label: 'Desistiu' },
   { value: 'none', label: 'Sem candidatura' },
 ] as const
+
+/** A link typed by a person opens only when it is http(s): never javascript:, data: or anything else. */
+export function safeExternalUrl(url: string | null | undefined): string | null {
+  const value = (url ?? '').trim()
+  if (!value) return null
+  try {
+    const parsed = new URL(value)
+    return parsed.protocol === 'http:' || parsed.protocol === 'https:' ? parsed.href : null
+  } catch {
+    return null
+  }
+}
+
+/** LinkedIn, portfólio and currículo that can be opened (in this order), skipping empty or unsafe ones. */
+export function candidateLinks(candidate: { linkedin_url?: string | null; portfolio_url?: string | null; resume_url?: string | null }): Array<{ label: string; href: string }> {
+  const links: Array<[string, string | null | undefined]> = [
+    ['LinkedIn', candidate.linkedin_url],
+    ['Portfólio', candidate.portfolio_url],
+    ['Currículo', candidate.resume_url],
+  ]
+  return links.flatMap(([label, url]) => {
+    const href = safeExternalUrl(url)
+    return href ? [{ label, href }] : []
+  })
+}
 
 /** Strong confirmation of the LGPD erasure: the name typed again (spaces and case do not matter). */
 export function erasureConfirmed(typed: string, name: string): boolean {

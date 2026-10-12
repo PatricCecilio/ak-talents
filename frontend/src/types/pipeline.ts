@@ -100,6 +100,7 @@ export interface ApplicationDetail {
     skills: string | null
     linkedin_url: string | null
     portfolio_url: string | null
+    resume_url?: string | null
     has_account: boolean
   }
   screening: {

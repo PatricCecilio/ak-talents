@@ -37,8 +37,8 @@ export function JobsPage() {
 
   const status = params.get('status') ?? ''
   const company = params.get('empresa') ?? ''
-  // Recruiters see their own jobs by default ("todas" shows everyone's).
-  const recruiter = params.get('recrutadora') ?? (isAdmin ? '' : 'minhas')
+  // Only the admin filters by recruiter: a recruiter only ever gets their own jobs (the API enforces it).
+  const recruiter = isAdmin ? (params.get('recrutadora') ?? '') : ''
   const archived = params.get('arquivadas') === '1'
   const focus = FOCUS[params.get('foco') ?? '']
   const page = Number(params.get('p') ?? '1') || 1
@@ -74,8 +74,8 @@ export function JobsPage() {
 
   useEffect(() => {
     getPanelCompanies().then(setCompanies).catch(() => setCompanies([]))
-    getTeam().then(setTeam).catch(() => setTeam([]))
-  }, [])
+    if (isAdmin) getTeam().then(setTeam).catch(() => setTeam([]))
+  }, [isAdmin])
 
   usePanelActions(
     isAdmin ? (
@@ -124,7 +124,7 @@ export function JobsPage() {
   const tableHeaders = ['Vaga', 'Empresa', 'Cidade', 'Recrutadora', 'Candidaturas', 'Para triar', 'Com o cliente', 'Status', 'Ações']
 
   return (
-    <div className="flex flex-col gap-4 xl:h-full xl:min-h-0">
+    <div className="flex flex-col gap-3 fit:h-full fit:min-h-0">
       <PanelPageHeader title="Vagas" subtitle="Clique em uma vaga para ver os candidatos" />
 
       <div className="flex flex-wrap items-center gap-2">
@@ -139,14 +139,16 @@ export function JobsPage() {
             <option key={item.id} value={item.id}>{item.company_name}</option>
           ))}
         </PanelSelect>
-        <PanelSelect label="Recrutadora" value={recruiter} onChange={(value) => setParam('recrutadora', value || (isAdmin ? '' : 'todas'))}>
-          <option value={isAdmin ? '' : 'todas'}>Recrutadora: todas</option>
-          <option value="minhas">Minhas vagas</option>
-          <option value="sem">Sem recrutadora</option>
-          {team.map((member) => (
-            <option key={member.id} value={member.id}>{member.name}</option>
-          ))}
-        </PanelSelect>
+        {isAdmin ? (
+          <PanelSelect label="Recrutadora" value={recruiter} onChange={(value) => setParam('recrutadora', value)}>
+            <option value="">Recrutadora: todas</option>
+            <option value="minhas">Minhas vagas</option>
+            <option value="sem">Sem recrutadora</option>
+            {team.map((member) => (
+              <option key={member.id} value={member.id}>{member.name}</option>
+            ))}
+          </PanelSelect>
+        ) : null}
         {focus ? (
           <button type="button" onClick={() => setParam('foco', '')} className={`inline-flex min-h-9 items-center gap-2 rounded-full bg-gold-50 px-3 text-sm font-semibold text-gold-800 ${panelFocus}`}>
             {focus.label} <span aria-hidden="true">×</span>
@@ -161,13 +163,13 @@ export function JobsPage() {
       {error ? <p role="alert" className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm font-semibold text-red-700">{error}</p> : null}
       {message ? <p role="status" className="rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-sm font-semibold text-emerald-800">{message}</p> : null}
 
-      <PanelCard className="xl:min-h-0 xl:flex-1">
-        <div className="overflow-x-auto xl:min-h-0 xl:flex-1 xl:overflow-y-auto">
+      <PanelCard className="fit:min-h-0 fit:flex-1">
+        <div className="overflow-x-auto fit:min-h-0 fit:flex-1 fit:overflow-y-auto">
           <table className="w-full min-w-[60rem] text-left text-sm">
             <thead className="sticky top-0 z-10 bg-[#faf8f4] text-xs font-semibold text-ink-600">
               <tr>
                 {tableHeaders.map((label) => (
-                  <th key={label} className="px-4 py-3 font-semibold first:pl-5">{label}</th>
+                  <th key={label} className="px-4 py-2.5 font-semibold first:pl-5">{label}</th>
                 ))}
               </tr>
             </thead>
@@ -179,22 +181,22 @@ export function JobsPage() {
               ) : null}
               {data?.items.map((job) => (
                 <tr key={job.id} className="cursor-pointer transition hover:bg-[#faf8f4]" onClick={() => navigate(`${PANEL_BASE}/vagas/${job.id}`)}>
-                  <td className="px-4 py-3 pl-5 font-semibold text-ink-950">
+                  <td className="px-4 py-2.5 pl-5 font-semibold text-ink-950">
                     <Link to={`${PANEL_BASE}/vagas/${job.id}`} className={panelFocus} onClick={(event) => event.stopPropagation()}>{job.title}</Link>
                   </td>
-                  <td className="px-4 py-3 text-ink-700">{job.company_name}</td>
-                  <td className="px-4 py-3 text-ink-700">{job.location || '—'}</td>
-                  <td className="px-4 py-3 text-ink-700">{job.recruiter_name?.split(' ')[0] ?? '—'}</td>
-                  <td className="px-4 py-3">{job.applications}</td>
-                  <td className="px-4 py-3"><CountBadge value={job.to_triage} tone="bg-gold-50 text-gold-800" /></td>
-                  <td className="px-4 py-3">
+                  <td className="px-4 py-2.5 text-ink-700">{job.company_name}</td>
+                  <td className="px-4 py-2.5 text-ink-700">{job.location || '—'}</td>
+                  <td className="px-4 py-2.5 text-ink-700">{job.recruiter_name?.split(' ')[0] ?? '—'}</td>
+                  <td className="px-4 py-2.5">{job.applications}</td>
+                  <td className="px-4 py-2.5"><CountBadge value={job.to_triage} tone="bg-gold-50 text-gold-800" /></td>
+                  <td className="px-4 py-2.5">
                     <span className="inline-flex items-center gap-1.5">
                       <CountBadge value={job.with_client} tone="bg-blue-50 text-blue-700" />
                       {job.waiting_client_too_long ? <span title="Há candidato com o cliente há mais de 5 dias" className="text-xs font-semibold text-gold-800">⚠</span> : null}
                     </span>
                   </td>
-                  <td className="px-4 py-3"><Pill tone={jobStatus(job.status).tone}>{jobStatus(job.status).label}</Pill></td>
-                  <td className="px-4 py-3">
+                  <td className="px-4 py-2.5"><Pill tone={jobStatus(job.status).tone}>{jobStatus(job.status).label}</Pill></td>
+                  <td className="px-4 py-2.5">
                     <ActionsMenu label={`Ações da vaga ${job.title}`} actions={actionsFor(job)} />
                   </td>
                 </tr>

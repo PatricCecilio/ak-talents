@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 import { useEffect, useRef, useState } from 'react'
 import { panelFocus } from './panelStyles'
+import { candidateLinks } from './panelFormat'
 
 // Building blocks of the new panel: same colors as the site (navy ink, bronze gold), cream background.
 
@@ -58,7 +59,7 @@ export function PanelPageHeader({ title, subtitle, actions }: { title: ReactNode
   return (
     <div className="flex flex-wrap items-end justify-between gap-3">
       <div className="min-w-0">
-        <h1 className="font-display text-2xl font-bold tracking-[-0.02em] text-ink-950 sm:text-[1.7rem]">{title}</h1>
+        <h1 className="font-display text-2xl font-bold tracking-[-0.02em] text-ink-950">{title}</h1>
         {subtitle ? <p className="mt-0.5 text-sm text-ink-600">{subtitle}</p> : null}
       </div>
       {actions ? <div className="flex flex-wrap gap-2">{actions}</div> : null}
@@ -194,5 +195,21 @@ export function PanelSelect({ label, value, onChange, children }: { label: strin
         {children}
       </select>
     </label>
+  )
+}
+
+/** LinkedIn, portfólio and currículo as links (new tab, no opener); only http(s) addresses become links. */
+export function CandidateLinks({ candidate, className = '' }: { candidate: Parameters<typeof candidateLinks>[0]; className?: string }) {
+  const links = candidateLinks(candidate)
+  if (!links.length) return null
+  return (
+    <p className={`flex flex-wrap gap-x-4 gap-y-1 text-sm ${className}`}>
+      {links.map((link) => (
+        <a key={link.label} href={link.href} target="_blank" rel="noopener noreferrer" className={`font-semibold text-brand-700 hover:underline ${panelFocus}`}>
+          {link.label} <span aria-hidden="true">↗</span>
+          <span className="sr-only">(abre em nova aba)</span>
+        </a>
+      ))}
+    </p>
   )
 }

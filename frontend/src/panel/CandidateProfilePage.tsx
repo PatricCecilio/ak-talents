@@ -7,7 +7,7 @@ import { formatDateTime, whatsappLink } from '../services/pipelineFormat'
 import { EditCandidateDialog, EraseCandidateDialog } from './CandidateDialogs'
 import { getCandidate } from './panelApi'
 import { PANEL_BASE, STAGE_TONES, cardSubtitle, initials, shortAge } from './panelFormat'
-import { ActionsMenu, PanelCard, Pill, type MenuAction } from './PanelUi'
+import { ActionsMenu, CandidateLinks, PanelCard, Pill, type MenuAction } from './PanelUi'
 import { panelFocus } from './panelStyles'
 import { ReferDialog } from './ReferDialog'
 import type { CandidateDetail } from './types'
@@ -56,7 +56,7 @@ export function CandidateProfilePage() {
   if (candidate.authorization_recorded_at) facts.push(['Autorização registrada', formatDateTime(candidate.authorization_recorded_at)])
 
   return (
-    <div className="flex flex-col gap-4 xl:h-full xl:min-h-0">
+    <div className="flex flex-col gap-3 fit:h-full fit:min-h-0">
       <nav aria-label="Caminho" className="text-sm text-ink-600">
         <Link to={`${PANEL_BASE}/candidatos`} className={`font-semibold text-gold-800 hover:text-ink-950 ${panelFocus}`}>Candidatos</Link> › {candidate.name}
       </nav>
@@ -72,7 +72,7 @@ export function CandidateProfilePage() {
       </div>
       {message ? <p role="status" className="rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-sm font-semibold text-emerald-800">{message}</p> : null}
 
-      <div className="grid gap-3 xl:min-h-0 xl:flex-1 xl:grid-cols-[1fr_1.6fr]">
+      <div className="grid gap-3 fit:min-h-0 fit:flex-1 xl:grid-cols-[1fr_1.6fr]">
         <PanelCard title="Dados">
           <dl className="grid gap-3 overflow-y-auto px-5 pb-5 text-sm">
             {facts.map(([label, value]) => (
@@ -81,12 +81,7 @@ export function CandidateProfilePage() {
                 <dd className="mt-0.5 break-words text-ink-950">{value}</dd>
               </div>
             ))}
-            {candidate.linkedin_url || candidate.resume_url ? (
-              <div className="flex flex-wrap gap-3">
-                {candidate.linkedin_url ? <a href={candidate.linkedin_url} target="_blank" rel="noopener noreferrer" className={`font-semibold text-brand-700 hover:underline ${panelFocus}`}>LinkedIn</a> : null}
-                {candidate.resume_url ? <a href={candidate.resume_url} target="_blank" rel="noopener noreferrer" className={`font-semibold text-brand-700 hover:underline ${panelFocus}`}>Currículo</a> : null}
-              </div>
-            ) : null}
+            <CandidateLinks candidate={candidate} />
             {candidate.skills ? (
               <div>
                 <dt className="text-xs font-semibold uppercase tracking-[0.12em] text-ink-400">Habilidades</dt>
@@ -95,13 +90,13 @@ export function CandidateProfilePage() {
             ) : null}
           </dl>
         </PanelCard>
-        <PanelCard title={`Candidaturas (${candidate.applications.length})`} className="xl:min-h-0">
-          <div className="overflow-x-auto xl:min-h-0 xl:flex-1 xl:overflow-y-auto">
+        <PanelCard title={`Candidaturas (${candidate.applications.length})`} className="fit:min-h-0">
+          <div className="overflow-x-auto fit:min-h-0 fit:flex-1 fit:overflow-y-auto">
             <table className="w-full min-w-[34rem] text-left text-sm">
               <thead className="sticky top-0 bg-[#faf8f4] text-xs font-semibold text-ink-600">
                 <tr>
                   {['Vaga', 'Empresa', 'Etapa', 'Na etapa há'].map((label) => (
-                    <th key={label} className="px-4 py-3 font-semibold first:pl-5">{label}</th>
+                    <th key={label} className="px-4 py-2.5 font-semibold first:pl-5">{label}</th>
                   ))}
                 </tr>
               </thead>
@@ -113,13 +108,13 @@ export function CandidateProfilePage() {
                 ) : null}
                 {candidate.applications.map((application) => (
                   <tr key={application.id} className="cursor-pointer hover:bg-[#faf8f4]" onClick={() => navigate(`${PANEL_BASE}/candidaturas/${application.id}`)}>
-                    <td className="px-4 py-3 pl-5 font-semibold text-ink-950">
+                    <td className="px-4 py-2.5 pl-5 font-semibold text-ink-950">
                       <Link to={`${PANEL_BASE}/candidaturas/${application.id}`} className={panelFocus} onClick={(event) => event.stopPropagation()}>{application.job_title}</Link>
                       {application.is_hidden ? <span className="ml-2 text-xs text-ink-400">(oculta)</span> : null}
                     </td>
-                    <td className="px-4 py-3 text-ink-700">{application.company_name}</td>
-                    <td className="px-4 py-3"><Pill tone={STAGE_TONES[application.stage]}>{application.stage_label}</Pill></td>
-                    <td className="px-4 py-3 text-ink-700">{shortAge(application.stage_updated_at)}</td>
+                    <td className="px-4 py-2.5 text-ink-700">{application.company_name}</td>
+                    <td className="px-4 py-2.5"><Pill tone={STAGE_TONES[application.stage]}>{application.stage_label}</Pill></td>
+                    <td className="px-4 py-2.5 text-ink-700">{shortAge(application.stage_updated_at)}</td>
                   </tr>
                 ))}
               </tbody>

@@ -2,6 +2,7 @@ import type { FormEvent } from 'react'
 import { useEffect, useState } from 'react'
 import { Input, Select } from '../components/ui'
 import { getAdminJobs } from '../services/adminService'
+import { getCurrentUser } from '../services/authService'
 import { FIELD_MESSAGES, isValidEmail } from '../services/fieldValidation'
 import type { AdminJob } from '../types/user'
 import { createManualCandidate } from './panelApi'
@@ -16,11 +17,13 @@ interface AddCandidateDialogProps {
   onCreated: (candidateId: number) => void
 }
 
-type Errors = Partial<Record<'full_name' | 'phone' | 'city' | 'email' | 'authorization', string>>
+type Errors = Partial<Record<'full_name' | 'phone' | 'city' | 'email' | 'job_id' | 'authorization', string>>
 
 // Manual registration by AK: only the essentials, and the candidate's authorization is required (recorded with
 // date, author and the origin "Cadastro manual pela AK").
 export function AddCandidateDialog({ jobId, jobTitle, onClose, onCreated }: AddCandidateDialogProps) {
+  // A recruiter registers into one of their jobs; otherwise they would not see the person afterwards.
+  const jobRequired = getCurrentUser()?.role !== 'admin'
   const [values, setValues] = useState({ full_name: '', phone: '', city: '', email: '', job_id: jobId ? String(jobId) : '' })
   const [authorized, setAuthorized] = useState(false)
   const [errors, setErrors] = useState<Errors>({})
@@ -47,6 +50,7 @@ export function AddCandidateDialog({ jobId, jobTitle, onClose, onCreated }: AddC
     if (values.phone.replace(/\D+/g, '').length < 8) next.phone = FIELD_MESSAGES.phone
     if (!values.city.trim()) next.city = FIELD_MESSAGES.city
     if (values.email.trim() && !isValidEmail(values.email)) next.email = FIELD_MESSAGES.email
+    if (jobRequired && !values.job_id) next.job_id = 'Escolha uma das suas vagas.'
     if (!authorized) next.authorization = 'Confirme que o candidato autorizou o uso dos dados.'
     setErrors(next)
     if (Object.keys(next).length) return
@@ -80,8 +84,14 @@ export function AddCandidateDialog({ jobId, jobTitle, onClose, onCreated }: AddC
         </div>
         <Input id="manual-email" label="E-mail (opcional)" type="email" inputMode="email" value={values.email} error={errors.email} onChange={(event) => update('email', event.target.value)} />
         {jobId ? null : (
-          <Select id="manual-job" label="Colocar na vaga (opcional)" value={values.job_id} onChange={(event) => update('job_id', event.target.value)}>
-            <option value="">Só no banco de talentos</option>
+          <Select
+            id="manual-job"
+            label={jobRequired ? 'Vaga' : 'Colocar na vaga (opcional)'}
+            value={values.job_id}
+            error={errors.job_id}
+            onChange={(event) => update('job_id', event.target.value)}
+          >
+            <option value="">{jobRequired ? 'Escolha a vaga' : 'Só no banco de talentos'}</option>
             {jobs.map((job) => (
               <option key={job.id} value={job.id}>
                 {job.title} · {job.company_name}

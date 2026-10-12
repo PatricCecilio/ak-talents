@@ -41,10 +41,9 @@ test('statuses and work modes reach the screen as Portuguese labels', () => {
   assert.equal(formatCompanyStatus('blocked'), 'Bloqueada')
 
   const read = (path: string) => readFileSync(new URL(path, root), 'utf8')
-  const admin = read('src/pages/AdminPage.tsx')
-  assert.match(admin, /Triagem: \{formatScreeningStatus\(application\.screening_status\)\}/)
-  assert.match(admin, /label=\{formatJobStatus\(job\.status\)\}/)
-  assert.doesNotMatch(admin, /\{status\}<\/Badge>/)
+  const panelJobs = read('src/panel/JobsPage.tsx')
+  assert.match(panelJobs, /jobStatus\(job\.status\)\.label/)
+  assert.match(read('src/panel/ApplicationPage.tsx'), /\{formatScreeningStatus\(screening\.status\)\}/)
   assert.match(read('src/pages/HomePage.tsx'), /workMode: formatWorkMode\(job\.work_mode\)/)
   assert.match(read('src/pages/CandidatePage.tsx'), /formatWorkMode\(job\.work_mode\)/)
 })
@@ -53,9 +52,9 @@ test('dashboard menu is in Portuguese and every item goes somewhere', () => {
   const read = (path: string) => readFileSync(new URL(path, root), 'utf8')
   const shell = read('src/layouts/DashboardShell.tsx')
   assert.doesNotMatch(shell, /'Company'|'Matches'|capitalize/)
-  assert.match(shell, /admin: 'Administração'/)
+  assert.match(shell, /candidate: 'Candidato'/)
 
-  const pages = { '#finalistas': 'CompanyPage', '#nova-vaga': 'CompanyPage', '#suas-vagas': 'CompanyPage', '#candidaturas': 'CandidatePage', '#perfil': 'CandidatePage', '#resumo': 'AdminPage', '#empresas': 'AdminPage', '#candidatos': 'AdminPage' }
+  const pages = { '#finalistas': 'CompanyPage', '#nova-vaga': 'CompanyPage', '#suas-vagas': 'CompanyPage', '#candidaturas': 'CandidatePage', '#perfil': 'CandidatePage' }
   for (const [href, page] of Object.entries(pages)) {
     assert.match(shell, new RegExp(`href: '${href}'`))
     assert.match(read(`src/pages/${page}.tsx`), new RegExp(`id="${href.slice(1)}"`), `${page} sem ${href}`)

@@ -1,0 +1,12 @@
+// Everything under /painel, loaded on demand (one chunk) so the public site does not download the team panel.
+export { ApplicationPage } from './ApplicationPage'
+export { CandidateProfilePage } from './CandidateProfilePage'
+export { CandidatesPage } from './CandidatesPage'
+export { CompaniesPage } from './CompaniesPage'
+export { JobPage } from './JobPage'
+export { JobsPage } from './JobsPage'
+export { OverviewPage } from './OverviewPage'
+export { PanelLayout } from './PanelLayout'
+export { PanelNotFoundPage } from './PanelNotFoundPage'
+export { PanelSignedOut } from './PanelSignedOut'
+export { TeamMemberPage, TeamPage } from './TeamPages'

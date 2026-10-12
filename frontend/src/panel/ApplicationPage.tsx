@@ -1,15 +1,21 @@
 import type { FormEvent, ReactNode } from 'react'
 import { useEffect, useState } from 'react'
-import { Link, useLocation, useParams } from 'react-router-dom'
-import { BrandButton } from '../../components/brand/BrandButton'
-import { BrandNotice } from '../../components/brand/BrandNotice'
-import { brandCard, brandHeading, brandInput } from '../../components/brand/styles'
-import { MoveStageDialog } from '../../components/recruiter/MoveStageDialog'
-import { StageBadge } from '../../components/recruiter/StageBadge'
-import { moveResultNote } from '../../services/hireDefaults'
-import { NOTE_KIND_OPTIONS, formatDateTime, formatDaysAgo, formatScreeningStatus, whatsappLink, type NoteKind } from '../../services/pipelineFormat'
-import { addApplicationNote, getApplicationDetail } from '../../services/pipelineService'
-import type { ApplicationDetail } from '../../types/pipeline'
+import { Link, useParams } from 'react-router-dom'
+import { BrandButton } from '../components/brand/BrandButton'
+import { BrandNotice } from '../components/brand/BrandNotice'
+import { brandCard, brandHeading, brandInput } from '../components/brand/styles'
+import { MoveStageDialog } from '../components/recruiter/MoveStageDialog'
+import { StageBadge } from '../components/recruiter/StageBadge'
+import { formatPhone } from '../services/adminForms'
+import { moveResultNote } from '../services/hireDefaults'
+import { NOTE_KIND_OPTIONS, formatDateTime, formatDaysAgo, formatScreeningStatus, whatsappLink, type NoteKind } from '../services/pipelineFormat'
+import { addApplicationNote, getApplicationDetail } from '../services/pipelineService'
+import type { ApplicationDetail } from '../types/pipeline'
+import { AboutJob } from './AboutJob'
+import { getPanelJob } from './panelApi'
+import { PANEL_BASE } from './panelFormat'
+import { CandidateLinks } from './PanelUi'
+import type { PanelJobDetail } from './types'
 
 const ROLE_LABELS: Record<string, string> = {
   system: 'Sistema',
@@ -28,17 +34,17 @@ function Section({ title, children }: { title: string; children: ReactNode }) {
   )
 }
 
-export function RecruiterApplicationPage() {
+// One application: candidate, "Sobre a vaga", screening, history and internal notes.
+export function ApplicationPage() {
   const { applicationId = '' } = useParams()
   const [detail, setDetail] = useState<ApplicationDetail | null>(null)
+  const [job, setJob] = useState<PanelJobDetail | null>(null)
   const [error, setError] = useState('')
   const [reloadKey, setReloadKey] = useState(0)
   const [isMoving, setIsMoving] = useState(false)
   const [flash, setFlash] = useState('')
   const [noteText, setNoteText] = useState('')
   const [noteKind, setNoteKind] = useState<NoteKind>('anotacao')
-  // Same screen in the old area (/recrutador) and in the new panel (/painel).
-  const jobsBase = useLocation().pathname.startsWith('/painel') ? '/painel/vagas' : '/recrutador/vagas'
   const [noteError, setNoteError] = useState('')
   const [isSavingNote, setIsSavingNote] = useState(false)
 
@@ -46,7 +52,12 @@ export function RecruiterApplicationPage() {
     let active = true
     getApplicationDetail(Number(applicationId))
       .then((response) => {
-        if (active) setDetail(response)
+        if (!active) return
+        setDetail(response)
+        // "Sobre a vaga": the job's data next to the candidate (same access rule as the application).
+        return getPanelJob(response.job_id).then((data) => {
+          if (active) setJob(data)
+        })
       })
       .catch((err: unknown) => {
         if (active) setError(err instanceof Error ? err.message : 'Não foi possível carregar a candidatura.')
@@ -80,7 +91,7 @@ export function RecruiterApplicationPage() {
 
   return (
     <div className="grid gap-5">
-      <Link to={`${jobsBase}/${detail.job_id}`} className="w-fit text-sm font-semibold text-ink-700 hover:underline">
+      <Link to={`${PANEL_BASE}/vagas/${detail.job_id}`} className="w-fit text-sm font-semibold text-ink-700 hover:underline">
         ← {detail.job_title}
       </Link>
 
@@ -114,11 +125,11 @@ export function RecruiterApplicationPage() {
       </header>
 
       <div className="grid gap-5 lg:grid-cols-2">
-        <Section title="Contato">
+        <Section title="Candidato">
           <dl className="grid gap-2 text-sm">
             <div>
               <dt className="text-ink-600">Telefone</dt>
-              <dd className="font-semibold text-ink-950">{candidate.phone || 'Não informado'}</dd>
+              <dd className="font-semibold text-ink-950">{candidate.phone ? formatPhone(candidate.phone) : 'Não informado'}</dd>
             </div>
             <div>
               <dt className="text-ink-600">E-mail</dt>
@@ -153,35 +164,44 @@ export function RecruiterApplicationPage() {
               {candidate.skills ? <>Habilidades: {candidate.skills}</> : null}
             </p>
           ) : null}
+          <CandidateLinks candidate={candidate} />
           {!candidate.has_account ? <p className="text-xs text-ink-600">Candidatura feita pelo site, sem conta.</p> : null}
         </Section>
 
-        <Section title="Triagem">
-          <p className="text-sm font-semibold text-ink-950">
-            {formatScreeningStatus(screening.status)}
-            {screening.score !== null && (screening.status === 'QUALIFIED' || screening.status === 'NOT_MATCHED') ? ` · ${screening.score}% das regras atendidas` : ''}
-          </p>
-          {screening.summary ? <p className="text-sm text-ink-600">{screening.summary}</p> : null}
-          {screening.answers.length ? (
-            <dl className="grid gap-2 text-sm">
-              {screening.answers.map((item) => (
-                <div key={item.question} className="rounded-lg bg-slate-50 px-3 py-2">
-                  <dt className="text-ink-600">{item.question}</dt>
-                  <dd className="font-semibold text-ink-950">{item.answer || '—'}</dd>
-                </div>
-              ))}
-            </dl>
-          ) : (
-            <p className="text-sm text-ink-600">Sem respostas de triagem.</p>
-          )}
+        <Section title="Sobre a vaga">
+          {job ? <AboutJob job={job} /> : <p className="text-sm text-ink-600">Carregando a vaga…</p>}
         </Section>
       </div>
 
-      {detail.finalist_summary ? (
-        <Section title="Parecer enviado ao cliente">
-          <p className="whitespace-pre-line text-sm leading-6 text-ink-800">{detail.finalist_summary}</p>
-        </Section>
-      ) : null}
+      <div className="grid gap-5 lg:grid-cols-2">
+        <div className={detail.finalist_summary ? '' : 'lg:col-span-2'}>
+          <Section title="Triagem">
+            <p className="text-sm font-semibold text-ink-950">
+              {formatScreeningStatus(screening.status)}
+              {screening.score !== null && (screening.status === 'QUALIFIED' || screening.status === 'NOT_MATCHED') ? ` · ${screening.score}% das regras atendidas` : ''}
+            </p>
+            {screening.summary ? <p className="text-sm text-ink-600">{screening.summary}</p> : null}
+            {screening.answers.length ? (
+              <dl className="grid gap-2 text-sm">
+                {screening.answers.map((item) => (
+                  <div key={item.question} className="rounded-lg bg-slate-50 px-3 py-2">
+                    <dt className="text-ink-600">{item.question}</dt>
+                    <dd className="font-semibold text-ink-950">{item.answer || '—'}</dd>
+                  </div>
+                ))}
+              </dl>
+            ) : (
+              <p className="text-sm text-ink-600">Sem respostas de triagem.</p>
+            )}
+          </Section>
+        </div>
+
+        {detail.finalist_summary ? (
+          <Section title="Parecer enviado ao cliente">
+            <p className="whitespace-pre-line text-sm leading-6 text-ink-800">{detail.finalist_summary}</p>
+          </Section>
+        ) : null}
+      </div>
 
       <div className="grid gap-5 lg:grid-cols-2">
         <Section title="Histórico">
