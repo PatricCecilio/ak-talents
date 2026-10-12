@@ -10,11 +10,11 @@ import { AuthLayout } from '../layouts/AuthLayout'
 import { authenticate, startSession } from '../services/authService'
 import { COMPANY_CLOSED_PATH, COMPANY_PORTAL_CLOSED_MESSAGE, isCompanyPortalEnabled } from '../services/companyPortal'
 import { googleErrorMessage, isGoogleLoginEnabled } from '../services/googleIdentity'
-import { DOOR_COPY, LOGIN_CHOOSER_PATH, decideAfterLogin, type LoginDoor } from '../services/loginDoors'
+import { DOOR_COPY, LOGIN_CHOOSER_PATH, decideAfterLogin, isStaffDoor, type LoginDoor } from '../services/loginDoors'
 
 const linkClass = 'font-bold text-brand-700 underline underline-offset-2 hover:text-brand-600'
 
-// One login form, three doors (/entrar/candidato, /entrar/empresa, /equipe). The API login is the same for all.
+// One login form, four doors (/entrar/candidato, /entrar/empresa, /equipe, /recrutamento). The API login is the same.
 export function LoginDoorPage({ door }: { door: LoginDoor }) {
   const navigate = useNavigate()
   const location = useLocation()
@@ -32,6 +32,8 @@ export function LoginDoorPage({ door }: { door: LoginDoor }) {
 
   // Company portal off: old links to /entrar/empresa land on the chooser with the notice.
   if (door === 'empresa' && !isCompanyPortalEnabled()) return <Navigate to={COMPANY_CLOSED_PATH} replace />
+
+  const staffDoor = isStaffDoor(door)
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -57,10 +59,10 @@ export function LoginDoorPage({ door }: { door: LoginDoor }) {
   }
 
   return (
-    <AuthLayout title={copy.title} subtitle={copy.subtitle} showHighlights={door !== 'equipe'}>
-      {door === 'equipe' ? <meta name="robots" content="noindex, nofollow" /> : null}
+    <AuthLayout title={copy.title} subtitle={copy.subtitle} showHighlights={!staffDoor}>
+      {staffDoor ? <meta name="robots" content="noindex, nofollow" /> : null}
       {/* The team keeps e-mail + password only. */}
-      {door !== 'equipe' ? (
+      {door === 'candidato' || door === 'empresa' ? (
         <div className="mb-5">
           <GoogleSignInButton door={door} />
         </div>
@@ -118,10 +120,10 @@ export function LoginDoorPage({ door }: { door: LoginDoor }) {
             </Link>
           </p>
         ) : null}
-        {door !== 'equipe' && isGoogleLoginEnabled() ? (
+        {!staffDoor && isGoogleLoginEnabled() ? (
           <p className="text-center text-xs text-ink-600">Criou a conta com o Google? Use o botão "Continuar com o Google".</p>
         ) : null}
-        {door !== 'equipe' ? (
+        {!staffDoor ? (
           <p className="text-center text-sm">
             <Link to={LOGIN_CHOOSER_PATH} className="font-semibold text-ink-600 hover:text-ink-950">
               ← Não é {door === 'candidato' ? 'candidato' : 'empresa'}? Escolher outra opção

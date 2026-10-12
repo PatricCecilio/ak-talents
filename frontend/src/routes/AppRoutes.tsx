@@ -36,7 +36,7 @@ export function AppRoutes() {
         {/* Internal AK Talent area: no public header/footer. */}
         <Route
           element={
-            <PrivateRoute allowedRoles={['admin', 'recruiter']}>
+            <PrivateRoute allowedRoles={['recruiter', 'admin']}>
               <WorkspaceLayout />
             </PrivateRoute>
           }
@@ -59,6 +59,8 @@ export function AppRoutes() {
           <Route path="/entrar/google" element={<GoogleReturnPage />} />
           {/* AK team login: not linked from any menu or footer; kept out of search engines. */}
           <Route path="/equipe" element={<LoginDoorPage key="equipe" door="equipe" />} />
+          {/* Recruiters' login: same rules as /equipe (no menu link, noindex). */}
+          <Route path="/recrutamento" element={<LoginDoorPage key="recrutamento" door="recrutamento" />} />
           <Route path="/login" element={<LegacyLoginRedirect />} />
           <Route path="/register" element={<RegisterPage />} />
           <Route

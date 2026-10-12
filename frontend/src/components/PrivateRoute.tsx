@@ -13,7 +13,7 @@ export function PrivateRoute({ children, allowedRoles }: PrivateRouteProps) {
   const currentUser = getCurrentUser()
 
   if (!isAuthenticated()) {
-    // Straight to the right login door: staff areas -> /equipe, company area -> /entrar/empresa, and so on.
+    // Straight to the right login door: /recrutador -> /recrutamento, /admin -> /equipe, and so on.
     return <Navigate to={doorPathForRole(allowedRoles?.[0])} replace state={{ from: location.pathname }} />
   }
 

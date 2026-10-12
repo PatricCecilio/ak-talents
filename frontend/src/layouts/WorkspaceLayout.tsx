@@ -2,9 +2,10 @@ import { NavLink, Outlet } from 'react-router-dom'
 import { LoginNotice } from '../components/LoginNotice'
 import { Logo } from '../components/Logo'
 import { getCurrentUser, logout } from '../services/authService'
-import { STAFF_LOGIN_PATH } from '../services/loginDoors'
+import { doorPathForRole } from '../services/loginDoors'
 
 // Internal AK Talent area (recruiters and admin): landing look, no public menu, phone first.
+// Recruiters only see jobs, pipeline, candidates and opinions; the admin also gets the link to /admin.
 export function WorkspaceLayout() {
   const user = getCurrentUser()
   const links =
@@ -46,7 +47,8 @@ export function WorkspaceLayout() {
             type="button"
             onClick={() => {
               logout()
-              window.location.href = STAFF_LOGIN_PATH
+              // Recruiters back to /recrutamento, the admin to /equipe.
+              window.location.href = doorPathForRole(user?.role)
             }}
             className="rounded-lg px-3 py-2 text-sm font-semibold text-ink-700 transition hover:bg-slate-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold-600"
           >

@@ -8,6 +8,15 @@
           "value": "noindex, nofollow"
         }
       ]
+    },
+    {
+      "source": "/recrutamento",
+      "headers": [
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex, nofollow"
+        }
+      ]
     }
   ],
   "rewrites": [

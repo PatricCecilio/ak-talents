@@ -25,7 +25,7 @@ test('without VITE_GOOGLE_CLIENT_ID there is no Google button', () => {
 
 test('candidate and company doors and sign-up have the button (all browsers); /equipe never does', () => {
   const door = read('src/pages/LoginDoorPage.tsx')
-  assert.match(door, /\{door !== 'equipe' \? \(\s*<div className="mb-5">\s*<GoogleSignInButton door=\{door\} \/>/)
+  assert.match(door, /\{door === 'candidato' \|\| door === 'empresa' \? \(\s*<div className="mb-5">\s*<GoogleSignInButton door=\{door\} \/>/)
   assert.match(read('src/pages/RegisterPage.tsx'), /<GoogleSignInButton door=\{values\.role === 'company' \? 'empresa' : 'candidato'\} divider="above" \/>/)
   assert.doesNotMatch(read('src/services/googleIdentity.ts'), /isPopupUnreliable/)
 })

@@ -16,12 +16,12 @@ test('recruiter is an internal role that public sign-up never offers', () => {
 
 test('recruiters land on /recrutador after login', () => {
   assert.equal(roleHome('recruiter'), '/recrutador')
-  assert.deepEqual(decideAfterLogin('equipe', 'recruiter'), { action: 'enter', to: '/recrutador' })
+  assert.deepEqual(decideAfterLogin('recrutamento', 'recruiter'), { action: 'enter', to: '/recrutador' })
 })
 
 test('/recrutador is private to admin and recruiter and uses the internal layout', () => {
   const routes = read('src/routes/AppRoutes.tsx')
-  assert.match(routes, /<PrivateRoute allowedRoles=\{\['admin', 'recruiter'\]\}>\s*<WorkspaceLayout \/>/)
+  assert.match(routes, /<PrivateRoute allowedRoles=\{\['recruiter', 'admin'\]\}>\s*<WorkspaceLayout \/>/)
   assert.match(routes, /<Route path="\/recrutador" element=\{<RecruiterHomePage \/>\} \/>/)
   // Must not live inside the public layout (public header/footer).
   assert.ok(routes.indexOf('path="/recrutador"') < routes.indexOf('<Route element={<MainLayout />}>'))

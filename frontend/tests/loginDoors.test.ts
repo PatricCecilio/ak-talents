@@ -7,6 +7,7 @@ import {
   STAFF_ONLY_MESSAGE,
   decideAfterLogin,
   doorPathForRole,
+  isStaffDoor,
   type LoginDoor,
 } from '../src/services/loginDoors.ts'
 
@@ -15,13 +16,13 @@ const read = (path: string) => readFileSync(new URL(path, root), 'utf8')
 
 const HOME = { candidate: '/candidate', company: '/company', admin: '/admin', recruiter: '/recrutador' } as const
 
-test('each door x each role: right door enters quietly, wrong public door enters with a notice', () => {
-  const ownDoor: Record<keyof typeof HOME, LoginDoor> = { candidate: 'candidato', company: 'empresa', admin: 'equipe', recruiter: 'equipe' }
-  for (const door of ['candidato', 'empresa', 'equipe'] as const) {
+test('each door x each role: right door enters quietly, wrong door enters with a notice', () => {
+  const ownDoor: Record<keyof typeof HOME, LoginDoor> = { candidate: 'candidato', company: 'empresa', admin: 'equipe', recruiter: 'recrutamento' }
+  for (const door of ['candidato', 'empresa', 'equipe', 'recrutamento'] as const) {
     for (const role of ['candidate', 'company', 'admin', 'recruiter'] as const) {
       const decision = decideAfterLogin(door, role)
       const label = `${door} x ${role}`
-      if (door === 'equipe' && (role === 'candidate' || role === 'company')) {
+      if (isStaffDoor(door) && (role === 'candidate' || role === 'company')) {
         assert.equal(decision.action, 'refuse', label)
         continue
       }
@@ -56,18 +57,32 @@ test('notices and refusals say what happened, in Portuguese', () => {
     message: STAFF_ONLY_MESSAGE,
     link: { label: 'Entrar como candidato', to: '/entrar/candidato' },
   })
+  assert.equal(decideAfterLogin('recrutamento', 'candidate').action, 'refuse')
+  // Between the two internal doors: each one goes to its own area with a discreet notice.
+  assert.deepEqual(decideAfterLogin('equipe', 'recruiter'), {
+    action: 'enter',
+    to: '/recrutador',
+    notice: 'Este é o acesso da administração. Abrimos a área de recrutamento.',
+  })
+  assert.deepEqual(decideAfterLogin('recrutamento', 'admin'), {
+    action: 'enter',
+    to: '/admin',
+    notice: 'Este é o acesso do recrutamento. Abrimos o painel da administração.',
+  })
   // Staff using a public door is not blocked either.
   assert.equal(decideAfterLogin('candidato', 'admin').action, 'enter')
 })
 
 test('door paths, copy and sign-up links', () => {
-  assert.deepEqual(DOOR_PATHS, { candidato: '/entrar/candidato', empresa: '/entrar/empresa', equipe: '/equipe' })
+  assert.deepEqual(DOOR_PATHS, { candidato: '/entrar/candidato', empresa: '/entrar/empresa', equipe: '/equipe', recrutamento: '/recrutamento' })
+  assert.equal(DOOR_COPY.recrutamento.signUp, null)
   assert.deepEqual(DOOR_COPY.candidato.signUp, { prompt: 'Ainda não tem conta?', label: 'Criar conta de candidato', to: '/register?tipo=candidato' })
   assert.deepEqual(DOOR_COPY.empresa.signUp, { prompt: 'Sua empresa ainda não tem conta?', label: 'Cadastrar minha empresa', to: '/register?tipo=empresa' })
   assert.equal(DOOR_COPY.equipe.signUp, null)
   assert.equal(doorPathForRole('company'), '/entrar/empresa')
   assert.equal(doorPathForRole('candidate'), '/entrar/candidato')
-  assert.equal(doorPathForRole('recruiter'), '/equipe')
+  assert.equal(doorPathForRole('recruiter'), '/recrutamento')
+  assert.equal(doorPathForRole('admin'), '/equipe')
 })
 
 test('routes: chooser, three doors, /equipe hidden and noindex, /login redirects to /entrar', () => {
@@ -86,13 +101,16 @@ test('routes: chooser, three doors, /equipe hidden and noindex, /login redirects
   assert.doesNotMatch(chooser, /equipe/i)
 
   const door = read('src/pages/LoginDoorPage.tsx')
-  assert.match(door, /door === 'equipe' \? <meta name="robots" content="noindex, nofollow" \/> : null/)
+  assert.match(door, /\{staffDoor \? <meta name="robots" content="noindex, nofollow" \/> : null\}/)
+  assert.match(door, /const staffDoor = isStaffDoor\(door\)/)
+  assert.match(routes, /<Route path="\/recrutamento" element=\{<LoginDoorPage key="recrutamento" door="recrutamento" \/>\} \/>/)
   // The session is only stored after the door accepted the account.
   assert.ok(door.indexOf("decision.action === 'refuse'") < door.indexOf('startSession(response)'))
   assert.doesNotMatch(door, /loginUser\(/)
 
   for (const file of ['src/components/Header.tsx', 'src/components/Footer.tsx', 'src/pages/HomePage.tsx', 'src/pages/LoginChooserPage.tsx']) {
-    assert.doesNotMatch(read(file), /\/equipe/, `${file} não pode linkar /equipe`)
+    // "/solucoes/recrutamento" (marketing page) is fine; the login door "/recrutamento" is not.
+    assert.doesNotMatch(read(file), /\/equipe|['"`]\/recrutamento/, `${file} não pode linkar /equipe nem /recrutamento`)
   }
 })
 
@@ -107,7 +125,9 @@ test('private areas send signed-out visitors straight to the right door', () => 
   assert.match(privateRoute, /<Navigate to=\{doorPathForRole\(allowedRoles\?\.\[0\]\)\} replace state=\{\{ from: location\.pathname \}\} \/>/)
   // The first allowed role of each private area decides the door.
   const routes = read('src/routes/AppRoutes.tsx')
-  assert.match(routes, /allowedRoles=\{\['admin', 'recruiter'\]\}/)
+  assert.match(routes, /allowedRoles=\{\['recruiter', 'admin'\]\}/)
+  assert.equal(doorPathForRole('recruiter'), '/recrutamento')
+  assert.match(routes, /allowedRoles=\{\['admin'\]\}/)
   assert.equal(doorPathForRole('admin'), '/equipe')
   assert.match(routes, /allowedRoles=\{\['company'\]\}/)
   assert.equal(doorPathForRole('company'), '/entrar/empresa')
@@ -119,7 +139,7 @@ test('private areas send signed-out visitors straight to the right door', () => 
 test('"Entrar" goes to /entrar; signing out returns to the right login; wrong-door notice on the panels', () => {
   assert.equal((read('src/components/Header.tsx').match(/href=\{LOGIN_CHOOSER_PATH\}/g) ?? []).length, 2)
   assert.doesNotMatch(read('src/components/Header.tsx'), /href="\/login"/)
-  assert.match(read('src/layouts/WorkspaceLayout.tsx'), /window\.location\.href = STAFF_LOGIN_PATH/)
+  assert.match(read('src/layouts/WorkspaceLayout.tsx'), /window\.location\.href = doorPathForRole\(user\?\.role\)/)
   assert.match(read('src/pages/AdminPage.tsx'), /window\.location\.href = STAFF_LOGIN_PATH/)
   assert.match(read('src/pages/CandidatePage.tsx'), /window\.location\.href = LOGIN_CHOOSER_PATH/)
   assert.match(read('src/pages/CompanyPage.tsx'), /window\.location\.href = LOGIN_CHOOSER_PATH/)
@@ -132,10 +152,12 @@ test('"Entrar" goes to /entrar; signing out returns to the right login; wrong-do
   assert.match(read('src/pages/LoginDoorPage.tsx'), /navigate\(decision\.to, decision\.notice \? \{ state: \{ loginNotice: decision\.notice \} \} : undefined\)/)
 })
 
-test('/equipe is also marked noindex by an HTTP header (robots that do not run JavaScript)', () => {
+test('/equipe and /recrutamento are also marked noindex by an HTTP header (robots that do not run JavaScript)', () => {
   const config = JSON.parse(read('vercel.json'))
-  const rule = config.headers.find((entry: { source: string }) => entry.source === '/equipe')
-  assert.deepEqual(rule.headers, [{ key: 'X-Robots-Tag', value: 'noindex, nofollow' }])
+  for (const source of ['/equipe', '/recrutamento']) {
+    const rule = config.headers.find((entry: { source: string }) => entry.source === source)
+    assert.deepEqual(rule.headers, [{ key: 'X-Robots-Tag', value: 'noindex, nofollow' }], source)
+  }
   // Listing it in robots.txt would only advertise the address.
   let robots = ''
   try {
@@ -156,5 +178,5 @@ test('phones/tablets: form first under a thin strip and a short title; /equipe w
   // Cards are optional and only inside the desktop panel.
   assert.match(layout, /\{showHighlights \? \(\s*<div className="mt-10 grid gap-4/)
   assert.ok(layout.indexOf('Triagem inteligente') < layout.indexOf('</aside>'))
-  assert.match(read('src/pages/LoginDoorPage.tsx'), /showHighlights=\{door !== 'equipe'\}/)
+  assert.match(read('src/pages/LoginDoorPage.tsx'), /showHighlights=\{!staffDoor\}/)
 })
