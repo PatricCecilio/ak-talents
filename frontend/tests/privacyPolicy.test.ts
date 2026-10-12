@@ -49,15 +49,14 @@ test('privacy page is routed and covers the required topics, with the real compa
     'seu currículo e o parecer',
     'WhatsApp (Meta)',
     'Esses dados são cadastrados pela equipe AK Talent',
-    // Google Analytics only with consent, and how to refuse.
-    'Estatísticas de visitas (Google Analytics):',
-    'só se você clicar em "Aceitar" no aviso de',
-    '<strong>Como recusar:</strong>',
-    '"Preferências de cookies" no rodapé',
-    '<strong>Google Analytics:</strong>',
+    // Visit statistics from Vercel: no cookies, no visitor identification.
+    '<strong>Estatísticas de visitas:</strong> usamos as estatísticas de visitas da Vercel (Vercel Web Analytics)',
+    'Elas não usam cookies e não identificam quem visita',
+    '<strong>Vercel Web Analytics:</strong>',
   ]) {
     assert.ok(page.includes(topic), `missing topic ${topic}`)
   }
+  assert.doesNotMatch(page, /Google Analytics|Preferências de cookies|aviso de\s+cookies/)
 })
 
 test('footer, public application and sign-up link to the privacy policy', () => {

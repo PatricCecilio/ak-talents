@@ -85,17 +85,12 @@ export function PrivacyPage() {
             sessão. Não usamos ferramentas de publicidade.
           </p>
           <p>
-            <strong>Estatísticas de visitas (Google Analytics):</strong> só se você clicar em "Aceitar" no aviso de
-            cookies, usamos o Google Analytics para contar as visitas às páginas públicas do site (início, vagas e esta
-            política) e entender quais páginas são mais vistas. Ele grava cookies no seu navegador e recebe dados como o
-            endereço da página visitada (sem nada do que vem depois do "?"), o tipo de aparelho e navegador e uma
-            localização aproximada. Não enviamos seu nome, e-mail, telefone nem dados de candidatura, e nada é medido nas
-            áreas logadas, no login ou no cadastro. Os sinais do Google para publicidade ficam desligados.
-          </p>
-          <p>
-            <strong>Como recusar:</strong> toque em "Recusar" no aviso de cookies. Para mudar de ideia depois, use o link
-            "Preferências de cookies" no rodapé do site: ao recusar, paramos de medir e apagamos os cookies do Google
-            Analytics deste navegador. Você também pode bloquear ou apagar cookies nas configurações do navegador.
+            <strong>Estatísticas de visitas:</strong> usamos as estatísticas de visitas da Vercel (Vercel Web Analytics)
+            para contar as visitas às páginas públicas do site (início, vagas e esta política) e entender quais páginas são
+            mais vistas. Elas não usam cookies e não identificam quem visita: recebemos só números agregados, como a página
+            visitada (sem nada do que vem depois do "?"), o site de origem da visita, o país e o tipo de aparelho e
+            navegador. Nada é medido nas áreas logadas, no login ou no cadastro, e não enviamos seu nome, e-mail, telefone
+            nem dados de candidatura.
           </p>
         </Section>
 
@@ -146,8 +141,8 @@ export function PrivacyPage() {
                 carrega fontes do Google Fonts, o que faz seu navegador se conectar aos servidores do Google.
               </>,
               <>
-                <strong>Google Analytics:</strong> se você aceitar os cookies, o Google recebe os dados de navegação das
-                páginas públicas descritos acima, só para gerar estatísticas de visitas para a AK Talent.
+                <strong>Vercel Web Analytics:</strong> recebe os dados de navegação das páginas públicas descritos acima, sem
+                cookies e sem identificar o visitante, só para gerar as estatísticas de visitas da AK Talent.
               </>,
               <>
                 <strong>Google:</strong> quando você escolhe "Continuar com o Google", o login acontece no Google, que nos

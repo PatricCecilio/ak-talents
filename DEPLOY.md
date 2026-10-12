@@ -132,7 +132,6 @@ Variáveis em **Production** (as `VITE_*` são gravadas no build: depois de muda
 | `VITE_APPINTELLI_WIDGET_URL` | `https://www.appintelli.com.br/widget.js` |
 | `VITE_APPINTELLI_WIDGET_KEY` | chave do widget no painel do AppIntelli |
 | `VITE_WHATSAPP_URL` | WhatsApp comercial do botão "Quero contratar": `https://wa.me/` + 55 + DDD + número, só dígitos (ex.: `https://wa.me/5541999999999`). Sem ela, o botão abre um e-mail para contato@aktalent.com.br |
-| `VITE_GA_MEASUREMENT_ID` | ID do Google Analytics 4 (`G-XXXXXXXXXX`). Vazio ou ausente = nenhum Analytics. Só carrega depois do "Aceitar" no banner de cookies e só mede as páginas públicas |
 | `VITE_COMPANY_PORTAL_ENABLED` | `false` (ou ausente): a empresa não usa o sistema (seção H) |
 | `VITE_APPINTELLI_SCREENING_ENABLED` | `false` (ou ausente). Só mude para `true` depois da verificação da seção F |
 

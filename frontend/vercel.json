@@ -36,7 +36,7 @@
       "destination": "/api/vaga-preview?slug=:slug"
     },
     {
-      "source": "/((?!api/).*)",
+      "source": "/((?!api/|_vercel/).*)",
       "destination": "/index.html"
     }
   ]

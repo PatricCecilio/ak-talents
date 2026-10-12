@@ -1,11 +1,12 @@
+import { Analytics } from '@vercel/analytics/react'
 import { BrowserRouter, Navigate, Route, Routes, useLocation } from 'react-router-dom'
 import { MainLayout } from '../layouts/MainLayout'
 import { WorkspaceLayout } from '../layouts/WorkspaceLayout'
 import { PrivateRoute } from '../components/PrivateRoute'
 import { AppIntelliRouteGate } from '../components/AppIntelliRouteGate'
-import { CookieConsent } from '../components/CookieConsent'
 import { ScrollToTop } from '../components/ScrollToTop'
 import { COMPANY_CLOSED_PATH, isCompanyPortalEnabled } from '../services/companyPortal'
+import { publicPagesOnly } from '../services/webAnalytics'
 import { CandidatePage } from '../pages/CandidatePage'
 import { CompanyPage } from '../pages/CompanyPage'
 import { AdminPage } from '../pages/AdminPage'
@@ -33,8 +34,8 @@ export function AppRoutes() {
     <BrowserRouter>
       <AppIntelliRouteGate />
       <ScrollToTop />
-      {/* Google Analytics only after consent, only on public pages (VITE_GA_MEASUREMENT_ID). */}
-      <CookieConsent />
+      {/* Vercel Web Analytics (no cookies): only public pages, never the query string or hash. */}
+      <Analytics beforeSend={publicPagesOnly} />
       <Routes>
         {/* Internal AK Talent area: no public header/footer. */}
         <Route

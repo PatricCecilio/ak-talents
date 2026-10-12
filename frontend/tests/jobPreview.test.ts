@@ -122,7 +122,7 @@ test('only link-preview robots are routed to the function; people keep the stati
     assert.equal(agents.test(person), false, person)
   }
   // The SPA fallback must not swallow /api/* (it did: the function was never reached).
-  assert.deepEqual(catchAll, { source: '/((?!api/).*)', destination: '/index.html' })
+  assert.deepEqual(catchAll, { source: '/((?!api/|_vercel/).*)', destination: '/index.html' })
   const spa = new RegExp(`^${catchAll.source}$`)
   assert.equal(spa.test('/api/vaga-preview'), false)
   for (const path of ['/', '/vagas', '/vagas/atendente', '/entrar/empresa', '/equipe', '/apidoc']) assert.ok(spa.test(path), path)

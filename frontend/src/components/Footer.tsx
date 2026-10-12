@@ -1,4 +1,3 @@
-import { gaMeasurementId, openCookiePreferences } from '../services/analytics'
 import { Container } from './Container'
 import { Logo } from './Logo'
 
@@ -38,16 +37,6 @@ export function Footer() {
           <a href="/privacidade" className="mt-2 inline-block text-sm font-semibold text-ink-600 transition hover:text-brand-700">
             Política de Privacidade
           </a>
-          {/* Only when Google Analytics is configured: reopens the consent banner to change the choice. */}
-          {gaMeasurementId() ? (
-            <button
-              type="button"
-              onClick={openCookiePreferences}
-              className="mt-2 block text-sm font-semibold text-ink-600 transition hover:text-brand-700 md:ml-auto"
-            >
-              Preferências de cookies
-            </button>
-          ) : null}
         </div>
       </Container>
     </footer>
