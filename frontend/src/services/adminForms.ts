@@ -160,11 +160,23 @@ interface JobLike {
 
 const optionalNumberText = (value: number | null | undefined): string => (value === null || value === undefined ? '' : String(value))
 
-/** Old statuses from before migration 0014 read as the closest new one. */
+/** Old statuses from before migration 0014 read as the closest new one (an archived job reads as closed). */
 export function normalizeJobStatus(status: string): JobStatusValue {
   if (status === 'approved') return 'approved'
-  if (status === 'closed' || status === 'hidden') return 'closed'
+  if (status === 'closed' || status === 'hidden' || status === 'archived') return 'closed'
   return 'draft'
+}
+
+export const isArchivedJob = (job: { status: string }) => job.status === 'archived'
+
+/** Delete only a job nobody applied to; any other is archived instead (applications and history kept). */
+export function jobRemovalAction(job: { status: string; applications_count?: number }): 'delete' | 'archive' | 'unarchive' {
+  if (isArchivedJob(job)) return 'unarchive'
+  return (job.applications_count ?? 0) === 0 ? 'delete' : 'archive'
+}
+
+export function deleteJobConfirmation(title: string): string {
+  return `Excluir a vaga ${title}? Essa ação não pode ser desfeita.`
 }
 
 export function jobToForm(job: JobLike): JobFormValues {
@@ -253,7 +265,10 @@ export function filterJobs<T extends { status: string; company_id: number }>(
   status: JobStatusValue | '',
   companyId: string,
 ): T[] {
+  // Archived jobs only show with no status filter ("Mostrar arquivadas" decides whether they are loaded at all).
   return jobs.filter(
-    (job) => (!status || normalizeJobStatus(job.status) === status) && (!companyId || String(job.company_id) === companyId),
+    (job) =>
+      (!status || (!isArchivedJob(job) && normalizeJobStatus(job.status) === status)) &&
+      (!companyId || String(job.company_id) === companyId),
   )
 }

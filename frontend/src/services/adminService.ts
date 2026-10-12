@@ -25,8 +25,18 @@ export function getAdminCompanies(): Promise<AdminCompany[]> {
   return apiRequest<AdminCompany[]>('/admin/companies')
 }
 
-export function getAdminJobs(): Promise<AdminJob[]> {
-  return apiRequest<AdminJob[]>('/admin/jobs')
+export function getAdminJobs(includeArchived = false): Promise<AdminJob[]> {
+  return apiRequest<AdminJob[]>(`/admin/jobs${includeArchived ? '?include_archived=true' : ''}`)
+}
+
+/** Only for a job nobody applied to (the API answers 409 otherwise). Cannot be undone. */
+export function deleteAdminJob(jobId: number): Promise<unknown> {
+  return apiRequest<unknown>(`/admin/jobs/${jobId}`, { method: 'DELETE' })
+}
+
+/** Archive: out of the admin, recruiter and public lists, applications kept. Unarchive: back as "Encerrada". */
+export function setJobArchived(jobId: number, archived: boolean): Promise<AdminJob> {
+  return apiRequest<AdminJob>(`/admin/jobs/${jobId}/archived`, { method: 'PUT', body: { archived } })
 }
 
 /** Client companies are internal records (no login): the admin creates and edits them. */

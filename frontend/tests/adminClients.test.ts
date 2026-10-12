@@ -140,7 +140,7 @@ test('admin page: create/edit/deactivate companies and jobs; portal approvals on
   assert.match(service, /`\/admin\/companies\/\$\{companyId\}`, \{ method: 'PUT'/)
   assert.match(service, /apiRequest<AdminJob>\('\/admin\/jobs', \{ method: 'POST'/)
   assert.match(service, /`\/admin\/jobs\/\$\{jobId\}`, \{ method: 'PUT'/)
-  assert.doesNotMatch(service, /method: 'DELETE'/)
+  assert.equal((service.match(/method: 'DELETE'/g) ?? []).length, 1)
 
   const page = read('src/pages/AdminPage.tsx')
   assert.match(page, /<CompanyForm/)

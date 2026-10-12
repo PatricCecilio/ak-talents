@@ -11,7 +11,9 @@ test('admin service exposes deactivate/hide endpoints (never delete)', () => {
   assert.match(service, /\/admin\/candidates\/\$\{candidateId\}\/active/)
   assert.match(service, /\/admin\/applications\/\$\{applicationId\}\/hidden/)
   assert.match(service, /include_hidden=true/)
-  assert.doesNotMatch(service, /method: 'DELETE'/)
+  // The only DELETE: a job nobody applied to (the API refuses the others with 409).
+  assert.deepEqual(service.match(/method: 'DELETE'/g), ["method: 'DELETE'"])
+  assert.match(service, /`\/admin\/jobs\/\$\{jobId\}`, \{ method: 'DELETE' \}/)
 })
 
 test('admin page: deactivate/reactivate companies and candidates, hide applications, show hidden filter', () => {

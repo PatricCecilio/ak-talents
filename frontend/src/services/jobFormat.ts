@@ -35,6 +35,7 @@ const JOB_STATUS_LABELS: Record<string, string> = {
   approved: 'Publicada',
   hidden: 'Oculta',
   closed: 'Encerrada',
+  archived: 'Arquivada',
 }
 
 const COMPANY_STATUS_LABELS: Record<string, string> = {

@@ -8,6 +8,7 @@ import {
   approveCompany,
   approveJob,
   blockCompany,
+  deleteAdminJob,
   getAdminApplications,
   getAdminCandidates,
   getAdminCompanies,
@@ -18,9 +19,19 @@ import {
   setApplicationHidden,
   setCandidateActive,
   setCompanyActive,
+  setJobArchived,
   updateJobScreeningQuestions,
 } from '../services/adminService'
-import { JOB_STATUS_OPTIONS, filterJobs, formatCnpj, formatPhone, normalizeJobStatus, type JobStatusValue } from '../services/adminForms'
+import {
+  JOB_STATUS_OPTIONS,
+  deleteJobConfirmation,
+  filterJobs,
+  formatCnpj,
+  formatPhone,
+  jobRemovalAction,
+  normalizeJobStatus,
+  type JobStatusValue,
+} from '../services/adminForms'
 import { logout } from '../services/authService'
 import { isCompanyPortalEnabled } from '../services/companyPortal'
 import { formatCompanyStatus, formatJobStatus, formatOpenings } from '../services/jobFormat'
@@ -29,7 +40,8 @@ import { formatScreeningStatus, whatsappLink } from '../services/pipelineFormat'
 import type { AdminApplication, AdminCandidate, AdminCompany, AdminJob, AdminUser } from '../types/user'
 
 function StatusBadge({ status, label }: { status: string; label: string }) {
-  return <Badge status={status as 'draft' | 'pending' | 'approved' | 'blocked' | 'hidden' | 'closed'}>{label}</Badge>
+  const tone = status === 'archived' ? 'hidden' : status
+  return <Badge status={tone as 'draft' | 'pending' | 'approved' | 'blocked' | 'hidden' | 'closed'}>{label}</Badge>
 }
 
 export function AdminPage() {
@@ -50,16 +62,19 @@ export function AdminPage() {
   const [jobForm, setJobForm] = useState<'new' | number | null>(null)
   const [jobStatusFilter, setJobStatusFilter] = useState<JobStatusValue | ''>('')
   const [jobCompanyFilter, setJobCompanyFilter] = useState('')
+  const [showArchivedJobs, setShowArchivedJobs] = useState(false)
+  // Job waiting for the "Excluir a vaga X?" confirmation.
+  const [confirmDeleteJobId, setConfirmDeleteJobId] = useState<number | null>(null)
   // Old self-service portal (approve/block company accounts): only with VITE_COMPANY_PORTAL_ENABLED.
   const companyPortal = isCompanyPortalEnabled()
   const visibleJobs = filterJobs(jobs, jobStatusFilter, jobCompanyFilter)
 
-  async function refreshAdminData(includeHidden = showHiddenApplications) {
+  async function refreshAdminData(includeHidden = showHiddenApplications, includeArchived = showArchivedJobs) {
     const [usersData, candidatesData, companiesData, jobsData, applicationsData] = await Promise.all([
       getAdminUsers(),
       getAdminCandidates(),
       getAdminCompanies(),
-      getAdminJobs(),
+      getAdminJobs(includeArchived),
       getAdminApplications(includeHidden),
     ])
 
@@ -376,6 +391,18 @@ export function AdminPage() {
                 ))}
               </Select>
             </div>
+            <label className="mt-3 flex w-fit items-center gap-2 text-sm font-semibold text-ink-700">
+              <input
+                type="checkbox"
+                checked={showArchivedJobs}
+                onChange={(event) => {
+                  setShowArchivedJobs(event.target.checked)
+                  void refreshAdminData(showHiddenApplications, event.target.checked)
+                }}
+                className="h-4 w-4"
+              />
+              Mostrar arquivadas
+            </label>
             <div className="mt-5 grid gap-3">
               {jobForm === 'new' ? (
                 <JobForm
@@ -416,10 +443,31 @@ export function AdminPage() {
                       <p className="mt-1 text-sm text-ink-600">
                         {[job.location || 'Local não informado', formatOpenings(job.openings)].filter(Boolean).join(' · ')}
                       </p>
-                      <p className="mt-1 text-sm text-ink-600">Responsável: {job.recruiter_name ?? 'ninguém'}</p>
+                      <p className="mt-1 text-sm text-ink-600">
+                        Responsável: {job.recruiter_name ?? 'ninguém'} ·{' '}
+                        {job.applications_count === 1 ? '1 candidatura' : `${job.applications_count ?? 0} candidaturas`}
+                      </p>
                     </div>
                     <div className="flex flex-wrap items-center gap-2">
-                      <StatusBadge status={normalizeJobStatus(job.status)} label={formatJobStatus(job.status)} />
+                      <StatusBadge status={job.status === 'archived' ? 'archived' : normalizeJobStatus(job.status)} label={formatJobStatus(job.status)} />
+                      {jobRemovalAction(job) === 'unarchive' ? (
+                        <Button
+                          type="button"
+                          variant="secondary"
+                          isLoading={actionId === `job-unarchive-${job.id}`}
+                          disabled={actionId === `job-unarchive-${job.id}`}
+                          onClick={() =>
+                            void runAction(
+                              `job-unarchive-${job.id}`,
+                              () => setJobArchived(job.id, false),
+                              'Vaga desarquivada. Ela volta como Encerrada; publique de novo se quiser.',
+                            )
+                          }
+                        >
+                          Desarquivar
+                        </Button>
+                      ) : (
+                        <>
                       <Button type="button" variant="secondary" onClick={() => setJobForm(job.id)}>
                         Editar
                       </Button>
@@ -452,8 +500,53 @@ export function AdminPage() {
                       >
                         Triagem
                       </Button>
+                      {jobRemovalAction(job) === 'delete' ? (
+                        <Button type="button" variant="danger" onClick={() => setConfirmDeleteJobId(job.id)}>
+                          Excluir
+                        </Button>
+                      ) : (
+                        <Button
+                          type="button"
+                          variant="secondary"
+                          isLoading={actionId === `job-archive-${job.id}`}
+                          disabled={actionId === `job-archive-${job.id}`}
+                          onClick={() =>
+                            void runAction(
+                              `job-archive-${job.id}`,
+                              () => setJobArchived(job.id, true),
+                              'Vaga arquivada: saiu das listas e do site. As candidaturas e o histórico continuam guardados.',
+                            )
+                          }
+                        >
+                          Arquivar
+                        </Button>
+                      )}
+                        </>
+                      )}
                     </div>
                   </div>
+                  {confirmDeleteJobId === job.id ? (
+                    <div role="alertdialog" aria-label="Confirmar exclusão" className="mt-4 grid gap-3 rounded-lg border border-red-200 bg-red-50 p-4">
+                      <p className="text-sm font-bold text-red-800">{deleteJobConfirmation(job.title)}</p>
+                      <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+                        <Button type="button" variant="secondary" onClick={() => setConfirmDeleteJobId(null)}>
+                          Cancelar
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="danger"
+                          isLoading={actionId === `job-delete-${job.id}`}
+                          disabled={actionId === `job-delete-${job.id}`}
+                          onClick={() => {
+                            setConfirmDeleteJobId(null)
+                            void runAction(`job-delete-${job.id}`, () => deleteAdminJob(job.id), `Vaga ${job.title} excluída.`)
+                          }}
+                        >
+                          Sim, excluir
+                        </Button>
+                      </div>
+                    </div>
+                  ) : null}
                   {openScreeningJobId === job.id ? (
                     <div className="mt-5 grid gap-3 border-t border-slate-200 pt-5">
                       <p className="text-sm font-bold text-ink-700">
