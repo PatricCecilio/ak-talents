@@ -22,6 +22,11 @@ import { RegisterPage } from '../pages/RegisterPage'
 import { RecruiterApplicationPage } from '../pages/recruiter/RecruiterApplicationPage'
 import { RecruiterHomePage } from '../pages/recruiter/RecruiterHomePage'
 import { RecruiterJobPage } from '../pages/recruiter/RecruiterJobPage'
+import { ComingSoonPage } from '../panel/ComingSoonPage'
+import { JobPage } from '../panel/JobPage'
+import { JobsPage as PanelJobsPage } from '../panel/JobsPage'
+import { OverviewPage } from '../panel/OverviewPage'
+import { PanelLayout } from '../panel/PanelLayout'
 
 // Old /login links keep working (with whatever state they carried).
 function LegacyLoginRedirect() {
@@ -48,6 +53,25 @@ export function AppRoutes() {
           <Route path="/recrutador" element={<RecruiterHomePage />} />
           <Route path="/recrutador/vagas/:jobId" element={<RecruiterJobPage />} />
           <Route path="/recrutador/candidaturas/:applicationId" element={<RecruiterApplicationPage />} />
+        </Route>
+
+        {/* New team panel, built next to /admin and /recrutador until it replaces them (noindex, no menu link). */}
+        <Route
+          element={
+            <PrivateRoute allowedRoles={['recruiter', 'admin']}>
+              <PanelLayout />
+            </PrivateRoute>
+          }
+        >
+          <Route path="/painel" element={<OverviewPage />} />
+          <Route path="/painel/vagas" element={<PanelJobsPage />} />
+          <Route path="/painel/vagas/:jobId" element={<JobPage />} />
+          <Route path="/painel/candidaturas/:applicationId" element={<RecruiterApplicationPage />} />
+          <Route path="/painel/empresas" element={<ComingSoonPage title="Empresas" />} />
+          <Route path="/painel/candidatos" element={<ComingSoonPage title="Candidatos" />} />
+          <Route path="/painel/candidatos/:candidateId" element={<ComingSoonPage title="Candidato" />} />
+          <Route path="/painel/recrutadoras" element={<ComingSoonPage title="Recrutadoras" />} />
+          <Route path="/painel/*" element={<ComingSoonPage title="Página não encontrada" />} />
         </Route>
 
         <Route element={<MainLayout />}>

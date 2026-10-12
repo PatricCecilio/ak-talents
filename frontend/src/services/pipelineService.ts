@@ -27,9 +27,9 @@ export function moveApplication(applicationId: number, payload: StageMovePayload
   })
 }
 
-export function addApplicationNote(applicationId: number, body: string): Promise<ApplicationNote> {
+export function addApplicationNote(applicationId: number, body: string, kind = 'anotacao'): Promise<ApplicationNote> {
   return apiRequest<ApplicationNote>(`/recruiter/applications/${applicationId}/notes`, {
     method: 'POST',
-    body: { body },
+    body: { body, kind },
   })
 }

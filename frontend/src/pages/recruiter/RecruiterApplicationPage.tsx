@@ -1,13 +1,13 @@
 import type { FormEvent, ReactNode } from 'react'
 import { useEffect, useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { Link, useLocation, useParams } from 'react-router-dom'
 import { BrandButton } from '../../components/brand/BrandButton'
 import { BrandNotice } from '../../components/brand/BrandNotice'
 import { brandCard, brandHeading, brandInput } from '../../components/brand/styles'
 import { MoveStageDialog } from '../../components/recruiter/MoveStageDialog'
 import { StageBadge } from '../../components/recruiter/StageBadge'
 import { moveResultNote } from '../../services/hireDefaults'
-import { formatDateTime, formatDaysAgo, formatScreeningStatus, whatsappLink } from '../../services/pipelineFormat'
+import { NOTE_KIND_OPTIONS, formatDateTime, formatDaysAgo, formatScreeningStatus, whatsappLink, type NoteKind } from '../../services/pipelineFormat'
 import { addApplicationNote, getApplicationDetail } from '../../services/pipelineService'
 import type { ApplicationDetail } from '../../types/pipeline'
 
@@ -36,6 +36,9 @@ export function RecruiterApplicationPage() {
   const [isMoving, setIsMoving] = useState(false)
   const [flash, setFlash] = useState('')
   const [noteText, setNoteText] = useState('')
+  const [noteKind, setNoteKind] = useState<NoteKind>('anotacao')
+  // Same screen in the old area (/recrutador) and in the new panel (/painel).
+  const jobsBase = useLocation().pathname.startsWith('/painel') ? '/painel/vagas' : '/recrutador/vagas'
   const [noteError, setNoteError] = useState('')
   const [isSavingNote, setIsSavingNote] = useState(false)
 
@@ -59,7 +62,7 @@ export function RecruiterApplicationPage() {
     setNoteError('')
     setIsSavingNote(true)
     try {
-      const note = await addApplicationNote(detail.id, noteText)
+      const note = await addApplicationNote(detail.id, noteText, noteKind)
       setDetail({ ...detail, notes: [note, ...detail.notes] })
       setNoteText('')
     } catch (err) {
@@ -77,7 +80,7 @@ export function RecruiterApplicationPage() {
 
   return (
     <div className="grid gap-5">
-      <Link to={`/recrutador/vagas/${detail.job_id}`} className="w-fit text-sm font-semibold text-ink-700 hover:underline">
+      <Link to={`${jobsBase}/${detail.job_id}`} className="w-fit text-sm font-semibold text-ink-700 hover:underline">
         ← {detail.job_title}
       </Link>
 
@@ -205,6 +208,18 @@ export function RecruiterApplicationPage() {
             <label htmlFor="note" className="sr-only">
               Nova nota
             </label>
+            <select
+              aria-label="Tipo da anotação"
+              value={noteKind}
+              onChange={(event) => setNoteKind(event.target.value as NoteKind)}
+              className={`${brandInput} sm:w-64`}
+            >
+              {NOTE_KIND_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
             <textarea
               id="note"
               className={`${brandInput} min-h-20 py-3`}
@@ -221,6 +236,7 @@ export function RecruiterApplicationPage() {
           <ul className="grid gap-2">
             {detail.notes.map((note) => (
               <li key={note.id} className="rounded-lg bg-slate-50 px-3 py-2 text-sm">
+                {note.kind_label ? <span className="mb-1 inline-flex rounded-full bg-white px-2 py-0.5 text-xs font-semibold text-ink-700">{note.kind_label}</span> : null}
                 <p className="whitespace-pre-line text-ink-900">{note.body}</p>
                 <p className="mt-1 text-xs text-ink-600">
                   {note.author_name ?? 'Equipe AK'} · {formatDateTime(note.created_at)}

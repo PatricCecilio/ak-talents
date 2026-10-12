@@ -38,6 +38,7 @@ export interface ApplicationCard {
   candidate_name: string
   city: string | null
   neighborhood: string | null
+  experience_years?: number | null
   stage: StageValue
   stage_label: string
   stage_updated_at: string
@@ -72,6 +73,8 @@ export interface ApplicationNote {
   body: string
   author_name: string | null
   created_at: string
+  kind?: string
+  kind_label?: string
 }
 
 export interface ApplicationDetail {

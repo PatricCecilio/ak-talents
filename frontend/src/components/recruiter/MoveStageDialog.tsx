@@ -20,6 +20,8 @@ interface MoveStageDialogProps {
   otherActiveCount: number
   /** Positions of the job (optional): one or none → the hire fills the job; more → keep it open. */
   openings?: number | null
+  /** Destination already chosen (dragging a card onto a board column). */
+  initialStage?: StageValue
   onMoved: (response: StageMoveResponse) => void
   onClose: () => void
 }
@@ -34,11 +36,12 @@ export function MoveStageDialog({
   options,
   otherActiveCount,
   openings,
+  initialStage,
   onMoved,
   onClose,
 }: MoveStageDialogProps) {
   const defaults = hireDefaults(openings)
-  const [toStage, setToStage] = useState<StageValue | ''>('')
+  const [toStage, setToStage] = useState<StageValue | ''>(initialStage ?? '')
   const [note, setNote] = useState('')
   const [finalistSummary, setFinalistSummary] = useState('')
   const [closeOthers, setCloseOthers] = useState(defaults.closeOthers)

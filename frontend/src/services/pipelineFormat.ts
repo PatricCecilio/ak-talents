@@ -41,6 +41,17 @@ export function moveOptionLabel(currentStage: StageValue | undefined, option: { 
   return isClientResponse(currentStage, option.value) ? (CLIENT_RESPONSE_LABELS[option.value] ?? option.label) : option.label
 }
 
+// Kinds of notes (backend NOTE_KINDS). "Parecer" and "Retorno do cliente" are also created automatically.
+export const NOTE_KIND_OPTIONS = [
+  { value: 'anotacao', label: 'Anotação' },
+  { value: 'triagem', label: 'Triagem' },
+  { value: 'entrevista', label: 'Entrevista' },
+  { value: 'parecer', label: 'Parecer' },
+  { value: 'retorno_cliente', label: 'Retorno do cliente' },
+] as const
+
+export type NoteKind = (typeof NOTE_KIND_OPTIONS)[number]['value']
+
 export const PIPELINE_COLUMNS: StageValue[] = ['new', 'screening', 'ak_interview', 'finalist', 'client_approved', 'hired']
 export const CLOSED_STAGES: StageValue[] = ['rejected', 'withdrawn']
 
