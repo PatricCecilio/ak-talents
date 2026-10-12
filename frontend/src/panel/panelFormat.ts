@@ -5,8 +5,8 @@ import type { JobsListFilters } from './types'
 
 export const PANEL_BASE = '/painel'
 
-/** Query string of the jobs list: only the filters that are set. */
-export function jobsQuery(filters: JobsListFilters): string {
+/** Query string with only the filters that are set. */
+export function queryString(filters: object): string {
   const params = new URLSearchParams()
   for (const [key, value] of Object.entries(filters)) {
     if (value === undefined || value === null || value === '' || value === false) continue
@@ -14,6 +14,50 @@ export function jobsQuery(filters: JobsListFilters): string {
   }
   const query = params.toString()
   return query ? `?${query}` : ''
+}
+
+export function jobsQuery(filters: JobsListFilters): string {
+  return queryString(filters)
+}
+
+/** "(41) 9••••-1203": the list shows only the end of the number; the profile shows it whole. */
+export function maskPhone(phone: string | null | undefined): string {
+  let digits = (phone ?? '').replace(/\D+/g, '')
+  if (digits.length > 11 && digits.startsWith('55')) digits = digits.slice(2)
+  if (digits.length < 8) return phone ? '••••' : '—'
+  const ddd = digits.length >= 10 ? `(${digits.slice(0, 2)}) ` : ''
+  const local = digits.length >= 10 ? digits.slice(2) : digits
+  return `${ddd}${local[0]}••••-${local.slice(-4)}`
+}
+
+/** Tone of the stage pill in the candidates list. */
+export const STAGE_TONES: Record<string, string> = {
+  new: 'bg-blue-50 text-blue-700',
+  screening: 'bg-violet-50 text-violet-700',
+  ak_interview: 'bg-gold-50 text-gold-800',
+  finalist: 'bg-amber-50 text-amber-800',
+  client_approved: 'bg-emerald-50 text-emerald-800',
+  hired: 'bg-emerald-100 text-emerald-900',
+  rejected: 'bg-red-50 text-red-700',
+  withdrawn: 'bg-slate-100 text-ink-600',
+}
+
+export const CANDIDATE_STAGE_FILTERS = [
+  { value: '', label: 'Todas as etapas' },
+  { value: 'new', label: 'Nova' },
+  { value: 'screening', label: 'Em triagem' },
+  { value: 'ak_interview', label: 'Entrevista AK' },
+  { value: 'finalist', label: 'Enviado ao cliente' },
+  { value: 'client_approved', label: 'Aprovado pelo cliente' },
+  { value: 'hired', label: 'Contratado' },
+  { value: 'rejected', label: 'Reprovado' },
+  { value: 'withdrawn', label: 'Desistiu' },
+  { value: 'none', label: 'Sem candidatura' },
+] as const
+
+/** Strong confirmation of the LGPD erasure: the name typed again (spaces and case do not matter). */
+export function erasureConfirmed(typed: string, name: string): boolean {
+  return typed.trim().length > 0 && typed.trim().toLowerCase() === name.trim().toLowerCase()
 }
 
 export interface PanelMenuItem {
@@ -30,11 +74,11 @@ export interface PanelMenuItem {
 export function panelMenu(role: string): { main: PanelMenuItem[]; admin: PanelMenuItem[] } {
   const main: PanelMenuItem[] = [
     { to: PANEL_BASE, label: 'Visão geral', icon: 'home' },
-    { to: `${PANEL_BASE}/empresas`, label: 'Empresas', icon: 'building', soon: true },
+    { to: `${PANEL_BASE}/empresas`, label: 'Empresas', icon: 'building' },
     { to: `${PANEL_BASE}/vagas`, label: 'Vagas', icon: 'briefcase', badge: 'to_triage' },
-    { to: `${PANEL_BASE}/candidatos`, label: 'Candidatos', icon: 'users', soon: true },
+    { to: `${PANEL_BASE}/candidatos`, label: 'Candidatos', icon: 'users' },
   ]
-  const admin: PanelMenuItem[] = role === 'admin' ? [{ to: `${PANEL_BASE}/recrutadoras`, label: 'Recrutadoras', icon: 'person', soon: true }] : []
+  const admin: PanelMenuItem[] = role === 'admin' ? [{ to: `${PANEL_BASE}/recrutadoras`, label: 'Recrutadoras', icon: 'person' }] : []
   return { main, admin }
 }
 

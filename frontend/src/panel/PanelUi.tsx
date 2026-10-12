@@ -183,13 +183,13 @@ export function PanelDialog({ title, onClose, children, wide = false }: { title:
 
 export function PanelSelect({ label, value, onChange, children }: { label: string; value: string; onChange: (value: string) => void; children: ReactNode }) {
   return (
-    <label className="relative">
+    <label className="relative min-w-0 max-w-full">
       <span className="sr-only">{label}</span>
       <select
         aria-label={label}
         value={value}
         onChange={(event) => onChange(event.target.value)}
-        className={`min-h-11 rounded-lg border border-slate-200 bg-white py-2 pl-3 pr-8 text-sm font-medium text-ink-950 transition hover:border-ink-800/40 ${panelFocus}`}
+        className={`min-h-11 max-w-full rounded-lg border border-slate-200 bg-white py-2 pl-3 pr-8 text-sm font-medium text-ink-950 transition hover:border-ink-800/40 ${panelFocus}`}
       >
         {children}
       </select>

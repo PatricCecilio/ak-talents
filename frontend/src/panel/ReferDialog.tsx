@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react'
 import { getAdminJobs } from '../services/adminService'
-import type { ApplicationCard } from '../types/pipeline'
 import type { AdminJob } from '../types/user'
 import { referToJob } from './panelApi'
 import { PanelDialog, PanelSelect } from './PanelUi'
@@ -8,7 +7,19 @@ import { panelButton } from './panelStyles'
 
 // "Indicar para outra vaga": a new application in "Nova" of the chosen job, with the note
 // "Indicado a partir da vaga X". The current application does not change.
-export function ReferDialog({ card, fromJobId, onClose, onDone }: { card: ApplicationCard; fromJobId: number; onClose: () => void; onDone: (jobTitle: string) => void }) {
+export function ReferDialog({
+  applicationId,
+  candidateName,
+  fromJobId,
+  onClose,
+  onDone,
+}: {
+  applicationId: number
+  candidateName: string
+  fromJobId: number
+  onClose: () => void
+  onDone: (jobTitle: string) => void
+}) {
   const [jobs, setJobs] = useState<AdminJob[]>([])
   const [jobId, setJobId] = useState('')
   const [error, setError] = useState('')
@@ -28,7 +39,7 @@ export function ReferDialog({ card, fromJobId, onClose, onDone }: { card: Applic
     setSaving(true)
     setError('')
     try {
-      await referToJob(card.id, Number(jobId))
+      await referToJob(applicationId, Number(jobId))
       onDone(jobs.find((job) => String(job.id) === jobId)?.title ?? 'a outra vaga')
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Não foi possível indicar o candidato.')
@@ -38,7 +49,7 @@ export function ReferDialog({ card, fromJobId, onClose, onDone }: { card: Applic
   }
 
   return (
-    <PanelDialog title={`Indicar ${card.candidate_name} para outra vaga`} onClose={onClose}>
+    <PanelDialog title={`Indicar ${candidateName} para outra vaga`} onClose={onClose}>
       <p className="text-sm text-ink-700">Cria uma candidatura na etapa Nova da vaga escolhida. A candidatura atual não muda.</p>
       <div className="mt-4 grid gap-2">
         <PanelSelect label="Vaga" value={jobId} onChange={setJobId}>

@@ -109,3 +109,108 @@ export interface ManualCandidatePayload {
   authorization_confirmed: boolean
   job_id?: number | null
 }
+
+export interface CandidateRow {
+  id: number
+  name: string
+  email: string | null
+  phone: string | null
+  city: string | null
+  latest_stage: StageValue | null
+  latest_stage_label: string
+  applications: number
+  has_account: boolean
+  source: string | null
+}
+
+export interface CandidatesListResponse extends PageInfo {
+  items: CandidateRow[]
+  cities: string[]
+}
+
+export interface CandidatesFilters {
+  stage?: string
+  job_id?: number
+  city?: string
+  q?: string
+  page?: number
+}
+
+export interface CandidateApplicationRow {
+  id: number
+  job_id: number
+  job_title: string
+  company_name: string
+  stage: StageValue
+  stage_label: string
+  created_at: string
+  stage_updated_at: string
+  is_hidden: boolean
+}
+
+export interface CandidateDetail {
+  id: number
+  name: string
+  email: string | null
+  phone: string | null
+  city: string | null
+  neighborhood: string | null
+  state: string | null
+  desired_role: string | null
+  experience_years: number | null
+  skills: string | null
+  linkedin_url: string | null
+  portfolio_url: string | null
+  resume_url: string | null
+  has_account: boolean
+  source: string | null
+  source_label: string
+  created_by_name: string | null
+  authorization_recorded_at: string | null
+  created_at: string
+  applications: CandidateApplicationRow[]
+}
+
+export interface CandidateWritePayload {
+  full_name: string
+  phone: string
+  city: string
+  email: string | null
+  neighborhood: string | null
+  state: string | null
+  desired_role: string | null
+  experience_years: number | null
+  skills: string | null
+  linkedin_url: string | null
+  portfolio_url: string | null
+  resume_url: string | null
+}
+
+export interface TeamMemberRow {
+  id: number
+  name: string
+  email: string
+  role: 'admin' | 'recruiter'
+  role_label: string
+  is_active: boolean
+  active_jobs: number
+  candidates_in_progress: number
+  hires_this_month: number
+  last_activity_at: string | null
+}
+
+export interface TeamMemberDetail {
+  member: TeamMemberRow
+  cards: {
+    active_jobs: number
+    closed_this_month: number
+    to_triage: number
+    oldest_to_triage_at: string | null
+    with_client: number
+    oldest_with_client_at: string | null
+    hires_this_month: number
+    average_days_to_hire: number | null
+  }
+  jobs: Array<{ id: number; title: string; company_name: string; status: string; published_at: string | null; stage_counts: Record<string, number> }>
+  notes: Array<{ id: number; application_id: number; candidate_name: string; job_title: string; kind: string; kind_label: string; body: string; created_at: string }>
+}

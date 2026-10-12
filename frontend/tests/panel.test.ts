@@ -3,21 +3,26 @@ import { readFileSync } from 'node:fs'
 import { test } from 'node:test'
 import {
   BOARD_COLUMNS,
+  CANDIDATE_STAGE_FILTERS,
   COLUMN_TITLES,
   EXIT_STAGES,
+  STAGE_TONES,
   cardSubtitle,
   daysAgo,
+  erasureConfirmed,
   greeting,
   initials,
   jobsQuery,
   jobStatus,
   longDate,
+  maskPhone,
   panelMenu,
   publicJobUrl,
   publishedFor,
   relativeTime,
   shortAge,
 } from '../src/panel/panelFormat.ts'
+import { AK_STAGE_LABELS } from '../src/services/pipelineFormat.ts'
 
 const root = new URL('../', import.meta.url)
 const read = (path: string) => readFileSync(new URL(path, root), 'utf8')
@@ -106,4 +111,50 @@ test('manual registration and referral reuse the API rules', () => {
   assert.match(dialog, /authorization_confirmed: true/)
   assert.match(read('src/panel/panelApi.ts'), /`\/panel\/applications\/\$\{applicationId\}\/refer`/)
   assert.match(read('src/panel/ReferDialog.tsx'), /A candidatura atual não muda\./)
+})
+
+test('candidates list: phone masked to the last digits, stage filters with the pipeline names', () => {
+  assert.equal(maskPhone('41 99876-1203'), '(41) 9••••-1203')
+  assert.equal(maskPhone('+55 (41) 99876-1203'), '(41) 9••••-1203')
+  assert.equal(maskPhone('98761203'), '9••••-1203')
+  assert.equal(maskPhone('123'), '••••')
+  assert.equal(maskPhone(null), '—')
+  assert.equal(CANDIDATE_STAGE_FILTERS[0].value, '')
+  assert.equal(CANDIDATE_STAGE_FILTERS.at(-1)?.value, 'none')
+  for (const option of CANDIDATE_STAGE_FILTERS.slice(1, -1)) {
+    assert.equal(AK_STAGE_LABELS[option.value as keyof typeof AK_STAGE_LABELS], option.label, option.value)
+    assert.ok(STAGE_TONES[option.value], option.value)
+  }
+})
+
+test('LGPD erasure: strong confirmation, cannot be undone, admin only', () => {
+  assert.equal(erasureConfirmed('  marcos TEIXEIRA ', 'Marcos Teixeira'), true)
+  assert.equal(erasureConfirmed('Marcos', 'Marcos Teixeira'), false)
+  assert.equal(erasureConfirmed('   ', '  '), false)
+  const dialog = read('src/panel/CandidateDialogs.tsx')
+  assert.match(dialog, /Esta ação não pode ser desfeita\./)
+  assert.match(dialog, /Entendi que não dá para desfazer\./)
+  assert.match(dialog, /const ready = understood && erasureConfirmed\(typed, candidate\.name\)/)
+  assert.match(dialog, /disabled=\{!ready \|\| saving\}/)
+  for (const page of ['src/panel/CandidatesPage.tsx', 'src/panel/CandidateProfilePage.tsx']) {
+    assert.match(read(page), /isAdmin \? \[?\{? ?label: 'Excluir dados \(LGPD\)'|if \(isAdmin\) \{\s*list\.push\(\{ label: 'Excluir dados \(LGPD\)'/, page)
+  }
+})
+
+test('stage 3 routes: Empresas, Candidatos, Recrutadoras and a panel 404', () => {
+  const routes = read('src/routes/AppRoutes.tsx')
+  for (const path of ['/painel/empresas', '/painel/candidatos', '/painel/candidatos/:candidateId', '/painel/recrutadoras', '/painel/recrutadoras/:userId', '/painel/*']) {
+    assert.ok(routes.includes(`path="${path}"`), path)
+  }
+  assert.doesNotMatch(routes, /ComingSoonPage/)
+  assert.ok(panelMenu('admin').main.concat(panelMenu('admin').admin).every((item) => !('soon' in item)))
+})
+
+test('recruiters: companies read-only, no team pages; nobody deactivates themselves', () => {
+  const companies = read('src/panel/CompaniesPage.tsx')
+  assert.match(companies, /if \(!isAdmin\) return list/)
+  assert.match(companies, /\(company\.jobs_count \?\? 0\) === 0 && !company\.has_account/)
+  const team = read('src/panel/TeamPages.tsx')
+  assert.equal(team.match(/if \(!isAdmin\) return <p className="text-sm text-ink-600">\{ADMIN_ONLY\}<\/p>/g)?.length, 2)
+  assert.match(team, /if \(member\.id !== selfId\) list\.push/)
 })

@@ -365,7 +365,8 @@ export function JobPage() {
       ) : null}
       {referring ? (
         <ReferDialog
-          card={referring}
+          applicationId={referring.id}
+          candidateName={referring.candidate_name}
           fromJobId={job.id}
           onClose={() => setReferring(null)}
           onDone={(title) => {
