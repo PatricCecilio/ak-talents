@@ -112,6 +112,8 @@ class AdminJobRead(BaseModel):
     status: str
     openings: int | None = None
     company_is_active: bool = True
+    # Every application, hidden ones included: a job with applications can only be archived, never deleted.
+    applications_count: int = 0
     is_active: bool
     created_at: datetime
     recruiter_id: int | None = None
@@ -158,6 +160,10 @@ class AdminApplicationRead(BaseModel):
     is_hidden: bool = False
     stage: str = "new"
     stage_label: str = "Nova"
+
+
+class ArchivedUpdate(BaseModel):
+    archived: bool
 
 
 class ActiveUpdate(BaseModel):

@@ -13,6 +13,7 @@ from app.schemas.admin import (
     AdminJobWrite,
     AdminUserRead,
     ActiveUpdate,
+    ArchivedUpdate,
     CompanyWrite,
     HiddenUpdate,
     RecruiterCreate,
@@ -38,7 +39,9 @@ from app.services.admin_service import (
 from app.services.client_admin_service import (
     create_admin_job,
     create_company,
+    delete_admin_job,
     get_admin_job,
+    set_job_archived,
     update_admin_job,
     update_company,
 )
@@ -104,9 +107,29 @@ def update_job_endpoint(
     return job_to_admin_read(update_admin_job(db, job_id, payload))
 
 
+@router.delete("/jobs/{job_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_job_endpoint(job_id: int, db: Session = Depends(get_db), current_user: User = Depends(admin_only)):
+    """Only jobs without any application; the others answer 409 and can be archived instead."""
+    delete_admin_job(db, job_id)
+
+
+@router.put("/jobs/{job_id}/archived", response_model=AdminJobRead)
+def set_job_archived_endpoint(
+    job_id: int,
+    payload: ArchivedUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(admin_only),
+):
+    return job_to_admin_read(set_job_archived(db, job_id, payload.archived))
+
+
 @router.get("/jobs", response_model=list[AdminJobRead])
-def get_jobs(db: Session = Depends(get_db), current_user: User = Depends(staff)):
-    return list_admin_jobs(db, current_user)
+def get_jobs(
+    include_archived: bool = Query(default=False),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(staff),
+):
+    return list_admin_jobs(db, current_user, include_archived=include_archived)
 
 
 @router.get("/jobs/{job_id}/screening-questions", response_model=list[ScreeningQuestionRead])

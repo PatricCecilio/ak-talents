@@ -8,10 +8,12 @@ from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.core import messages
+from app.models.application import Application
 from app.models.company import Company
 from app.models.job import Job
 from app.models.user import STAFF_ROLES, User
 from app.schemas.admin import AdminJobDetail, AdminJobWrite, CompanyWrite
+from app.services.admin_service import JOB_ARCHIVED_STATUS, ensure_not_archived
 from app.services.identity_service import normalize_email, normalize_phone
 from app.services.slug_service import generate_unique_job_slug
 
@@ -107,6 +109,7 @@ def create_admin_job(db: Session, payload: AdminJobWrite) -> Job:
 
 def update_admin_job(db: Session, job_id: int, payload: AdminJobWrite) -> Job:
     job = _job_or_404(db, job_id)
+    ensure_not_archived(job)
     # The slug (public link) never changes, even if the title does: links already shared keep working.
     _apply_job_fields(db, job, payload)
     db.commit()
@@ -118,3 +121,25 @@ def get_admin_job(db: Session, job_id: int) -> AdminJobDetail:
     job = _job_or_404(db, job_id)
     fields = {field: getattr(job, field) for field in AdminJobDetail.model_fields if field != "company_name"}
     return AdminJobDetail(**fields, company_name=job.company.company_name)
+
+def delete_admin_job(db: Session, job_id: int) -> None:
+    """Really deletes a job, but only one nobody applied to (hidden applications count too)."""
+    job = _job_or_404(db, job_id)
+    if db.query(Application.id).filter(Application.job_id == job.id).first() is not None:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=messages.JOB_HAS_APPLICATIONS)
+    db.delete(job)  # its screening questions go with it (cascade)
+    db.commit()
+
+
+def set_job_archived(db: Session, job_id: int, archived: bool) -> Job:
+    """Archive: out of the admin, recruiter and public lists; applications and history stay.
+    Unarchive: back as closed (off the site), so publishing again is a conscious step."""
+    job = _job_or_404(db, job_id)
+    if archived:
+        job.status = JOB_ARCHIVED_STATUS
+        job.is_active = False
+    elif job.status == JOB_ARCHIVED_STATUS:
+        job.status = "closed"
+    db.commit()
+    db.refresh(job)
+    return job

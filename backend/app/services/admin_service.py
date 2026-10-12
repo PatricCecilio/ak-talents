@@ -17,6 +17,15 @@ from app.schemas.admin import (
 )
 
 
+JOB_ARCHIVED_STATUS = "archived"
+
+
+def ensure_not_archived(job: Job) -> None:
+    """Archived jobs are frozen: unarchive first (admin), then publish, close or edit."""
+    if job.status == JOB_ARCHIVED_STATUS:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=messages.JOB_ARCHIVED)
+
+
 def require_admin(current_user: User) -> None:
     if current_user.role != UserRole.admin.value:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=messages.ADMIN_ONLY)
@@ -62,6 +71,7 @@ def job_to_admin_read(job: Job) -> AdminJobRead:
         status=job.status,
         openings=job.openings,
         company_is_active=job.company.is_active,
+        applications_count=len(job.applications),
         is_active=job.is_active,
         created_at=job.created_at,
         recruiter_id=job.recruiter_id,
@@ -113,9 +123,12 @@ def list_admin_companies(db: Session, current_user: User) -> list[AdminCompanyRe
     return [company_to_admin_read(company) for company in companies]
 
 
-def list_admin_jobs(db: Session, current_user: User) -> list[AdminJobRead]:
+def list_admin_jobs(db: Session, current_user: User, include_archived: bool = False) -> list[AdminJobRead]:
     require_staff(current_user)
-    jobs = db.query(Job).join(Job.company).order_by(Job.created_at.desc()).all()
+    query = db.query(Job).join(Job.company)
+    if not include_archived:
+        query = query.filter(Job.status != JOB_ARCHIVED_STATUS)
+    jobs = query.order_by(Job.created_at.desc()).all()
     return [job_to_admin_read(job) for job in jobs]
 
 
@@ -178,6 +191,7 @@ def approve_job(db: Session, current_user: User, job_id: int) -> AdminJobRead:
     job = db.query(Job).filter(Job.id == job_id).first()
     if not job:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=messages.JOB_NOT_FOUND)
+    ensure_not_archived(job)
 
     job.status = "approved"
     job.is_active = True
@@ -191,6 +205,7 @@ def hide_job(db: Session, current_user: User, job_id: int) -> AdminJobRead:
     job = db.query(Job).filter(Job.id == job_id).first()
     if not job:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=messages.JOB_NOT_FOUND)
+    ensure_not_archived(job)
 
     job.status = "closed"
     job.is_active = False

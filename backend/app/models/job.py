@@ -28,7 +28,8 @@ class Job(Base):
     benefits: Mapped[str | None] = mapped_column(Text, nullable=True)
     contract_type: Mapped[str | None] = mapped_column(String(20), nullable=True)
     openings: Mapped[int | None] = mapped_column(Integer, nullable=True)
-    # draft (Rascunho), approved (Publicada: the only status shown on the site) or closed (Encerrada).
+    # draft (Rascunho), approved (Publicada: the only status shown on the site), closed (Encerrada) or archived
+    # (Arquivada: out of every list; applications and history kept; unarchiving brings it back as closed).
     status: Mapped[str] = mapped_column(String(40), default="draft", nullable=False)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     # Off by default: AK recruits on behalf of the client, so candidates do not see the company name.

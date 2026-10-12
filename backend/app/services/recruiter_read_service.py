@@ -103,6 +103,7 @@ def list_recruiter_jobs(db: Session) -> RecruiterJobsResponse:
         db.query(Job)
         .join(Company, Job.company_id == Company.id)
         .filter(Company.is_active.is_(True))  # deactivated (test) companies drop out of the AK lists
+        .filter(Job.status != "archived")  # archived jobs (admin) too; their applications stay in the database
         .order_by(Job.created_at.desc(), Job.id.desc())
         .all()
     )

@@ -48,6 +48,10 @@ COMPANY_PORTAL_CLOSED = (
 )
 INVALID_CNPJ = "Confira o CNPJ: são 14 números."
 INVALID_WHATSAPP = "Confira o WhatsApp: informe o DDD e o número."
+JOB_HAS_APPLICATIONS = (
+    "Esta vaga tem candidaturas e não pode ser excluída. Arquive a vaga para tirá-la das listas sem perder o histórico."
+)
+JOB_ARCHIVED = "Esta vaga está arquivada. Desarquive no admin antes de alterá-la."
 INACTIVE_COMPANY = "Esta empresa está desativada. Reative a empresa antes de abrir vagas para ela."
 COMPANY_SIGNUP_CLOSED = "O cadastro de empresas foi encerrado. Para contratar, fale com a AK Talent pelo WhatsApp."
 EMAIL_ALREADY_REGISTERED = "Este e-mail já tem cadastro. Entre com sua senha."
