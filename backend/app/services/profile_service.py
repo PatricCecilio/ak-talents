@@ -23,6 +23,8 @@ def _candidate_to_read(candidate: Candidate) -> CandidateProfileRead:
     return CandidateProfileRead(
         id=candidate.id,
         user_id=candidate.user_id,
+        # The e-mail is the account's (shown read-only on the profile).
+        email=candidate.user.email if candidate.user else candidate.email,
         full_name=candidate.full_name or candidate.user.name,
         phone=candidate.phone,
         city=candidate.city,
@@ -35,6 +37,7 @@ def _candidate_to_read(candidate: Candidate) -> CandidateProfileRead:
         work_mode=candidate.work_mode,
         linkedin_url=candidate.linkedin_url,
         portfolio_url=candidate.portfolio_url,
+        resume_url=candidate.resume_url,
         created_at=candidate.created_at,
     )
 
@@ -83,13 +86,12 @@ def update_candidate_profile(
         db.add(candidate)
 
     update_data = payload.model_dump(exclude_unset=True)
-    professional_summary = update_data.pop("professional_summary", None)
+    # Stored as "bio"; an empty summary clears it.
+    if "professional_summary" in update_data:
+        candidate.bio = update_data.pop("professional_summary")
 
     for field, value in update_data.items():
         setattr(candidate, field, value)
-
-    if professional_summary is not None:
-        candidate.bio = professional_summary
 
     if candidate.full_name:
         current_user.name = candidate.full_name

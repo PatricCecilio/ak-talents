@@ -11,6 +11,12 @@ APPLICATION_ALREADY_EXISTS = (
     "Você já se candidatou a esta vaga. Fique tranquilo: a equipe AK Talent vai entrar em contato."
 )
 INVALID_PHONE = "Confira o telefone: informe o DDD e o número."
+PROFILE_NAME_REQUIRED = "Informe seu nome completo."
+PROFILE_PHONE_REQUIRED = "Informe seu telefone ou WhatsApp, com DDD."
+PROFILE_CITY_REQUIRED = "Informe sua cidade."
+INVALID_LINKEDIN_URL = "Confira o link do LinkedIn. Exemplo: https://linkedin.com/in/seu-perfil"
+INVALID_PORTFOLIO_URL = "Confira o link do portfólio. Exemplo: https://seusite.com.br"
+INVALID_RESUME_URL = "Confira o link do currículo. Exemplo: um link do Google Drive ou do Dropbox."
 IDENTITY_NOT_CONFIRMED = "Não foi possível confirmar sua identidade com os dados informados."
 CANDIDATES_ONLY = "Esta área é só para candidatos."
 COMPANIES_ONLY = "Esta área é só para empresas."
@@ -102,6 +108,7 @@ FIELD_LABELS = {
     "password": "Senha",
     "phone": "Telefone",
     "portfolio_url": "Portfólio",
+    "resume_url": "Currículo",
     "privacy_accepted": "Aceite da Política de Privacidade",
     "professional_summary": "Resumo profissional",
     "question_type": "Tipo de pergunta",

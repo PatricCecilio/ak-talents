@@ -55,7 +55,7 @@ class PublicFormVersusAccountsTestCase(unittest.TestCase):
         self.token = register.json()["access_token"]
         profile = self.client.put(
             "/candidates/me",
-            json={"phone": "41911112222", "city": "Curitiba"},
+            json={"full_name": "Júlia Lima", "phone": "41911112222", "city": "Curitiba"},
             headers={"Authorization": f"Bearer {self.token}"},
         )
         self.assertEqual(profile.status_code, 200, profile.text)
