@@ -51,9 +51,9 @@ export function PrivacyPage() {
         <Section title="1. Quem somos">
           <p>
             A AK Talent é operada por AK Talent (63.263.799 PATRIC CECILIO), Microempreendedor Individual, inscrita no
-            CNPJ sob o nº 63.263.799/0001-29. Somos uma empresa de recrutamento: nossa equipe conduz processos seletivos
-            para empresas clientes usando a plataforma AK Talent. Somos responsáveis (controladores) pelos dados tratados
-            nesta plataforma.
+            CNPJ sob o nº 63.263.799/0001-29. Somos uma empresa de recrutamento: nossa equipe conduz todo o processo seletivo
+            para as empresas clientes usando a plataforma AK Talent e envia a elas o resultado. Somos responsáveis
+            (controladores) pelos dados tratados nesta plataforma.
           </p>
           <p>Para qualquer assunto sobre seus dados, fale com a gente pelo e-mail {contactEmail}.</p>
         </Section>
@@ -69,8 +69,9 @@ export function PrivacyPage() {
             anos de experiência, pretensão salarial, modelo de trabalho, LinkedIn e portfólio.
           </p>
           <p>
-            <strong>Empresas:</strong> nome da empresa, nome do responsável, e-mail, telefone, cidade, estado, segmento,
-            porte, site, descrição e os dados das vagas publicadas.
+            <strong>Empresas clientes:</strong> nome e CNPJ da empresa, cidade e estado, nome do responsável, WhatsApp e, se
+            informado, e-mail, além dos dados das vagas. Esses dados são cadastrados pela equipe AK Talent: as empresas
+            clientes não têm conta na plataforma.
           </p>
           <p>
             <strong>Quem entra com o Google:</strong> recebemos do Google apenas seu nome, seu e-mail (já verificado pelo
@@ -89,8 +90,8 @@ export function PrivacyPage() {
           <List
             items={[
               'Conduzir processos seletivos: analisar candidaturas, organizar a triagem e entrar em contato sobre as vagas.',
-              'Criar e manter as contas de candidatos e empresas na plataforma.',
-              'Apresentar candidatos às empresas clientes nas vagas em que eles se candidataram.',
+              'Criar e manter as contas de candidatos na plataforma.',
+              'Apresentar candidatos às empresas clientes nas vagas em que eles se candidataram, em um relatório enviado pela AK Talent.',
               'Manter a plataforma segura e prevenir fraudes e abusos.',
               'Cumprir obrigações legais e responder a autoridades quando a lei exigir.',
             ]}
@@ -112,8 +113,10 @@ export function PrivacyPage() {
           <List
             items={[
               <>
-                <strong>Empresas clientes:</strong> a empresa que abriu a vaga em que você se candidatou pode receber seus dados
-                profissionais e de contato para conduzir o processo seletivo.
+                <strong>Empresas clientes:</strong> quando você avança no processo de uma vaga em que se candidatou, a AK Talent
+                envia à empresa contratante um relatório com seus dados profissionais e de contato, seu currículo e o parecer
+                da nossa equipe sobre você. O relatório é enviado pelo WhatsApp ou por e-mail. A empresa não acessa a
+                plataforma e só pode usar esses dados para aquele processo seletivo.
               </>,
               <>
                 <strong>AppIntelli:</strong> fornecedora do chat do site e da triagem por conversa. Ela recebe as mensagens que
@@ -121,8 +124,8 @@ export function PrivacyPage() {
                 automaticamente.
               </>,
               <>
-                <strong>OpenAI:</strong> quando você usa os assistentes de IA da plataforma (sugestões de perfil para candidatos
-                e de texto de vaga para empresas), as informações digitadas nesses assistentes são enviadas à OpenAI para gerar
+                <strong>OpenAI:</strong> quando você usa os assistentes de IA da plataforma (por exemplo, sugestões de perfil
+                para candidatos), as informações digitadas nesses assistentes são enviadas à OpenAI para gerar
                 a sugestão. Os dados de candidatura enviados pelo site não são enviados à OpenAI.
               </>,
               <>
@@ -132,6 +135,10 @@ export function PrivacyPage() {
               <>
                 <strong>Google:</strong> quando você escolhe "Continuar com o Google", o login acontece no Google, que nos
                 confirma quem você é. Não enviamos ao Google seus dados de candidatura.
+              </>,
+              <>
+                <strong>WhatsApp (Meta):</strong> usamos o WhatsApp para falar com candidatos e para enviar os relatórios às
+                empresas clientes. As mensagens passam pelos servidores do WhatsApp.
               </>,
               <>
                 <strong>Autoridades públicas:</strong> somente quando a lei ou uma ordem judicial exigir.

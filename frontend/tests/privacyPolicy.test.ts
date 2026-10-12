@@ -44,6 +44,11 @@ test('privacy page is routed and covers the required topics, with the real compa
     'Como exercer seus direitos',
     'Quem entra com o Google',
     'Continuar com o Google',
+    // The client no longer uses the system: AK sends the report (data, CV and opinion).
+    'envia à empresa contratante um relatório',
+    'seu currículo e o parecer',
+    'WhatsApp (Meta)',
+    'Esses dados são cadastrados pela equipe AK Talent',
   ]) {
     assert.ok(page.includes(topic), `missing topic ${topic}`)
   }
