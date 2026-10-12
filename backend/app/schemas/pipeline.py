@@ -125,6 +125,7 @@ class CandidateContact(BaseModel):
     skills: str | None
     linkedin_url: str | None
     portfolio_url: str | None
+    resume_url: str | None = None
     has_account: bool
 
 

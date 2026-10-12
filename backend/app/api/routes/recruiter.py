@@ -18,7 +18,8 @@ from app.schemas.pipeline import (
     stage_options,
 )
 from app.services.admin_service import job_to_admin_read
-from app.services.pipeline_service import add_note, allowed_next_stages, get_application_or_404, move_application
+from app.services.access import application_for, job_for
+from app.services.pipeline_service import add_note, allowed_next_stages, move_application
 from app.services.recruiter_read_service import get_application_detail, get_job_pipeline, list_recruiter_jobs
 from app.schemas.candidate_pipeline import CompanyVisibilityUpdate
 from app.services.recruiter_service import set_company_visibility, set_job_responsible
@@ -26,8 +27,10 @@ from app.services.staff_service import list_staff
 
 router = APIRouter()
 
-# The whole internal AK team (admin and recruiters) works in this area.
+# The whole internal AK team (admin and recruiters) works in this area; a recruiter only on the jobs they are
+# responsible for (app.services.access: other jobs, their applications and candidates answer 404).
 staff = require_role(UserRole.admin, UserRole.recruiter)
+admin_only = require_role(UserRole.admin)
 
 
 @router.get("/team", response_model=list[StaffMemberRead])
@@ -40,8 +43,9 @@ def update_job_responsible(
     job_id: int,
     payload: JobResponsibleUpdate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(staff),
+    current_user: User = Depends(admin_only),
 ):
+    """Only the admin assigns (or changes) the recruiter responsible for a job."""
     return job_to_admin_read(set_job_responsible(db, job_id, payload.recruiter_id))
 
 
@@ -52,7 +56,7 @@ def move_application_stage(
     db: Session = Depends(get_db),
     current_user: User = Depends(staff),
 ):
-    application = get_application_or_404(db, application_id)
+    application = application_for(db, current_user, application_id)
     closed = move_application(
         db,
         application,
@@ -81,7 +85,7 @@ def create_application_note(
     db: Session = Depends(get_db),
     current_user: User = Depends(staff),
 ):
-    note = add_note(db, get_application_or_404(db, application_id), current_user, payload.body, payload.kind)
+    note = add_note(db, application_for(db, current_user, application_id), current_user, payload.body, payload.kind)
     return NoteRead(
         id=note.id, body=note.body, author_name=current_user.name, created_at=note.created_at, kind=note.kind, kind_label=NOTE_KINDS[note.kind]
     )
@@ -89,7 +93,7 @@ def create_application_note(
 
 @router.get("/jobs", response_model=RecruiterJobsResponse)
 def get_recruiter_jobs(db: Session = Depends(get_db), current_user: User = Depends(staff)):
-    return list_recruiter_jobs(db)
+    return list_recruiter_jobs(db, current_user)
 
 
 @router.get("/jobs/{job_id}/applications", response_model=JobPipelineResponse)
@@ -115,4 +119,5 @@ def update_job_company_visibility(
     current_user: User = Depends(staff),
 ):
     """Show (or hide) the client company name to candidates in "Minhas candidaturas". Off by default."""
+    job_for(db, current_user, job_id)
     return job_to_admin_read(set_company_visibility(db, job_id, payload.show_company_to_candidates))

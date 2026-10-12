@@ -1,17 +1,15 @@
 """Panel (/painel) read models: overview, jobs list with counts, global search.
 
-Callers are AK staff (routes enforce it). A recruiter's overview only counts the jobs they are responsible for;
-the jobs list shows every job (recruiters operate all of them) and filters to "mine" on request.
+Callers are AK staff (routes enforce it). A recruiter only sees the jobs they are responsible for (app.services.access):
+overview, jobs list, job page and search alike. The admin sees everything.
 """
 
 from collections import defaultdict
 from datetime import datetime, timedelta, timezone
 
-from fastapi import HTTPException, status
 from sqlalchemy import func, or_
 from sqlalchemy.orm import Session
 
-from app.core import messages
 from app.core.config import settings
 from app.core.pipeline import STAGE_LABELS, Stage
 from app.models.application import Application
@@ -19,7 +17,7 @@ from app.models.candidate import Candidate
 from app.models.company import Company
 from app.models.job import Job
 from app.models.pipeline import ApplicationStageHistory
-from app.models.user import User, UserRole
+from app.models.user import User
 from app.schemas.panel import (
     ActivityItem,
     JobsListResponse,
@@ -32,6 +30,7 @@ from app.schemas.panel import (
     SearchResponse,
     StageCount,
 )
+from app.services.access import has_application_in, is_restricted, job_for, scope_jobs, visible_job_ids
 from app.services.identity_service import normalize_phone
 
 PAGE_SIZE = 10
@@ -60,10 +59,6 @@ def month_start_utc(now: datetime | None = None) -> datetime:
 
 def alert_days() -> int:
     return max(settings.FINALIST_ALERT_DAYS, 0)
-
-
-def is_recruiter(actor: User) -> bool:
-    return actor.role == UserRole.recruiter.value
 
 
 def _visible_applications(db: Session):
@@ -135,10 +130,7 @@ def job_rows(db: Session, jobs: list[Job]) -> list[PanelJobRow]:
 
 
 def _scoped_jobs(db: Session, actor: User):
-    query = db.query(Job).join(Company, Job.company_id == Company.id)
-    if is_recruiter(actor):
-        query = query.filter(Job.recruiter_id == actor.id)
-    return query
+    return scope_jobs(db.query(Job).join(Company, Job.company_id == Company.id), actor)
 
 
 # --- overview ---------------------------------------------------------------------------------------------------------
@@ -225,7 +217,7 @@ def _candidate_name(candidate: Candidate) -> str:
 
 def overview(db: Session, actor: User) -> OverviewResponse:
     now = now_utc()
-    mine = is_recruiter(actor)
+    mine = is_restricted(actor)
     scope_ids = [job_id for (job_id,) in _scoped_jobs(db, actor).with_entities(Job.id).all()] if mine else None
 
     apps = _visible_applications(db)
@@ -292,10 +284,12 @@ def list_jobs(
     focus: str | None = None,
     page: int = 1,
 ) -> JobsListResponse:
-    query = db.query(Job).join(Company, Job.company_id == Company.id)
+    query = _scoped_jobs(db, actor)
     if company_id:
         query = query.filter(Job.company_id == company_id)
-    if mine:
+    if is_restricted(actor):
+        pass  # already only their own jobs: the responsible filters do not apply
+    elif mine:
         query = query.filter(Job.recruiter_id == actor.id)
     elif no_recruiter:
         query = query.filter(Job.recruiter_id.is_(None))
@@ -334,10 +328,8 @@ def list_jobs(
     )
 
 
-def job_detail(db: Session, job_id: int) -> PanelJobDetail:
-    job = db.get(Job, job_id)
-    if job is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=messages.JOB_NOT_FOUND)
+def job_detail(db: Session, actor: User, job_id: int) -> PanelJobDetail:
+    job = job_for(db, actor, job_id)
     row = job_rows(db, [job])[0]
     return PanelJobDetail(
         **row.model_dump(),
@@ -357,7 +349,7 @@ def job_detail(db: Session, job_id: int) -> PanelJobDetail:
 # --- search -----------------------------------------------------------------------------------------------------------
 
 
-def search(db: Session, text: str, limit: int = 5) -> SearchResponse:
+def search(db: Session, actor: User, text: str, limit: int = 5) -> SearchResponse:
     term = text.strip()
     if len(term) < 2:
         return SearchResponse(candidates=[], jobs=[], companies=[])
@@ -367,14 +359,12 @@ def search(db: Session, text: str, limit: int = 5) -> SearchResponse:
     candidate_filter = [func.lower(Candidate.full_name).like(like), func.lower(Candidate.email).like(like)]
     if len(digits) >= 4:
         candidate_filter.append(Candidate.phone.like(f"%{digits}%"))
-    candidates = (
-        db.query(Candidate)
-        .filter(Candidate.anonymized_at.is_(None), or_(*candidate_filter))
-        .order_by(Candidate.full_name)
-        .limit(limit)
-        .all()
-    )
-    jobs = db.query(Job).filter(func.lower(Job.title).like(like)).order_by(Job.created_at.desc()).limit(limit).all()
+    candidates = db.query(Candidate).filter(Candidate.anonymized_at.is_(None), or_(*candidate_filter))
+    job_ids = visible_job_ids(db, actor)
+    if job_ids is not None:
+        candidates = candidates.filter(has_application_in(job_ids))
+    candidates = candidates.order_by(Candidate.full_name).limit(limit).all()
+    jobs = scope_jobs(db.query(Job), actor).filter(func.lower(Job.title).like(like)).order_by(Job.created_at.desc()).limit(limit).all()
     companies = db.query(Company).filter(func.lower(Company.company_name).like(like)).order_by(Company.company_name).limit(limit).all()
     return SearchResponse(
         candidates=[

@@ -5,7 +5,6 @@ from sqlalchemy.orm import Session
 
 from app.core import messages
 from app.models.application import Application
-from app.models.job import Job
 from app.models.screening import ScreeningAnswer, ScreeningQuestion
 from app.models.user import User
 from app.schemas.screening import (
@@ -22,6 +21,7 @@ from app.schemas.screening import (
     ScreeningSubmitRequest,
     ScreeningSubmitResponse,
 )
+from app.services.access import job_for
 from app.services.admin_service import require_staff
 from app.services.pipeline_service import advance_after_automated_screening
 from app.services.token_service import hash_public_token
@@ -91,6 +91,7 @@ def list_admin_screening_questions(
     job_id: int,
 ) -> list[ScreeningQuestionRead]:
     require_staff(current_user)
+    job_for(db, current_user, job_id)
     return [
         _question_to_read(question)
         for question in db.query(ScreeningQuestion)
@@ -107,9 +108,7 @@ def replace_admin_screening_questions(
     questions: list[ScreeningQuestionCreate],
 ) -> list[ScreeningQuestionRead]:
     require_staff(current_user)
-    job = db.query(Job).filter(Job.id == job_id).first()
-    if not job:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=messages.JOB_NOT_FOUND)
+    job_for(db, current_user, job_id)
 
     existing = db.query(ScreeningQuestion).filter(ScreeningQuestion.job_id == job_id).all()
     for question in existing:

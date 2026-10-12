@@ -69,6 +69,11 @@ class CandidateApplicationsTestCase(unittest.TestCase):
             db.add(Application(candidate_id=other.id, job_id=hidden_job.id, stage="new"))
             db.commit()
 
+        # The recruiter here is responsible for every job (a recruiter only sees their own jobs).
+        with self.SessionLocal() as db:
+            db.query(Job).update({Job.recruiter_id: self.users["recruiter"].id})
+            db.commit()
+
         def override_get_db():
             with self.SessionLocal() as db:
                 yield db

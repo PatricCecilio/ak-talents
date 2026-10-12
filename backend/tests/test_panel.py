@@ -184,8 +184,10 @@ class PanelTestCase(unittest.TestCase):
         self.assertEqual(titles("mine=true", who="rita"), ["Operador de caixa", "Atendente de loja"])
         self.assertIn("Estoquista", titles("include_archived=true"))
         self.assertEqual(titles("status=archived"), ["Estoquista"])
-        # Recruiters see every job (they operate all of them); "mine" is just the default filter on screen.
-        self.assertEqual(len(titles("", who="rita")), 4)
+        # A recruiter only ever gets their own jobs; the responsible filters change nothing for them.
+        self.assertEqual(titles("", who="rita"), ["Operador de caixa", "Atendente de loja"])
+        self.assertEqual(titles("no_recruiter=true", who="rita"), ["Operador de caixa", "Atendente de loja"])
+        self.assertEqual(titles(f"recruiter_id={self.users['caio'].id}", who="rita"), ["Operador de caixa", "Atendente de loja"])
 
     def test_jobs_list_focus_for_the_overview_cards(self) -> None:
         titles = lambda focus: [row["title"] for row in self.call("GET", f"/panel/jobs?focus={focus}").json()["items"]]
@@ -193,14 +195,76 @@ class PanelTestCase(unittest.TestCase):
         self.assertEqual(titles("with_client"), ["Atendente de loja", "Recepcionista"])
         self.assertEqual(titles("empty"), ["Operador de caixa"])
 
-    def test_job_detail_for_the_whole_team(self) -> None:
-        body = self.call("GET", f"/panel/jobs/{self.rita_job.id}", who="caio").json()
+    def test_job_detail_for_the_admin_and_the_responsible(self) -> None:
+        self.assertEqual(self.call("GET", f"/panel/jobs/{self.rita_job.id}", who="caio").status_code, 404)
+        body = self.call("GET", f"/panel/jobs/{self.rita_job.id}", who="rita").json()
         self.assertEqual((body["title"], body["company_name"], body["recruiter_name"]), ("Atendente de loja", "Loja Exemplo", "Pessoa Rita"))
         self.assertEqual((body["applications"], body["to_triage"], body["with_client"]), (3, 2, 1))
         self.assertEqual(body["description"], "Descrição da vaga.")
         self.assertIsNotNone(body["published_at"])
         self.assertEqual(self.call("GET", "/panel/jobs/9999").status_code, 404)
         self.assertEqual(self.call("GET", f"/panel/jobs/{self.rita_job.id}", who="account").status_code, 403)
+
+    def test_recruiters_only_reach_their_own_jobs_applications_and_candidates(self) -> None:
+        caio = lambda method, path, **kwargs: self.call(method, path, who="caio", **kwargs)
+        # Someone else's job, and a job without a responsible (the admin's): 404 everywhere, reading or writing.
+        for job in (self.rita_job, self.draft_job):
+            for method, path, payload in (
+                ("GET", f"/panel/jobs/{job.id}", None),
+                ("GET", f"/recruiter/jobs/{job.id}/applications", None),
+                ("PUT", f"/recruiter/jobs/{job.id}/candidate-visibility", {"show_company_to_candidates": True}),
+                ("GET", f"/admin/jobs/{job.id}/screening-questions", None),
+                ("PUT", f"/admin/jobs/{job.id}/screening-questions", {"questions": []}),
+                ("PUT", f"/admin/jobs/{job.id}/approve", None),
+                ("PUT", f"/admin/jobs/{job.id}/hide", None),
+            ):
+                self.assertEqual(caio(method, path, json=payload).status_code, 404, f"{method} {path}")
+        for method, path, payload in (
+            ("GET", f"/recruiter/applications/{self.app_new_today.id}", None),
+            ("POST", f"/recruiter/applications/{self.app_new_today.id}/stage", {"to_stage": "screening"}),
+            ("POST", f"/recruiter/applications/{self.app_new_today.id}/notes", {"body": "Nota."}),
+            ("POST", f"/panel/applications/{self.app_new_today.id}/refer", {"job_id": self.caio_job.id}),
+            ("GET", f"/panel/candidates/{self.juliana.id}", None),
+            ("PUT", f"/panel/candidates/{self.juliana.id}", {"full_name": "Juliana Prado", "phone": "41911110001", "city": "Curitiba"}),
+            # Diego's application in Caio's job was hidden by the admin: it does not open the door.
+            ("GET", f"/panel/candidates/{self.diego.id}", None),
+        ):
+            self.assertEqual(caio(method, path, json=payload).status_code, 404, f"{method} {path}")
+        with self.SessionLocal() as db:
+            self.assertEqual(db.get(Application, self.app_new_today.id).stage, "new")
+
+        # Their own job works as usual.
+        self.assertEqual(caio("GET", f"/panel/jobs/{self.caio_job.id}").status_code, 200)
+        self.assertEqual(caio("GET", f"/recruiter/applications/{self.app_finalist_new.id}").status_code, 200)
+        self.assertEqual([job["title"] for job in caio("GET", "/recruiter/jobs").json()["jobs"]], ["Recepcionista"])
+        self.assertEqual([job["title"] for job in caio("GET", "/admin/jobs").json()], ["Recepcionista"])
+        self.assertEqual(caio("PUT", f"/recruiter/jobs/{self.caio_job.id}/responsible", json={"recruiter_id": None}).status_code, 403)
+
+        # Candidates: only people in their jobs, and only those applications.
+        pool = caio("GET", "/panel/candidates").json()
+        self.assertEqual({row["name"] for row in pool["items"]}, {"Bruna Costa", "Thiago Ramos"})
+        self.assertEqual(pool["cities"], ["Curitiba"])
+        rita_view = self.call("GET", f"/panel/candidates/{self.diego.id}", who="rita").json()
+        self.assertEqual([row["job_title"] for row in rita_view["applications"]], ["Atendente de loja"])
+        admin_view = self.call("GET", f"/panel/candidates/{self.diego.id}").json()
+        self.assertEqual(len(admin_view["applications"]), 2)
+
+        # Referral and manual registration only into their own jobs.
+        refer = caio("POST", f"/panel/applications/{self.app_finalist_new.id}/refer", json={"job_id": self.rita_job.id})
+        self.assertEqual(refer.status_code, 404)
+        manual = {"full_name": "Nova Pessoa", "phone": "41955550000", "city": "Curitiba", "authorization_confirmed": True}
+        without_job = caio("POST", "/panel/candidates", json=manual)
+        self.assertEqual(without_job.status_code, 422)
+        self.assertEqual(without_job.json()["detail"], "Escolha uma das suas vagas para cadastrar o candidato.")
+        self.assertEqual(caio("POST", "/panel/candidates", json={**manual, "job_id": self.rita_job.id}).status_code, 404)
+        self.assertEqual(caio("POST", "/panel/candidates", json={**manual, "job_id": self.caio_job.id}).status_code, 201)
+
+        # Overview and search follow the same scope.
+        overview = caio("GET", "/panel/overview").json()
+        self.assertEqual([row["title"] for row in overview["jobs_in_progress"]], ["Recepcionista"])
+        self.assertEqual(caio("GET", "/panel/search?q=Juliana").json()["candidates"], [])
+        self.assertEqual(caio("GET", "/panel/search?q=Atendente").json()["jobs"], [])
+        self.assertEqual([hit["title"] for hit in caio("GET", "/panel/search?q=Recep").json()["jobs"]], ["Recepcionista"])
 
     def test_jobs_list_pages_of_ten(self) -> None:
         with self.SessionLocal() as db:

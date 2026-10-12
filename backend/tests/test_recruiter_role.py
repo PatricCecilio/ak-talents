@@ -45,6 +45,11 @@ class RecruiterRoleTestCase(unittest.TestCase):
             db.commit()
             self.job_id = job.id
 
+        # The recruiter here is responsible for every job (a recruiter only sees their own jobs).
+        with self.SessionLocal() as db:
+            db.query(Job).update({Job.recruiter_id: self.users["recruiter"].id})
+            db.commit()
+
         def override_get_db():
             with self.SessionLocal() as db:
                 yield db
@@ -145,9 +150,11 @@ class RecruiterRoleTestCase(unittest.TestCase):
 
     # --- responsible recruiter on the job ---
 
-    def test_staff_assigns_and_clears_responsible_recruiter(self) -> None:
+    def test_only_the_admin_assigns_and_clears_responsible_recruiter(self) -> None:
         recruiter_id = self.users["recruiter"].id
-        response = self.call("recruiter", "PUT", f"/recruiter/jobs/{self.job_id}/responsible", json={"recruiter_id": recruiter_id})
+        refused = self.call("recruiter", "PUT", f"/recruiter/jobs/{self.job_id}/responsible", json={"recruiter_id": recruiter_id})
+        self.assertEqual(refused.status_code, 403)
+        response = self.call("admin", "PUT", f"/recruiter/jobs/{self.job_id}/responsible", json={"recruiter_id": recruiter_id})
         self.assertEqual(response.status_code, 200, response.text)
         self.assertEqual(response.json()["recruiter_id"], recruiter_id)
         self.assertEqual(response.json()["recruiter_name"], "Pessoa recruiter")

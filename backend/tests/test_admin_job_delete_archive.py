@@ -58,6 +58,11 @@ class AdminJobDeleteArchiveTestCase(unittest.TestCase):
             db.commit()
             self.application_id = application.id
 
+        # The recruiter here is responsible for every job (a recruiter only sees their own jobs).
+        with self.SessionLocal() as db:
+            db.query(Job).update({Job.recruiter_id: self.users["recruiter"].id})
+            db.commit()
+
         def override_get_db():
             with self.SessionLocal() as db:
                 yield db

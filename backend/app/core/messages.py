@@ -57,6 +57,7 @@ CANDIDATE_ACCOUNT_EMAIL = "Este candidato tem conta no site: o e-mail de acesso 
 CANDIDATE_ALREADY_IN_JOB = "Este candidato já está nesta vaga."
 JOB_NOT_OPEN_FOR_CANDIDATES = "Escolha uma vaga publicada ou em rascunho, de uma empresa ativa."
 MANUAL_AUTHORIZATION_REQUIRED = "Confirme que o candidato autorizou o uso dos dados dele pela AK Talent."
+MANUAL_JOB_REQUIRED = "Escolha uma das suas vagas para cadastrar o candidato."
 REFER_SAME_JOB = "Escolha uma vaga diferente da atual."
 ERASURE_CONFIRMATION_MISMATCH = "Para confirmar, digite o nome do candidato exatamente como aparece."
 TEAM_MEMBER_NOT_FOUND = "Pessoa da equipe não encontrada."

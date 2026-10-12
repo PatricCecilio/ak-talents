@@ -17,6 +17,7 @@ from app.schemas.admin import (
     AdminJobRead,
     AdminUserRead,
 )
+from app.services.access import job_for, scope_jobs
 
 
 JOB_ARCHIVED_STATUS = "archived"
@@ -127,7 +128,7 @@ def list_admin_companies(db: Session, current_user: User) -> list[AdminCompanyRe
 
 def list_admin_jobs(db: Session, current_user: User, include_archived: bool = False) -> list[AdminJobRead]:
     require_staff(current_user)
-    query = db.query(Job).join(Job.company)
+    query = scope_jobs(db.query(Job).join(Job.company), current_user)
     if not include_archived:
         query = query.filter(Job.status != JOB_ARCHIVED_STATUS)
     jobs = query.order_by(Job.created_at.desc()).all()
@@ -190,9 +191,7 @@ def block_company(db: Session, current_user: User, company_id: int) -> AdminComp
 
 def approve_job(db: Session, current_user: User, job_id: int) -> AdminJobRead:
     require_staff(current_user)
-    job = db.query(Job).filter(Job.id == job_id).first()
-    if not job:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=messages.JOB_NOT_FOUND)
+    job = job_for(db, current_user, job_id)
     ensure_not_archived(job)
 
     job.status = "approved"
@@ -205,9 +204,7 @@ def approve_job(db: Session, current_user: User, job_id: int) -> AdminJobRead:
 
 def hide_job(db: Session, current_user: User, job_id: int) -> AdminJobRead:
     require_staff(current_user)
-    job = db.query(Job).filter(Job.id == job_id).first()
-    if not job:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=messages.JOB_NOT_FOUND)
+    job = job_for(db, current_user, job_id)
     ensure_not_archived(job)
 
     job.status = "closed"

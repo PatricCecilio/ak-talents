@@ -83,8 +83,8 @@ def get_jobs(
 
 @router.get("/jobs/{job_id}", response_model=PanelJobDetail)
 def get_job(job_id: int, db: Session = Depends(get_db), current_user: User = Depends(staff)):
-    """Header and "Detalhes da vaga" for the whole team (editing stays admin-only in /admin/jobs/{id})."""
-    return job_detail(db, job_id)
+    """Header and "Detalhes da vaga" (a recruiter: only their own jobs; editing stays admin-only in /admin/jobs/{id})."""
+    return job_detail(db, current_user, job_id)
 
 
 @router.put("/jobs/{job_id}/responsible", response_model=AdminJobRead)
@@ -107,7 +107,7 @@ def get_companies(db: Session = Depends(get_db), current_user: User = Depends(st
 
 @router.get("/search", response_model=SearchResponse)
 def get_search(q: str = Query(default="", max_length=100), db: Session = Depends(get_db), current_user: User = Depends(staff)):
-    return search(db, q)
+    return search(db, current_user, q)
 
 
 # --- candidates -------------------------------------------------------------------------------------------------------
@@ -123,7 +123,7 @@ def get_candidates(
     db: Session = Depends(get_db),
     current_user: User = Depends(staff),
 ):
-    return list_candidates(db, stage=stage, job_id=job_id, city=city, text=q, page=page)
+    return list_candidates(db, current_user, stage=stage, job_id=job_id, city=city, text=q, page=page)
 
 
 @router.post("/candidates", response_model=CandidateDetail, status_code=status.HTTP_201_CREATED)
@@ -134,12 +134,12 @@ def post_candidate(payload: ManualCandidateCreate, db: Session = Depends(get_db)
 
 @router.get("/candidates/{candidate_id}", response_model=CandidateDetail)
 def get_candidate(candidate_id: int, db: Session = Depends(get_db), current_user: User = Depends(staff)):
-    return candidate_detail(db, candidate_id)
+    return candidate_detail(db, current_user, candidate_id)
 
 
 @router.put("/candidates/{candidate_id}", response_model=CandidateDetail)
 def put_candidate(candidate_id: int, payload: CandidateWrite, db: Session = Depends(get_db), current_user: User = Depends(staff)):
-    return update_candidate(db, candidate_id, payload)
+    return update_candidate(db, current_user, candidate_id, payload)
 
 
 @router.post("/candidates/{candidate_id}/erase", response_model=ErasureResponse)

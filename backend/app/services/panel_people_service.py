@@ -32,6 +32,15 @@ from app.schemas.panel import (
     TeamMemberUpdate,
     TeamNote,
 )
+from app.services.access import (
+    application_for,
+    applications_in_scope,
+    ensure_candidate,
+    has_application_in,
+    is_restricted,
+    job_for,
+    visible_job_ids,
+)
 from app.services.identity_service import normalize_email, normalize_phone
 from app.services.panel_service import PAGE_SIZE, as_utc, job_counts, month_start_utc, now_utc
 from app.services.pipeline_service import record_initial_stage
@@ -63,8 +72,11 @@ def _email(candidate: Candidate) -> str | None:
     return candidate.email or (candidate.user.email if candidate.user else None)
 
 
-def _latest(candidate: Candidate) -> Application | None:
-    visible = [application for application in candidate.applications if not application.is_hidden]
+def _visible(candidate: Candidate, job_ids: set[int] | None) -> list[Application]:
+    return [application for application in applications_in_scope(candidate, job_ids) if not application.is_hidden]
+
+
+def _latest(visible: list[Application]) -> Application | None:
     return max(visible, key=lambda application: (as_utc(application.created_at), application.id), default=None)
 
 
@@ -73,6 +85,7 @@ def _latest(candidate: Candidate) -> Application | None:
 
 def list_candidates(
     db: Session,
+    actor: User,
     *,
     stage: str | None = None,
     job_id: int | None = None,
@@ -80,17 +93,20 @@ def list_candidates(
     text: str | None = None,
     page: int = 1,
 ) -> CandidatesListResponse:
-    candidates = (
-        db.query(Candidate).filter(Candidate.anonymized_at.is_(None)).order_by(Candidate.created_at.desc(), Candidate.id.desc()).all()
-    )
+    query = db.query(Candidate).filter(Candidate.anonymized_at.is_(None))
+    job_ids = visible_job_ids(db, actor)
+    if job_ids is not None:
+        # A recruiter's pool: only people with an application in one of their jobs.
+        query = query.filter(has_application_in(job_ids))
+    candidates = query.order_by(Candidate.created_at.desc(), Candidate.id.desc()).all()
     cities = sorted({(candidate.city or "").strip() for candidate in candidates if (candidate.city or "").strip()}, key=str.lower)
 
     term = (text or "").strip().lower()
     digits = normalize_phone(term)
     rows: list[CandidateRow] = []
     for candidate in candidates:
-        latest = _latest(candidate)
-        visible = [application for application in candidate.applications if not application.is_hidden]
+        visible = _visible(candidate, job_ids)
+        latest = _latest(visible)
         if stage == "none" and visible:
             continue
         if stage and stage != "none" and (latest is None or latest.stage != stage):
@@ -125,10 +141,12 @@ def list_candidates(
     )
 
 
-def candidate_detail(db: Session, candidate_id: int) -> CandidateDetail:
+def candidate_detail(db: Session, actor: User, candidate_id: int) -> CandidateDetail:
     candidate = _candidate_or_404(db, candidate_id)
+    job_ids = visible_job_ids(db, actor)
+    ensure_candidate(candidate, job_ids)
     creator = db.get(User, candidate.created_by_user_id) if candidate.created_by_user_id else None
-    applications = sorted(candidate.applications, key=lambda application: (as_utc(application.created_at), application.id), reverse=True)
+    applications = sorted(applications_in_scope(candidate, job_ids), key=lambda application: (as_utc(application.created_at), application.id), reverse=True)
     return CandidateDetail(
         id=candidate.id,
         name=_name(candidate),
@@ -189,21 +207,20 @@ def _apply_fields(candidate: Candidate, payload: CandidateWrite, phone: str, ema
         setattr(candidate, field, getattr(payload, field))
 
 
-def update_candidate(db: Session, candidate_id: int, payload: CandidateWrite) -> CandidateDetail:
+def update_candidate(db: Session, actor: User, candidate_id: int, payload: CandidateWrite) -> CandidateDetail:
     candidate = _candidate_or_404(db, candidate_id)
+    ensure_candidate(candidate, visible_job_ids(db, actor))
     phone, email = _check_contact_free(db, payload, exclude_id=candidate.id)
     if candidate.user_id is not None and email and email != normalize_email(candidate.user.email):
         # The login e-mail belongs to the person; AK only edits the contact data.
         raise _unprocessable(messages.CANDIDATE_ACCOUNT_EMAIL)
     _apply_fields(candidate, payload, phone, email if candidate.user_id is None else candidate.email)
     db.commit()
-    return candidate_detail(db, candidate.id)
+    return candidate_detail(db, actor, candidate.id)
 
 
-def _job_open_for_new_applications(db: Session, job_id: int) -> Job:
-    job = db.get(Job, job_id)
-    if job is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=messages.JOB_NOT_FOUND)
+def _job_open_for_new_applications(db: Session, actor: User, job_id: int) -> Job:
+    job = job_for(db, actor, job_id)
     if job.status not in REFERABLE_STATUSES or not job.company.is_active:
         raise _unprocessable(messages.JOB_NOT_OPEN_FOR_CANDIDATES)
     return job
@@ -227,8 +244,11 @@ def _new_application(db: Session, candidate: Candidate, job: Job, note: str) -> 
 def create_manual_candidate(db: Session, actor: User, payload: ManualCandidateCreate) -> CandidateDetail:
     if not payload.authorization_confirmed:
         raise _unprocessable(messages.MANUAL_AUTHORIZATION_REQUIRED)
+    if not payload.job_id and is_restricted(actor):
+        # Without a job of theirs, the recruiter would not see the person they just registered.
+        raise _unprocessable(messages.MANUAL_JOB_REQUIRED)
     phone, email = _check_contact_free(db, payload)
-    job = _job_open_for_new_applications(db, payload.job_id) if payload.job_id else None
+    job = _job_open_for_new_applications(db, actor, payload.job_id) if payload.job_id else None
     candidate = Candidate(source="manual", created_by_user_id=actor.id, authorization_recorded_at=now_utc())
     _apply_fields(candidate, payload, phone, email)
     db.add(candidate)
@@ -236,19 +256,17 @@ def create_manual_candidate(db: Session, actor: User, payload: ManualCandidateCr
     if job:
         _new_application(db, candidate, job, MANUAL_NOTE)
     db.commit()
-    return candidate_detail(db, candidate.id)
+    return candidate_detail(db, actor, candidate.id)
 
 
 def refer_to_job(db: Session, actor: User, application_id: int, job_id: int) -> ReferResponse:
     """"Indicar para outra vaga": a new application in "Nova" of the other job; the current one does not change."""
-    origin = db.get(Application, application_id)
-    if origin is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Candidatura não encontrada.")
+    origin = application_for(db, actor, application_id)
     if origin.candidate.anonymized_at is not None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=messages.CANDIDATE_NOT_FOUND)
     if job_id == origin.job_id:
         raise _unprocessable(messages.REFER_SAME_JOB)
-    job = _job_open_for_new_applications(db, job_id)
+    job = _job_open_for_new_applications(db, actor, job_id)
     text = f"Indicado a partir da vaga {origin.job.title}."
     application = _new_application(db, origin.candidate, job, text)
     db.add(ApplicationNote(application_id=application.id, author_user_id=actor.id, kind="anotacao", body=text))

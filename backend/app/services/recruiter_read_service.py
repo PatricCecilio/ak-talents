@@ -3,7 +3,6 @@
 from collections import defaultdict
 from datetime import datetime, timedelta, timezone
 
-from fastapi import HTTPException, status
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
@@ -30,7 +29,8 @@ from app.schemas.pipeline import (
     stage_options,
 )
 from app.services.identity_service import normalize_email, normalize_phone
-from app.services.pipeline_service import allowed_next_stages, get_application_or_404
+from app.services.access import application_for, job_for, scope_jobs
+from app.services.pipeline_service import allowed_next_stages
 
 ACTIVE_STAGE_VALUES = [stage.value for stage in ACTIVE_STAGES]
 
@@ -98,9 +98,9 @@ def _summaries(db: Session, jobs: list[Job]) -> list[RecruiterJobSummary]:
     ]
 
 
-def list_recruiter_jobs(db: Session) -> RecruiterJobsResponse:
+def list_recruiter_jobs(db: Session, actor: User) -> RecruiterJobsResponse:
     jobs = (
-        db.query(Job)
+        scope_jobs(db.query(Job), actor)
         .join(Company, Job.company_id == Company.id)
         .filter(Company.is_active.is_(True))  # deactivated (test) companies drop out of the AK lists
         .filter(Job.status != "archived")  # archived jobs (admin) too; their applications stay in the database
@@ -132,9 +132,7 @@ def _possible_duplicates(db: Session, job_id: int) -> set[int]:
 
 
 def get_job_pipeline(db: Session, job_id: int, actor: User, stage: str | None = None) -> JobPipelineResponse:
-    job = db.query(Job).filter(Job.id == job_id).first()
-    if not job:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Vaga não encontrada.")
+    job = job_for(db, actor, job_id)
 
     query = _visible_applications(db).filter(Application.job_id == job.id)
     if stage:
@@ -178,7 +176,7 @@ def _format_answer(question: ScreeningQuestion, answer: ScreeningAnswer) -> str:
 
 
 def get_application_detail(db: Session, application_id: int, actor: User) -> ApplicationDetail:
-    application = get_application_or_404(db, application_id)
+    application = application_for(db, actor, application_id)
     candidate = application.candidate
 
     answers = (
@@ -221,6 +219,7 @@ def get_application_detail(db: Session, application_id: int, actor: User) -> App
             skills=candidate.skills,
             linkedin_url=candidate.linkedin_url,
             portfolio_url=candidate.portfolio_url,
+            resume_url=candidate.resume_url,
             has_account=candidate.user_id is not None,
         ),
         screening=ScreeningView(
