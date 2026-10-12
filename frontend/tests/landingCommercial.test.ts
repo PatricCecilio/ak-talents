@@ -105,5 +105,7 @@ test('campaign route and SEO metadata are wired without external tracking script
   assert.match(routes, /RecruitmentSolutionPage/)
   assert.match(html, /AK Talent \| Recrutamento e triagem de candidatos/)
   assert.match(html, /og:title/)
-  assert.doesNotMatch(`${routes}\n${html}`, /googletagmanager|gtag|Meta Pixel|fbq|tiktok|analytics/i)
+  // No tracking script in the HTML: Google Analytics only loads from src/services/analytics.ts after consent.
+  assert.doesNotMatch(html, /googletagmanager|gtag|Meta Pixel|fbq|tiktok|analytics/i)
+  assert.doesNotMatch(routes, /googletagmanager|gtag\(|Meta Pixel|fbq|tiktok/i)
 })

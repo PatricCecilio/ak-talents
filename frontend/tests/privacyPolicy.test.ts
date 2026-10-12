@@ -49,6 +49,12 @@ test('privacy page is routed and covers the required topics, with the real compa
     'seu currículo e o parecer',
     'WhatsApp (Meta)',
     'Esses dados são cadastrados pela equipe AK Talent',
+    // Google Analytics only with consent, and how to refuse.
+    'Estatísticas de visitas (Google Analytics):',
+    'só se você clicar em "Aceitar" no aviso de',
+    '<strong>Como recusar:</strong>',
+    '"Preferências de cookies" no rodapé',
+    '<strong>Google Analytics:</strong>',
   ]) {
     assert.ok(page.includes(topic), `missing topic ${topic}`)
   }

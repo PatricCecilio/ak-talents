@@ -3,6 +3,7 @@ import { MainLayout } from '../layouts/MainLayout'
 import { WorkspaceLayout } from '../layouts/WorkspaceLayout'
 import { PrivateRoute } from '../components/PrivateRoute'
 import { AppIntelliRouteGate } from '../components/AppIntelliRouteGate'
+import { CookieConsent } from '../components/CookieConsent'
 import { ScrollToTop } from '../components/ScrollToTop'
 import { COMPANY_CLOSED_PATH, isCompanyPortalEnabled } from '../services/companyPortal'
 import { CandidatePage } from '../pages/CandidatePage'
@@ -32,6 +33,8 @@ export function AppRoutes() {
     <BrowserRouter>
       <AppIntelliRouteGate />
       <ScrollToTop />
+      {/* Google Analytics only after consent, only on public pages (VITE_GA_MEASUREMENT_ID). */}
+      <CookieConsent />
       <Routes>
         {/* Internal AK Talent area: no public header/footer. */}
         <Route
