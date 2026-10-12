@@ -17,7 +17,7 @@ test('home landing follows the new enterprise visual narrative', () => {
   expectText(source, [
     'Encontre os melhores talentos',
     'sem perder o controle.',
-    'Publique vagas, organize candidatos e acompanhe todo o processo de contratação em um só lugar',
+    'Nós publicamos suas vagas, organizamos os candidatos e acompanhamos todo o processo de contratação para você',
     'Soluções para diferentes segmentos',
     'Tudo o que sua empresa precisa para recrutar melhor.',
     'Pronto para grandes operações de contratação?',
@@ -33,12 +33,17 @@ test('home uses the requested segment and platform structure', () => {
   expectText(source, ['Varejo', 'Restaurantes', 'Logística', 'Indústria', 'Saúde', 'Serviços', 'Educação', 'Franquias'])
   expectText(source, [
     'Divulgação de vagas em múltiplos canais',
-    'Gestão de candidatos',
+    'Nossa equipe organiza os candidatos para você',
     'Triagem',
     'Entrevistas',
-    'Relatórios',
+    'Relatórios sobre cada etapa, enviados a você',
     'Acompanhamento',
   ])
+  // The company does not use the system itself: AK publishes, organizes and follows up.
+  const visible = `${source}\n${read('index.html')}\n${read('src/layouts/AuthLayout.tsx')}`
+  for (const old of ['Publique vagas', 'Gestão de candidatos em um só painel', 'em tempo real', 'Plataforma completa', 'Controle vagas', 'Distribua responsabilidades', 'nossa plataforma ajuda', 'candidatos e empresas']) {
+    assert.ok(!visible.includes(old), old)
+  }
   expectText(source, ['50+', '1.200+', 'vagas simultâneas', 'candidatos por mês'])
 })
 

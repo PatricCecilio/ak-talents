@@ -78,9 +78,9 @@ const segments = [
 
 const platformFeatures = [
   'Divulgação de vagas em múltiplos canais',
-  'Gestão de candidatos em um só painel',
+  'Nossa equipe organiza os candidatos para você',
   'Triagem e entrevistas organizadas por etapa',
-  'Relatórios e indicadores em tempo real',
+  'Relatórios sobre cada etapa, enviados a você',
   'Acompanhamento até a contratação',
 ]
 
@@ -93,8 +93,8 @@ const enterpriseMetrics = [
 
 const enterpriseHighlights = [
   { icon: 'users', title: 'Alto volume', text: 'Centenas de candidatos em uma única operação.' },
-  { icon: 'building', title: 'Múltiplas unidades', text: 'Controle vagas e candidatos por região, loja ou unidade.' },
-  { icon: 'briefcase', title: 'Equipes de RH', text: 'Distribua responsabilidades e acompanhe cada etapa.' },
+  { icon: 'building', title: 'Múltiplas unidades', text: 'Organizamos vagas e candidatos por região, loja ou unidade.' },
+  { icon: 'briefcase', title: 'Equipes de RH', text: 'Acompanhamos cada etapa e mantemos sua equipe informada.' },
 ] satisfies Array<{ icon: IconName; title: string; text: string }>
 
 const videoPoints = [
@@ -518,7 +518,7 @@ function MarketingLanding({ campaign = false }: MarketingLandingProps) {
               Encontre os melhores talentos <span className="block text-gold-600">sem perder o controle.</span>
             </h1>
             <p className="mt-6 max-w-[31rem] text-lg leading-8 text-ink-600">
-              Publique vagas, organize candidatos e acompanhe todo o processo de contratação em um só lugar, com tecnologia para organizar e pessoas para decidir.
+              Nós publicamos suas vagas, organizamos os candidatos e acompanhamos todo o processo de contratação para você, com tecnologia para organizar e pessoas para decidir.
             </p>
 
             <div className="mt-8 flex flex-col gap-3 sm:flex-row lg:flex-col lg:items-start xl:flex-row">
@@ -573,10 +573,10 @@ function MarketingLanding({ campaign = false }: MarketingLandingProps) {
       >
         <Container className="grid gap-12 lg:grid-cols-[0.8fr_1.2fr] lg:items-center">
           <div>
-            <p className={eyebrowPill}>Plataforma completa</p>
+            <p className={eyebrowPill}>Recrutamento completo</p>
             <h2 className={`mt-4 ${sectionTitle}`}>Tudo o que sua empresa precisa para recrutar melhor.</h2>
             <p className="mt-5 text-lg leading-8 text-ink-600">
-              Organize vagas, candidatos, entrevistas e contratações com mais eficiência e menos trabalho operacional.
+              Nós organizamos vagas, candidatos, entrevistas e contratações para você, com mais eficiência e menos trabalho operacional.
             </p>
             <ul className="mt-7 grid gap-3.5">
               {platformFeatures.map((feature) => (
@@ -649,7 +649,7 @@ function MarketingLanding({ campaign = false }: MarketingLandingProps) {
             <p className={eyebrowPill}>Vídeo institucional</p>
             <h2 className={`mt-4 ${sectionTitle}`}>Veja a AK Talent em ação</h2>
             <p className="mt-5 text-base leading-7 text-ink-600">
-              Do anúncio da vaga à contratação, conheça na prática como nossa plataforma ajuda sua empresa a ganhar tempo e contratar melhor.
+              Do anúncio da vaga à contratação, conheça na prática como nossa equipe ajuda sua empresa a ganhar tempo e contratar melhor.
             </p>
             <button type="button" title="Vídeo institucional em produção" className={`${buttonNavy} mt-7`}>
               <Icon name="playCircle" className="h-5 w-5" />

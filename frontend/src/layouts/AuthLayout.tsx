@@ -26,7 +26,7 @@ export function AuthLayout({ title, subtitle, showHighlights = true, children }:
                   Triagem inteligente para reduzir tempo operacional.
                 </div>
                 <div className="rounded-lg border border-white/10 bg-white/5 p-4">
-                  Jornada preparada para candidatos e empresas.
+                  Jornada preparada para candidatos, do cadastro à contratação.
                 </div>
               </div>
             ) : null}
