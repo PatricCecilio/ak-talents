@@ -73,5 +73,6 @@ test('index.html: icons, manifest and share preview tags (Portuguese, absolute i
   assert.match(html, /<meta property="og:title" content="[^"]+" \/>/)
   assert.match(html, /property="og:description"\s+content="[^"]+"/)
   assert.match(html, /name="twitter:title" content="[^"]+"/)
-  assert.match(html, /inteligência artificial e atendimento humano quando necessário/)
+  assert.match(html, /name="description"\s+content="Você conta a vaga pelo WhatsApp; a AK Talent anuncia, filtra, entrevista e envia os finalistas com parecer\. Você só escolhe\."/)
+  assert.match(html, /og:image:alt" content="AK Talent: você conta o que precisa, a gente entrega os finalistas\."/)
 })

@@ -180,8 +180,9 @@ test('CTAs are real buttons wired to the expected contexts; each landing CTA app
   const homePage = read('src/pages/HomePage.tsx')
   const header = read('src/components/Header.tsx')
   const count = (source: string, id: string) => (source.match(new RegExp(`cta="${id}"`, 'g')) ?? []).length
-  assert.equal(count(homePage, 'heroDemo'), 1)
-  assert.equal(count(homePage, 'finalDemo'), 1)
+  // The home's company calls now go to WhatsApp (landingCommercial.test.ts); the chat is the corner button.
+  assert.equal(count(homePage, 'heroDemo'), 0)
+  assert.equal(count(homePage, 'finalDemo'), 0)
   assert.equal(count(homePage, 'floatingChat'), 0)
   assert.doesNotMatch(homePage, /FloatingChatPrompt/)
   assert.equal(count(header, 'headerContact'), 0)

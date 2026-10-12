@@ -16,7 +16,7 @@ export function Footer() {
         <div>
           <Logo />
           <p className="mt-5 max-w-sm text-base leading-7 text-ink-600">
-            Plataforma e operação de recrutamento para empresas que precisam contratar com mais organização.
+            Recrutamento para pequenas e médias empresas: você conta o que precisa e recebe os finalistas pelo WhatsApp.
           </p>
         </div>
 

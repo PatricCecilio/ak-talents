@@ -23,10 +23,10 @@ export function AuthLayout({ title, subtitle, showHighlights = true, children }:
             {showHighlights ? (
               <div className="mt-10 grid gap-4 text-sm text-slate-300">
                 <div className="rounded-lg border border-white/10 bg-white/5 p-4">
-                  Triagem inteligente para reduzir tempo operacional.
+                  Candidate-se em poucos minutos, pelo celular.
                 </div>
                 <div className="rounded-lg border border-white/10 bg-white/5 p-4">
-                  Jornada preparada para candidatos e empresas.
+                  Acompanhe em que etapa está cada candidatura.
                 </div>
               </div>
             ) : null}
