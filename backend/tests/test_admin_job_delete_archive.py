@@ -6,7 +6,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
-from app.api.routes import admin, jobs, recruiter
+from app.api.routes import admin, applications, candidates, jobs, recruiter
 from app.core import messages
 from app.core.errors import install_error_handlers
 from app.core.security import create_access_token
@@ -30,7 +30,7 @@ class AdminJobDeleteArchiveTestCase(unittest.TestCase):
         self.SessionLocal = sessionmaker(bind=engine, expire_on_commit=False)
         with self.SessionLocal() as db:
             self.users = {}
-            for key, role in (("admin", "admin"), ("recruiter", "recruiter")):
+            for key, role in (("admin", "admin"), ("recruiter", "recruiter"), ("candidate", "candidate")):
                 user = User(name=f"Pessoa {key}", email=f"{key}@example.com", hashed_password="x", role=role, is_active=True)
                 db.add(user)
                 self.users[key] = user
@@ -50,6 +50,11 @@ class AdminJobDeleteArchiveTestCase(unittest.TestCase):
             db.add(application)
             db.flush()
             db.add(ApplicationStageHistory(application_id=application.id, from_stage="new", to_stage="screening", changed_by_role="system"))
+            # A candidate with an account who applied before the job was archived.
+            account_candidate = Candidate(user_id=self.users["candidate"].id, full_name="Carla Conta")
+            db.add(account_candidate)
+            db.flush()
+            db.add(Application(candidate_id=account_candidate.id, job_id=self.busy_job.id, stage="ak_interview"))
             db.commit()
             self.application_id = application.id
 
@@ -59,7 +64,7 @@ class AdminJobDeleteArchiveTestCase(unittest.TestCase):
 
         app = FastAPI()
         install_error_handlers(app)
-        for module, prefix in ((admin, "/admin"), (jobs, "/jobs"), (recruiter, "/recruiter")):
+        for module, prefix in ((admin, "/admin"), (applications, "/applications"), (candidates, "/candidates"), (jobs, "/jobs"), (recruiter, "/recruiter")):
             app.include_router(module.router, prefix=prefix)
         app.dependency_overrides[get_db] = override_get_db
         self.client = TestClient(app)
@@ -74,7 +79,7 @@ class AdminJobDeleteArchiveTestCase(unittest.TestCase):
 
     def test_job_without_applications_is_really_deleted(self) -> None:
         listed = {job["id"]: job["applications_count"] for job in self.call("GET", "/admin/jobs").json()}
-        self.assertEqual(listed, {self.empty_job.id: 0, self.busy_job.id: 1})
+        self.assertEqual(listed, {self.empty_job.id: 0, self.busy_job.id: 2})
 
         response = self.call("DELETE", f"/admin/jobs/{self.empty_job.id}")
         self.assertEqual(response.status_code, 204, response.text)
@@ -119,6 +124,39 @@ class AdminJobDeleteArchiveTestCase(unittest.TestCase):
         self.assertNotIn("vaga-com-gente", {job["slug"] for job in self.client.get("/jobs").json()})
         self.assertEqual(self.call("PUT", f"/admin/jobs/{self.busy_job.id}/approve").status_code, 200)
         self.assertIn("vaga-com-gente", {job["slug"] for job in self.client.get("/jobs").json()})
+
+    def test_archived_or_closed_job_link_is_unavailable_and_refuses_applications(self) -> None:
+        public_form = {"full_name": "Nova Pessoa", "email": "nova@example.com", "phone": "41988887777", "city": "Curitiba", "privacy_accepted": True}
+        for label, change in (
+            ("arquivada", lambda: self.call("PUT", f"/admin/jobs/{self.empty_job.id}/archived", json={"archived": True})),
+            ("encerrada", lambda: self.call("PUT", f"/admin/jobs/{self.empty_job.id}/hide")),
+        ):
+            with self.subTest(status=label):
+                self.call("PUT", f"/admin/jobs/{self.empty_job.id}/archived", json={"archived": False})
+                self.call("PUT", f"/admin/jobs/{self.empty_job.id}/approve")
+                self.assertEqual(self.client.get("/jobs/vaga-vazia").status_code, 200)
+                self.assertEqual(change().status_code, 200)
+
+                # The job link (and the WhatsApp preview, which reads this same endpoint) gets nothing.
+                detail = self.client.get("/jobs/vaga-vazia")
+                self.assertEqual(detail.status_code, 404)
+                self.assertEqual(detail.json(), {"detail": messages.JOB_NOT_FOUND})
+                # Public form and logged-in application both refused.
+                public = self.client.post("/jobs/vaga-vazia/applications", json=public_form)
+                self.assertEqual(public.status_code, 404)
+                self.assertEqual(public.json()["detail"], messages.JOB_NOT_FOUND)
+                logged_in = self.call("POST", "/applications", role="candidate", json={"job_id": self.empty_job.id})
+                self.assertEqual(logged_in.status_code, 404)
+                with self.SessionLocal() as db:
+                    self.assertEqual(db.query(Application).filter(Application.job_id == self.empty_job.id).count(), 0)
+
+    def test_candidate_still_sees_the_application_of_an_archived_job(self) -> None:
+        self.call("PUT", f"/admin/jobs/{self.busy_job.id}/archived", json={"archived": True})
+        response = self.call("GET", "/candidates/me/applications", role="candidate")
+        self.assertEqual(response.status_code, 200, response.text)
+        items = response.json()["applications"]
+        self.assertEqual([item["job_title"] for item in items], ["Vaga com gente"])
+        self.assertEqual(items[0]["status_label"], "Entrevista")
 
     def test_only_the_admin_deletes_or_archives(self) -> None:
         self.assertEqual(self.call("DELETE", f"/admin/jobs/{self.empty_job.id}", role="recruiter").status_code, 403)
