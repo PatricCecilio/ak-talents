@@ -9,27 +9,29 @@ export interface PublicApplicationFormValues {
   privacy_accepted: boolean
 }
 
+export type PublicApplicationField = Exclude<keyof PublicApplicationFormValues, 'neighborhood'>
+
 export interface PublicApplicationValidation {
   isValid: boolean
+  /** First problem (kept for callers that show a single message). */
   message: string
+  /** One message per field, shown under each field (same order as on screen). */
+  fieldErrors: Partial<Record<PublicApplicationField, string>>
 }
 
+// Only the essentials are required: name, e-mail, phone/WhatsApp and city (+ the privacy consent).
 export function validatePublicApplicationForm(values: PublicApplicationFormValues): PublicApplicationValidation {
-  if (!values.full_name.trim()) return { isValid: false, message: 'Informe seu nome completo.' }
-  if (!values.email.trim()) return { isValid: false, message: 'Informe seu e-mail.' }
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(values.email.trim())) {
-    return { isValid: false, message: 'Informe um e-mail válido.' }
-  }
-  if (!values.phone.trim()) return { isValid: false, message: 'Informe seu telefone.' }
-  if (values.phone.replace(/\D+/g, '').length < 8) {
-    return { isValid: false, message: 'Informe um telefone válido, com DDD.' }
-  }
-  if (!values.city.trim()) return { isValid: false, message: 'Informe sua cidade.' }
-  if (!values.privacy_accepted) {
-    return { isValid: false, message: 'Aceite o tratamento dos dados para enviar sua candidatura.' }
-  }
+  const fieldErrors: Partial<Record<PublicApplicationField, string>> = {}
+  if (!values.full_name.trim()) fieldErrors.full_name = 'Informe seu nome completo.'
+  if (!values.email.trim()) fieldErrors.email = 'Informe seu e-mail.'
+  else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(values.email.trim())) fieldErrors.email = 'Informe um e-mail válido.'
+  if (!values.phone.trim()) fieldErrors.phone = 'Informe seu telefone.'
+  else if (values.phone.replace(/\D+/g, '').length < 8) fieldErrors.phone = 'Informe um telefone válido, com DDD.'
+  if (!values.city.trim()) fieldErrors.city = 'Informe sua cidade.'
+  if (!values.privacy_accepted) fieldErrors.privacy_accepted = 'Aceite o tratamento dos dados para enviar sua candidatura.'
 
-  return { isValid: true, message: '' }
+  const message = Object.values(fieldErrors)[0] ?? ''
+  return { isValid: !message, message, fieldErrors }
 }
 
 export function toPublicApplicationPayload(values: PublicApplicationFormValues): PublicApplicationPayload {

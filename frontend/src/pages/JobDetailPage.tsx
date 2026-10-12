@@ -2,6 +2,8 @@ import type { FormEvent } from 'react'
 import { useEffect, useRef, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { Alert, Button, Card, PageHeader } from '../components/ui'
+import { FieldError } from '../components/ui/FieldError'
+import { fieldBorderClass, fieldErrorClass } from '../components/ui/fieldHelpers'
 import { Container } from '../components/Container'
 import { JobsLoading } from '../components/JobsLoading'
 import { LoadErrorState } from '../components/LoadErrorState'
@@ -27,6 +29,7 @@ import {
   toPublicApplicationPayload,
   validatePublicApplicationForm,
   type PublicApplicationFormValues,
+  type PublicApplicationValidation,
 } from '../services/publicApplicationForm'
 import type { Job, PublicScreeningQuestion } from '../types/user'
 
@@ -50,6 +53,7 @@ export function JobDetailPage() {
   const [loadError, setLoadError] = useState<JobLoadError>(null)
   const [reloadKey, setReloadKey] = useState(0)
   const [formError, setFormError] = useState('')
+  const [fieldErrors, setFieldErrors] = useState<PublicApplicationValidation['fieldErrors']>({})
   const [formNotice, setFormNotice] = useState('')
   const [step, setStep] = useState<ApplicationStep>('form')
   const [screeningToken, setScreeningToken] = useState('')
@@ -73,6 +77,8 @@ export function JobDetailPage() {
 
   function updateField<Key extends keyof PublicApplicationFormValues>(field: Key, value: PublicApplicationFormValues[Key]) {
     setFormValues((currentValues) => ({ ...currentValues, [field]: value }))
+    // The message under a field goes away as soon as the person fixes it.
+    setFieldErrors((current) => (field in current ? { ...current, [field]: undefined } : current))
   }
 
   function openApplicationForm() {
@@ -96,8 +102,12 @@ export function JobDetailPage() {
     setFormNotice('')
 
     const validation = validatePublicApplicationForm(formValues)
+    setFieldErrors(validation.fieldErrors)
     if (!validation.isValid) {
-      setFormError(validation.message)
+      // Messages appear under each field; the cursor goes to the first one to fix.
+      const first = Object.keys(validation.fieldErrors)[0]
+      const id = first === 'privacy_accepted' ? 'application_privacy' : `application_${first}`
+      if (first) document.getElementById(id)?.focus()
       return
     }
 
@@ -296,6 +306,7 @@ export function JobDetailPage() {
             {step === 'form' && showForm ? (
               <form
                 ref={formRef}
+                noValidate
                 onSubmit={(event) => void handleSubmit(event)}
                 className="mt-8 grid scroll-mt-24 gap-5 border-t border-slate-200 pt-8"
               >
@@ -310,48 +321,65 @@ export function JobDetailPage() {
                 {formNotice ? <Alert tone="info">{formNotice}</Alert> : null}
 
                 <div className="grid gap-4 md:grid-cols-2">
-                  <label htmlFor="application_full_name" className="grid gap-2 text-sm font-bold text-ink-800">
+                  <label htmlFor="application_full_name" className="grid content-start gap-2 text-sm font-bold text-ink-800">
                     Nome completo
                     <input
                       id="application_full_name"
                       ref={firstFieldRef}
                       value={formValues.full_name}
+                      aria-invalid={fieldErrors.full_name ? true : undefined}
+                      aria-describedby={fieldErrors.full_name ? 'application_full_name-error' : undefined}
                       onChange={(event) => updateField('full_name', event.target.value)}
-                      className="h-12 rounded-lg border border-slate-300 bg-white px-4 text-base font-medium text-ink-950 outline-none transition placeholder:text-ink-400 focus:border-gold-500 focus:ring-4 focus:ring-amber-100"
+                      className={`h-12 rounded-lg border bg-white px-4 text-base font-medium text-ink-950 outline-none transition placeholder:text-ink-400 focus:ring-4 ${fieldErrors.full_name ? fieldErrorClass : fieldBorderClass}`}
                     />
+                    <FieldError id="application_full_name-error" message={fieldErrors.full_name} />
                   </label>
-                  <label htmlFor="application_email" className="grid gap-2 text-sm font-bold text-ink-800">
+                  <label htmlFor="application_email" className="grid content-start gap-2 text-sm font-bold text-ink-800">
                     E-mail
                     <input
                       id="application_email"
                       type="email"
+                      inputMode="email"
+                      autoComplete="email"
                       value={formValues.email}
+                      aria-invalid={fieldErrors.email ? true : undefined}
+                      aria-describedby={fieldErrors.email ? 'application_email-error' : undefined}
                       onChange={(event) => updateField('email', event.target.value)}
-                      className="h-12 rounded-lg border border-slate-300 bg-white px-4 text-base font-medium text-ink-950 outline-none transition placeholder:text-ink-400 focus:border-gold-500 focus:ring-4 focus:ring-amber-100"
+                      className={`h-12 rounded-lg border bg-white px-4 text-base font-medium text-ink-950 outline-none transition placeholder:text-ink-400 focus:ring-4 ${fieldErrors.email ? fieldErrorClass : fieldBorderClass}`}
                     />
+                    <FieldError id="application_email-error" message={fieldErrors.email} />
                   </label>
                 </div>
 
                 <div className="grid gap-4 md:grid-cols-3">
-                  <label htmlFor="application_phone" className="grid gap-2 text-sm font-bold text-ink-800">
+                  <label htmlFor="application_phone" className="grid content-start gap-2 text-sm font-bold text-ink-800">
                     WhatsApp/telefone
                     <input
                       id="application_phone"
+                      type="tel"
+                      inputMode="tel"
+                      autoComplete="tel"
                       value={formValues.phone}
+                      aria-invalid={fieldErrors.phone ? true : undefined}
+                      aria-describedby={fieldErrors.phone ? 'application_phone-error' : undefined}
                       onChange={(event) => updateField('phone', event.target.value)}
-                      className="h-12 rounded-lg border border-slate-300 bg-white px-4 text-base font-medium text-ink-950 outline-none transition placeholder:text-ink-400 focus:border-gold-500 focus:ring-4 focus:ring-amber-100"
+                      className={`h-12 rounded-lg border bg-white px-4 text-base font-medium text-ink-950 outline-none transition placeholder:text-ink-400 focus:ring-4 ${fieldErrors.phone ? fieldErrorClass : fieldBorderClass}`}
                     />
+                    <FieldError id="application_phone-error" message={fieldErrors.phone} />
                   </label>
-                  <label htmlFor="application_city" className="grid gap-2 text-sm font-bold text-ink-800">
+                  <label htmlFor="application_city" className="grid content-start gap-2 text-sm font-bold text-ink-800">
                     Cidade
                     <input
                       id="application_city"
                       value={formValues.city}
+                      aria-invalid={fieldErrors.city ? true : undefined}
+                      aria-describedby={fieldErrors.city ? 'application_city-error' : undefined}
                       onChange={(event) => updateField('city', event.target.value)}
-                      className="h-12 rounded-lg border border-slate-300 bg-white px-4 text-base font-medium text-ink-950 outline-none transition placeholder:text-ink-400 focus:border-gold-500 focus:ring-4 focus:ring-amber-100"
+                      className={`h-12 rounded-lg border bg-white px-4 text-base font-medium text-ink-950 outline-none transition placeholder:text-ink-400 focus:ring-4 ${fieldErrors.city ? fieldErrorClass : fieldBorderClass}`}
                     />
+                    <FieldError id="application_city-error" message={fieldErrors.city} />
                   </label>
-                  <label htmlFor="application_neighborhood" className="grid gap-2 text-sm font-bold text-ink-800">
+                  <label htmlFor="application_neighborhood" className="grid content-start gap-2 text-sm font-bold text-ink-800">
                     Bairro (opcional)
                     <input
                       id="application_neighborhood"
@@ -366,6 +394,8 @@ export function JobDetailPage() {
                   <input
                     id="application_privacy"
                     type="checkbox"
+                    aria-invalid={fieldErrors.privacy_accepted ? true : undefined}
+                    aria-describedby={fieldErrors.privacy_accepted ? 'application_privacy-error' : undefined}
                     checked={formValues.privacy_accepted}
                     onChange={(event) => updateField('privacy_accepted', event.target.checked)}
                     className="mt-1 h-4 w-4 rounded border-slate-300 text-brand-700 focus:ring-gold-500"
@@ -384,6 +414,7 @@ export function JobDetailPage() {
                     .
                   </span>
                 </label>
+                <FieldError id="application_privacy-error" message={fieldErrors.privacy_accepted} />
 
                 <Button type="submit" isLoading={isSubmitting} disabled={isSubmitting}>
                   Enviar candidatura

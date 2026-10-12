@@ -171,6 +171,8 @@ export interface CandidateMatch {
 export interface CandidateProfile {
   id: number
   user_id: number
+  /** The account's e-mail (read-only on the profile). */
+  email?: string | null
   full_name: string | null
   phone: string | null
   city: string | null
@@ -183,13 +185,15 @@ export interface CandidateProfile {
   work_mode: string | null
   linkedin_url: string | null
   portfolio_url: string | null
+  resume_url?: string | null
   created_at: string
 }
 
 export interface CandidateProfilePayload {
-  full_name?: string | null
-  phone?: string | null
-  city?: string | null
+  // Required by the API: name, phone/WhatsApp and city.
+  full_name: string
+  phone: string
+  city: string
   state?: string | null
   desired_role?: string | null
   professional_summary?: string | null
@@ -199,6 +203,7 @@ export interface CandidateProfilePayload {
   work_mode?: string | null
   linkedin_url?: string | null
   portfolio_url?: string | null
+  resume_url?: string | null
 }
 
 export interface CompanyProfile {
@@ -321,6 +326,8 @@ export interface AdminJob {
   recruiter_name?: string | null
   openings?: number | null
   company_is_active?: boolean
+  /** Every application (hidden ones too). With any, the job can only be archived, never deleted. */
+  applications_count?: number
 }
 
 export interface StaffMember {

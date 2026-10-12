@@ -7,7 +7,10 @@ interface FormFieldProps {
   value: string
   placeholder: string
   autoComplete?: string
+  inputMode?: 'text' | 'email' | 'tel' | 'url' | 'numeric' | 'decimal'
   required?: boolean
+  /** Shown under the field, in Portuguese. */
+  error?: string
   onChange: (value: string) => void
 }
 
@@ -18,7 +21,9 @@ export function FormField({
   value,
   placeholder,
   autoComplete,
+  inputMode,
   required = true,
+  error,
   onChange,
 }: FormFieldProps) {
   return (
@@ -30,8 +35,10 @@ export function FormField({
       value={value}
       placeholder={placeholder}
       autoComplete={autoComplete}
+      inputMode={inputMode}
       onChange={(event) => onChange(event.target.value)}
       required={required}
+      error={error}
     />
   )
 }

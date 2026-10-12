@@ -4,19 +4,42 @@ import { AIResultList } from '../components/AIResultList'
 import { AiComingSoon } from '../components/AiComingSoon'
 import { FormField } from '../components/FormField'
 import { MyApplicationsSection } from '../components/candidate/MyApplicationsSection'
-import { Alert, Button, Card, EmptyState, LoadingSpinner, PageHeader } from '../components/ui'
+import { Alert, Button, Card, EmptyState, Input, LoadingSpinner, PageHeader } from '../components/ui'
 import { useFormState } from '../hooks/useFormState'
 import { useAiAvailable } from '../hooks/useAiAvailable'
 import { DashboardShell } from '../layouts/DashboardShell'
 import { createApplication } from '../services/applicationService'
 import { generateCandidateProfile } from '../services/aiService'
 import { getCurrentUser, logout } from '../services/authService'
+import {
+  toCandidateProfilePayload,
+  validateCandidateProfile,
+  type CandidateProfileErrors,
+  type CandidateProfileFormValues,
+} from '../services/fieldValidation'
 import { formatWorkMode } from '../services/jobFormat'
 import { getJobs } from '../services/jobService'
 import { LOGIN_CHOOSER_PATH } from '../services/loginDoors'
 import { getCandidateProfile, updateCandidateProfile } from '../services/profileService'
 import type { CandidateProfileAIResponse } from '../types/ai'
 import type { Job } from '../types/user'
+
+// Field -> input id, in screen order (focus goes to the first field with a problem).
+const PROFILE_FIELD_IDS: Record<keyof CandidateProfileFormValues, string> = {
+  full_name: 'profile_full_name',
+  phone: 'profile_phone',
+  city: 'profile_city',
+  state: 'profile_state',
+  desired_role: 'profile_desired_role',
+  professional_summary: 'profile_summary',
+  skills: 'profile_skills',
+  experience_years: 'profile_experience',
+  salary_expectation: 'profile_salary',
+  work_mode: 'profile_work_mode',
+  linkedin_url: 'profile_linkedin',
+  portfolio_url: 'profile_portfolio',
+  resume_url: 'profile_resume',
+}
 
 function formatSalary(job: Job) {
   if (job.salary_min && job.salary_max) {
@@ -50,7 +73,7 @@ export function CandidatePage() {
   const [profileError, setProfileError] = useState('')
   const [profileSuccess, setProfileSuccess] = useState('')
   const [careerAIResult, setCareerAIResult] = useState<CandidateProfileAIResponse | null>(null)
-  const { values: profileValues, updateField: updateProfileField, setFormValues: setProfileValues } = useFormState({
+  const { values: profileValues, updateField: updateProfileField, setFormValues: setProfileValues } = useFormState<CandidateProfileFormValues>({
     full_name: '',
     phone: '',
     city: '',
@@ -60,10 +83,19 @@ export function CandidatePage() {
     skills: '',
     experience_years: '',
     salary_expectation: '',
-    work_mode: 'remote',
+    work_mode: '',
     linkedin_url: '',
     portfolio_url: '',
+    resume_url: '',
   })
+  const [profileEmail, setProfileEmail] = useState('')
+  const [profileErrors, setProfileErrors] = useState<CandidateProfileErrors>({})
+
+  function changeProfileField(field: keyof CandidateProfileFormValues, value: string) {
+    updateProfileField(field, value)
+    // The message under a field goes away as soon as the person fixes it.
+    setProfileErrors((current) => (current[field] ? { ...current, [field]: undefined } : current))
+  }
   const { values: aiValues, updateField: updateAIField } = useFormState({
     desired_role: '',
     experience: '',
@@ -110,24 +142,26 @@ export function CandidatePage() {
 
   async function handleProfileSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
-    setIsSavingProfile(true)
     setProfileError('')
     setProfileSuccess('')
 
+    const errors = validateCandidateProfile(profileValues)
+    setProfileErrors(errors)
+    const firstInvalid = (Object.keys(PROFILE_FIELD_IDS) as Array<keyof CandidateProfileFormValues>).find((field) => errors[field])
+    if (firstInvalid) {
+      document.getElementById(PROFILE_FIELD_IDS[firstInvalid])?.focus()
+      return
+    }
+
+    setIsSavingProfile(true)
     try {
-      await updateCandidateProfile({
-        full_name: profileValues.full_name,
-        phone: profileValues.phone,
-        city: profileValues.city,
-        state: profileValues.state,
-        desired_role: profileValues.desired_role,
-        professional_summary: profileValues.professional_summary,
-        skills: profileValues.skills,
-        experience_years: profileValues.experience_years ? Number(profileValues.experience_years) : null,
-        salary_expectation: profileValues.salary_expectation ? Number(profileValues.salary_expectation) : null,
-        work_mode: profileValues.work_mode,
-        linkedin_url: profileValues.linkedin_url,
-        portfolio_url: profileValues.portfolio_url,
+      const saved = await updateCandidateProfile(toCandidateProfilePayload(profileValues))
+      // Links come back normalized ("linkedin.com/in/x" -> "https://linkedin.com/in/x").
+      setProfileValues({
+        ...profileValues,
+        linkedin_url: saved.linkedin_url ?? '',
+        portfolio_url: saved.portfolio_url ?? '',
+        resume_url: saved.resume_url ?? '',
       })
       setProfileSuccess('Perfil salvo com sucesso.')
     } catch (err) {
@@ -178,10 +212,12 @@ export function CandidatePage() {
             skills: profile.skills ?? '',
             experience_years: profile.experience_years?.toString() ?? '',
             salary_expectation: profile.salary_expectation?.toString() ?? '',
-            work_mode: profile.work_mode ?? 'remote',
+            work_mode: profile.work_mode ?? '',
             linkedin_url: profile.linkedin_url ?? '',
             portfolio_url: profile.portfolio_url ?? '',
+            resume_url: profile.resume_url ?? '',
           })
+          setProfileEmail(profile.email ?? '')
         }
       })
       .catch((err: unknown) => {
@@ -234,12 +270,13 @@ export function CandidatePage() {
         </div>
 
         <Card id="perfil" className="mt-10 scroll-mt-28 p-6">
-        <form onSubmit={handleProfileSubmit} className="grid gap-5">
+        <form onSubmit={handleProfileSubmit} noValidate className="grid gap-5">
           <div>
             <p className="text-sm font-black uppercase tracking-[0.22em] text-brand-700">Meu Perfil</p>
             <h2 className="mt-2 text-2xl font-black text-ink-950">Complete seu perfil para melhorar o match.</h2>
             <p className="mt-2 text-sm leading-6 text-ink-600">
-              Esses dados alimentam a compatibilidade com vagas e ajudam empresas a entender seu contexto.
+              Esses dados ajudam a equipe AK Talent a encontrar as vagas certas para você. Só nome, telefone e cidade são
+              obrigatórios.
             </p>
           </div>
 
@@ -262,61 +299,73 @@ export function CandidatePage() {
               id="profile_full_name"
               label="Nome completo"
               value={profileValues.full_name}
-              placeholder="Joao Silva"
-              onChange={(value) => updateProfileField('full_name', value)}
+              placeholder="João Silva"
+              autoComplete="name"
+              error={profileErrors.full_name}
+              onChange={(value) => changeProfileField('full_name', value)}
             />
-            <FormField
-              id="profile_phone"
-              label="Telefone"
-              value={profileValues.phone}
-              placeholder="(11) 99999-9999"
-              onChange={(value) => updateProfileField('phone', value)}
-            />
+            <Input id="profile_email" label="E-mail (da sua conta)" value={profileEmail} readOnly className="bg-slate-50 text-ink-600" />
           </div>
 
           <div className="grid gap-4 md:grid-cols-3">
             <FormField
+              id="profile_phone"
+              label="Telefone ou WhatsApp"
+              type="tel"
+              inputMode="tel"
+              value={profileValues.phone}
+              placeholder="(41) 99999-9999"
+              autoComplete="tel"
+              error={profileErrors.phone}
+              onChange={(value) => changeProfileField('phone', value)}
+            />
+            <FormField
               id="profile_city"
               label="Cidade"
               value={profileValues.city}
-              placeholder="São Paulo"
-              onChange={(value) => updateProfileField('city', value)}
+              placeholder="Curitiba"
+              autoComplete="address-level2"
+              error={profileErrors.city}
+              onChange={(value) => changeProfileField('city', value)}
             />
             <FormField
               id="profile_state"
-              label="Estado"
+              label="Estado (opcional)"
               value={profileValues.state}
-              placeholder="SP"
-              onChange={(value) => updateProfileField('state', value)}
-            />
-            <FormField
-              id="profile_desired_role"
-              label="Cargo desejado"
-              value={profileValues.desired_role}
-              placeholder="Frontend Developer"
-              onChange={(value) => updateProfileField('desired_role', value)}
+              placeholder="PR"
+              required={false}
+              onChange={(value) => changeProfileField('state', value)}
             />
           </div>
 
+          <FormField
+            id="profile_desired_role"
+            label="Cargo desejado (opcional)"
+            value={profileValues.desired_role}
+            placeholder="Atendente, auxiliar administrativo…"
+            required={false}
+            onChange={(value) => changeProfileField('desired_role', value)}
+          />
+
           <label htmlFor="profile_summary" className="grid gap-2 text-sm font-bold text-ink-800">
-            Resumo profissional
+            Resumo profissional (opcional)
             <textarea
               id="profile_summary"
               value={profileValues.professional_summary}
               placeholder="Resumo da sua experiência, objetivos e diferenciais"
-              onChange={(event) => updateProfileField('professional_summary', event.target.value)}
+              onChange={(event) => changeProfileField('professional_summary', event.target.value)}
               rows={4}
               className="rounded-lg border border-slate-300 bg-white px-4 py-3 text-base font-medium text-ink-950 outline-none transition placeholder:text-ink-400 focus:border-brand-600 focus:ring-4 focus:ring-teal-100"
             />
           </label>
 
           <label htmlFor="profile_skills" className="grid gap-2 text-sm font-bold text-ink-800">
-            Habilidades
+            Habilidades (opcional)
             <textarea
               id="profile_skills"
               value={profileValues.skills}
-              placeholder="React, TypeScript, SQL, Atendimento ao cliente"
-              onChange={(event) => updateProfileField('skills', event.target.value)}
+              placeholder="Atendimento ao cliente, caixa, Excel"
+              onChange={(event) => changeProfileField('skills', event.target.value)}
               rows={3}
               className="rounded-lg border border-slate-300 bg-white px-4 py-3 text-base font-medium text-ink-950 outline-none transition placeholder:text-ink-400 focus:border-brand-600 focus:ring-4 focus:ring-teal-100"
             />
@@ -325,28 +374,33 @@ export function CandidatePage() {
           <div className="grid gap-4 md:grid-cols-3">
             <FormField
               id="profile_experience"
-              label="Anos de experiência"
-              type="number"
+              label="Anos de experiência (opcional)"
+              inputMode="decimal"
               value={profileValues.experience_years}
-              placeholder="4"
-              onChange={(value) => updateProfileField('experience_years', value)}
+              placeholder="2"
+              required={false}
+              error={profileErrors.experience_years}
+              onChange={(value) => changeProfileField('experience_years', value)}
             />
             <FormField
               id="profile_salary"
-              label="Pretensão salarial"
-              type="number"
+              label="Pretensão salarial (opcional)"
+              inputMode="decimal"
               value={profileValues.salary_expectation}
-              placeholder="9000"
-              onChange={(value) => updateProfileField('salary_expectation', value)}
+              placeholder="2500"
+              required={false}
+              error={profileErrors.salary_expectation}
+              onChange={(value) => changeProfileField('salary_expectation', value)}
             />
             <label htmlFor="profile_work_mode" className="grid gap-2 text-sm font-bold text-ink-800">
-              Modelo de trabalho
+              Modelo de trabalho (opcional)
               <select
                 id="profile_work_mode"
                 value={profileValues.work_mode}
-                onChange={(event) => updateProfileField('work_mode', event.target.value)}
+                onChange={(event) => changeProfileField('work_mode', event.target.value)}
                 className="h-12 rounded-lg border border-slate-300 bg-white px-4 text-base font-medium text-ink-950 outline-none transition focus:border-brand-600 focus:ring-4 focus:ring-teal-100"
               >
+                <option value="">Prefiro não informar</option>
                 <option value="remote">Remoto</option>
                 <option value="hybrid">Híbrido</option>
                 <option value="onsite">Presencial</option>
@@ -354,20 +408,36 @@ export function CandidatePage() {
             </label>
           </div>
 
-          <div className="grid gap-4 md:grid-cols-2">
+          <div className="grid gap-4 md:grid-cols-3">
             <FormField
               id="profile_linkedin"
-              label="LinkedIn"
+              label="LinkedIn (opcional)"
+              inputMode="url"
               value={profileValues.linkedin_url}
-              placeholder="https://linkedin.com/in/seu-perfil"
-              onChange={(value) => updateProfileField('linkedin_url', value)}
+              placeholder="linkedin.com/in/seu-perfil"
+              required={false}
+              error={profileErrors.linkedin_url}
+              onChange={(value) => changeProfileField('linkedin_url', value)}
             />
             <FormField
               id="profile_portfolio"
-              label="Portfólio"
+              label="Portfólio (opcional)"
+              inputMode="url"
               value={profileValues.portfolio_url}
-              placeholder="https://seusite.com"
-              onChange={(value) => updateProfileField('portfolio_url', value)}
+              placeholder="seusite.com.br"
+              required={false}
+              error={profileErrors.portfolio_url}
+              onChange={(value) => changeProfileField('portfolio_url', value)}
+            />
+            <FormField
+              id="profile_resume"
+              label="Currículo, link (opcional)"
+              inputMode="url"
+              value={profileValues.resume_url}
+              placeholder="Link do Google Drive ou Dropbox"
+              required={false}
+              error={profileErrors.resume_url}
+              onChange={(value) => changeProfileField('resume_url', value)}
             />
           </div>
 
