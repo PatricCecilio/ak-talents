@@ -3,13 +3,13 @@ import { Link } from 'react-router-dom'
 import enterpriseImage from '../assets/ak-talent-enterprise-team.webp'
 import heroOfficeImage from '../assets/ak-talent-hero-office.webp'
 import videoThumbnailImage from '../assets/ak-talent-video-thumbnail.webp'
+import { AppIntelliButton } from '../components/AppIntelliButton'
 import { Container } from '../components/Container'
 import { JobsUnavailableNotice } from '../components/JobsUnavailableNotice'
 import { LoadingHint } from '../components/JobsLoading'
 import { resolveFeaturedJobsMode, type FeaturedJobsMode } from '../services/featuredJobs'
 import { formatWorkMode } from '../services/jobFormat'
 import { getJobs } from '../services/jobService'
-import { hireContact } from '../services/whatsapp'
 import type { Job } from '../types/user'
 
 const iconPaths = {
@@ -77,30 +77,30 @@ const segments = [
 ] satisfies Array<{ icon: IconName; label: string }>
 
 const platformFeatures = [
-  'Você conta pelo WhatsApp a vaga que precisa preencher',
-  'A AK escreve o anúncio e divulga a vaga',
-  'A AK filtra os candidatos e entrevista os melhores',
-  'Você recebe os finalistas com parecer e currículo',
-  'Você escolhe quem contratar, e a AK acompanha até o fim',
+  'Divulgação de vagas em múltiplos canais',
+  'Gestão de candidatos em um só painel',
+  'Triagem e entrevistas organizadas por etapa',
+  'Relatórios e indicadores em tempo real',
+  'Acompanhamento até a contratação',
 ]
 
 const enterpriseMetrics = [
-  { value: 'WhatsApp', label: 'um só contato' },
-  { value: 'Anúncio', label: 'feito pela AK' },
-  { value: 'Entrevista', label: 'feita pela AK' },
-  { value: 'Finalistas', label: 'com parecer' },
+  { value: '50+', label: 'vagas simultâneas' },
+  { value: '1.200+', label: 'candidatos por mês' },
+  { value: 'Multi', label: 'unidades e regiões' },
+  { value: 'RH', label: 'equipes conectadas' },
 ]
 
 const enterpriseHighlights = [
-  { icon: 'users', title: 'Uma vaga ou várias', text: 'A AK cuida de uma contratação ou de muitas de uma vez.' },
-  { icon: 'building', title: 'Várias lojas', text: 'Vagas em mais de uma unidade ou cidade, no mesmo atendimento.' },
-  { icon: 'briefcase', title: 'Sem RH próprio', text: 'Você não precisa de equipe de RH: a AK faz esse papel.' },
+  { icon: 'users', title: 'Alto volume', text: 'Centenas de candidatos em uma única operação.' },
+  { icon: 'building', title: 'Múltiplas unidades', text: 'Controle vagas e candidatos por região, loja ou unidade.' },
+  { icon: 'briefcase', title: 'Equipes de RH', text: 'Distribua responsabilidades e acompanhe cada etapa.' },
 ] satisfies Array<{ icon: IconName; title: string; text: string }>
 
 const videoPoints = [
-  { icon: 'clipboard', text: 'A AK anuncia a sua vaga' },
-  { icon: 'users', text: 'A AK filtra e entrevista' },
-  { icon: 'chart', text: 'Você recebe os finalistas e escolhe' },
+  { icon: 'clipboard', text: 'Publicação de vagas em múltiplos canais' },
+  { icon: 'users', text: 'Triagem e organização de candidatos' },
+  { icon: 'chart', text: 'Acompanhamento até a contratação' },
 ] satisfies Array<{ icon: IconName; text: string }>
 
 const fallbackJobs = [
@@ -158,12 +158,12 @@ function AppTopBar() {
       <span className="text-xs font-bold text-ink-950">AK Talent</span>
       <span className="ml-2 hidden h-7 min-w-0 flex-1 items-center gap-2 rounded-md border border-slate-200 bg-slate-50 px-2.5 text-[10px] text-ink-400 sm:flex">
         <Icon name="search" className="h-3 w-3 shrink-0" />
-        <span className="truncate">Vaga: Atendente de loja · Exemplo</span>
+        <span className="truncate">Buscar candidatos, vagas ou palavras-chave...</span>
       </span>
       <span className="ml-auto flex items-center gap-2">
         <span className="hidden text-right leading-tight sm:block">
           <span className="block text-[10px] font-semibold text-ink-950">Mariana Silva</span>
-          <span className="block text-[9px] text-ink-400">Recrutadora AK</span>
+          <span className="block text-[9px] text-ink-400">RH - Matriz</span>
         </span>
         <span className="grid h-7 w-7 place-items-center rounded-full bg-gold-100 text-[10px] font-bold text-gold-800">MS</span>
       </span>
@@ -172,11 +172,11 @@ function AppTopBar() {
 }
 
 function AppSidebar({ active, className = '' }: { active: string; className?: string }) {
-  const activeTone = active === 'Resumo' ? 'bg-ink-950 text-white' : 'bg-gold-50 text-gold-800'
+  const activeTone = active === 'Visão geral' ? 'bg-ink-950 text-white' : 'bg-gold-50 text-gold-800'
 
   return (
     <aside className={`border-r border-slate-100 bg-slate-50/70 p-2 ${className}`}>
-      {['Resumo', 'Vaga', 'Inscritos', 'Filtro', 'Entrevistas', 'Finalistas', 'Parecer'].map((item) => (
+      {['Visão geral', 'Vagas', 'Candidatos', 'Triagem', 'Entrevistas', 'Contratações', 'Relatórios'].map((item) => (
         <div
           key={item}
           className={`mb-0.5 rounded-md px-2.5 py-1.5 text-[10px] font-medium ${item === active ? activeTone : 'text-ink-600'}`}
@@ -191,9 +191,9 @@ function AppSidebar({ active, className = '' }: { active: string; className?: st
 function HeroDashboard() {
   const stats = [
     ['1.284', 'Candidatos recebidos', '+12%'],
-    ['327', 'Filtrados pela AK', '+18%'],
-    ['86', 'Entrevistados pela AK', '+24%'],
-    ['42', 'Finalistas enviados', '+31%'],
+    ['327', 'Em triagem', '+18%'],
+    ['86', 'Entrevistas', '+24%'],
+    ['42', 'Contratações', '+31%'],
   ]
   const featured = [
     ['Carla Mendes', 'Analista de Marketing', '92%'],
@@ -202,29 +202,29 @@ function HeroDashboard() {
     ['Diego Lima', 'Designer UI/UX', '83%'],
   ]
   const pipeline = [
-    ['Inscritos', '1.284', 100],
-    ['Filtrados', '327', 62],
-    ['Entrevistados', '86', 38],
-    ['Finalistas', '54', 22],
-    ['Contratados', '42', 14],
+    ['Candidatos', '1.284', 100],
+    ['Triagem', '327', 62],
+    ['Entrevistas', '86', 38],
+    ['Propostas', '54', 22],
+    ['Contratações', '42', 14],
   ] as const
 
   return (
     <div
       role="img"
-      aria-label="Exemplo do trabalho da AK Talent numa vaga: candidatos recebidos, filtrados, entrevistados e finalistas enviados ao cliente"
+      aria-label="Painel demonstrativo da plataforma AK Talent com candidatos, triagem, entrevistas e contratações"
       className="overflow-hidden rounded-xl bg-white shadow-[0_32px_80px_-24px_rgba(6,20,36,0.5)] ring-1 ring-ink-950/10"
     >
       <AppTopBar />
       <div className="grid xl:grid-cols-[7rem_1fr]">
-        <AppSidebar active="Resumo" className="hidden xl:block" />
+        <AppSidebar active="Visão geral" className="hidden xl:block" />
         <div className="p-3">
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
             {stats.map(([value, label, delta]) => (
               <div key={label} className="rounded-lg border border-slate-100 p-2.5">
                 <p className="font-display text-lg font-bold leading-none text-ink-950">{value}</p>
                 <p className="mt-1.5 text-[10px] leading-tight text-ink-600">{label}</p>
-                <p className="mt-1 whitespace-nowrap text-[9px] font-semibold text-emerald-600">{delta}</p>
+                <p className="mt-1 whitespace-nowrap text-[9px] font-semibold text-emerald-600">{delta} no mês</p>
               </div>
             ))}
           </div>
@@ -232,8 +232,8 @@ function HeroDashboard() {
           <div className="mt-2.5 grid gap-2.5 sm:grid-cols-[1.1fr_1fr]">
             <div className="rounded-lg border border-slate-100">
               <div className="flex items-center justify-between px-2.5 py-2">
-                <p className="text-[11px] font-bold text-ink-950">Finalistas enviados a você</p>
-                <span className="text-[9px] text-ink-400">Com parecer</span>
+                <p className="text-[11px] font-bold text-ink-950">Candidatos em destaque</p>
+                <span className="text-[9px] text-ink-400">Ver todos</span>
               </div>
               {featured.map(([name, role, match], index) => (
                 <div key={name} className="flex items-center gap-2 border-t border-slate-100 px-2.5 py-1.5">
@@ -243,14 +243,14 @@ function HeroDashboard() {
                     <p className="truncate text-[9px] text-ink-400">{role}</p>
                   </div>
                   <span className="ml-auto shrink-0 rounded bg-emerald-50 px-1.5 py-0.5 text-[9px] font-semibold text-emerald-700">
-                    Aderência {match}
+                    Match {match}
                   </span>
                 </div>
               ))}
             </div>
 
             <div className="hidden rounded-lg border border-slate-100 p-2.5 sm:block">
-              <p className="text-[11px] font-bold text-ink-950">O caminho até os finalistas</p>
+              <p className="text-[11px] font-bold text-ink-950">Pipeline de recrutamento</p>
               {pipeline.map(([label, value, width], index) => (
                 <div key={label} className="mt-2.5 grid grid-cols-[4.25rem_1fr_auto] items-center gap-2">
                   <span className="text-[10px] text-ink-600">{label}</span>
@@ -273,21 +273,20 @@ function HeroDashboard() {
 
 function PlatformMockup() {
   const columns = [
-    { title: 'Filtrados', count: 327, people: [['Carla Mendes', 'Analista de Marketing'], ['Rafael Souza', 'Desenvolvedor Full Stack'], ['Juliana Alves', 'Analista Financeiro']] },
-    { title: 'Entrevistados', count: 86, people: [['Lucas Pereira', 'Analista de RH'], ['Fernanda Lima', 'Operadora de Logística'], ['Paulo Henrique', 'Vendedor']] },
-    { title: 'Enviados a você', count: 54, people: [['Camila Rocha', 'Coordenadora de TI'], ['Tiago Santos', 'Supervisor de Loja'], ['Marina Oliveira', 'Analista de Dados']] },
+    { title: 'Em triagem', count: 327, people: [['Carla Mendes', 'Analista de Marketing'], ['Rafael Souza', 'Desenvolvedor Full Stack'], ['Juliana Alves', 'Analista Financeiro']] },
+    { title: 'Entrevista', count: 86, people: [['Lucas Pereira', 'Analista de RH'], ['Fernanda Lima', 'Operadora de Logística'], ['Paulo Henrique', 'Vendedor']] },
+    { title: 'Proposta', count: 54, people: [['Camila Rocha', 'Coordenadora de TI'], ['Tiago Santos', 'Supervisor de Loja'], ['Marina Oliveira', 'Analista de Dados']] },
   ]
-  // "What you receive": the finalists' summary on the phone.
   const phoneJobs = [
-    ['Camila Rocha', 'Atendente · 3 anos de experiência', 'Recomendada'],
-    ['Tiago Santos', 'Atendente · 1 ano', 'Recomendado'],
-    ['Marina Oliveira', 'Atendente · 2 anos', 'Boa opção'],
+    ['Atendente de Restaurante', 'Curitiba, PR', 'Contratação imediata'],
+    ['Auxiliar de Operações', 'São Paulo, SP', 'Em andamento'],
+    ['Operador de Loja', 'Belo Horizonte, MG', 'Nova oportunidade'],
   ]
 
   return (
     <div
       role="img"
-      aria-label="O que você recebe: os candidatos de cada etapa e o resumo dos finalistas no celular"
+      aria-label="Plataforma AK Talent no notebook e no celular, com candidatos organizados por etapa"
       className="relative mx-auto w-full max-w-[42rem] sm:pb-8 sm:pt-10"
     >
       {/* Laptop: the base is as wide as this group and the screen is inset, so nothing overhangs the section. */}
@@ -296,9 +295,9 @@ function PlatformMockup() {
           <div className="overflow-hidden rounded-lg bg-white">
             <AppTopBar />
             <div className="grid sm:grid-cols-[7rem_1fr] lg:grid-cols-1 xl:grid-cols-[7rem_1fr]">
-              <AppSidebar active="Inscritos" className="hidden sm:block lg:hidden xl:block" />
+              <AppSidebar active="Candidatos" className="hidden sm:block lg:hidden xl:block" />
               <div className="min-w-0 bg-white p-3">
-                <p className="text-sm font-bold text-ink-950">Sua vaga, etapa por etapa</p>
+                <p className="text-sm font-bold text-ink-950">Candidatos</p>
                 <div className="mt-2.5 grid grid-cols-3 gap-2">
                   {columns.map((column, columnIndex) => (
                     <div key={column.title} className="min-w-0 rounded-lg bg-slate-50 p-1.5 sm:p-2">
@@ -328,10 +327,10 @@ function PlatformMockup() {
 
       <div className="absolute bottom-0 right-0 hidden w-[29%] min-w-36 max-w-44 rounded-[1.6rem] border-[5px] border-ink-950 bg-white p-2.5 shadow-2xl shadow-ink-950/30 sm:block">
         <div className="mx-auto mb-2 h-1 w-10 rounded-full bg-slate-200" />
-        <p className="text-[11px] font-bold text-ink-950">Seus finalistas</p>
+        <p className="text-[11px] font-bold text-ink-950">AK Talent</p>
         <div className="mt-2 grid grid-cols-2 gap-1 text-center text-[9px] font-semibold">
-          <span className="rounded-md bg-ink-950 py-1 text-white">Finalistas</span>
-          <span className="rounded-md bg-slate-100 py-1 text-ink-600">Parecer</span>
+          <span className="rounded-md bg-ink-950 py-1 text-white">Vagas</span>
+          <span className="rounded-md bg-slate-100 py-1 text-ink-600">Candidatos</span>
         </div>
         {phoneJobs.map(([title, location, status]) => (
           <div key={title} className="mt-1.5 rounded-md border border-slate-100 p-1.5">
@@ -342,21 +341,6 @@ function PlatformMockup() {
         ))}
       </div>
     </div>
-  )
-}
-
-// Company calls to action go to the commercial WhatsApp with a ready message (the AppIntelli chat stays in the corner
-// button). Same wrapper as the old chat button, so size and position do not change.
-function HireWhatsappButton({ className }: { className: string }) {
-  const contact = hireContact()
-  return (
-    <span className="inline-flex flex-col gap-2">
-      <a href={contact.href} target="_blank" rel="noopener noreferrer" data-hire-cta className={className}>
-        <Icon name="chat" className="h-5 w-5" />
-        <span>{contact.channel === 'whatsapp' ? 'Falar no WhatsApp' : 'Falar com a AK Talent'}</span>
-        <Icon name="arrow" className="h-4 w-4" />
-      </a>
-    </span>
   )
 }
 
@@ -528,17 +512,22 @@ function MarketingLanding({ campaign = false }: MarketingLandingProps) {
         <Container className="relative grid gap-10 pb-12 pt-28 lg:min-h-[44rem] lg:grid-cols-[0.9fr_1.1fr] lg:items-center lg:gap-8 lg:pb-14 lg:pt-28">
           <div className="min-w-0 lg:max-w-[36rem]">
             <p className="text-xs font-semibold uppercase tracking-[0.16em] text-ink-800">
-              {campaign ? 'Recrutamento feito por quem entende do assunto' : 'Recrutamento para pequenas e médias empresas'}
+              {campaign ? 'Solução de recrutamento para empresas' : 'Recrutamento para empresas que crescem'}
             </p>
             <h1 className="mt-5 font-display text-[2.4rem] font-bold leading-[1.06] tracking-[-0.03em] text-ink-950 sm:text-5xl lg:text-[2.9rem] xl:text-[3.3rem]">
-              Você conta o que precisa. <span className="block text-gold-600">A gente entrega os finalistas.</span>
+              Encontre os melhores talentos <span className="block text-gold-600">sem perder o controle.</span>
             </h1>
             <p className="mt-6 max-w-[31rem] text-lg leading-8 text-ink-600">
-              A AK Talent anuncia a vaga, filtra, entrevista e te envia pelo WhatsApp os melhores candidatos, com parecer e currículo. Você só escolhe quem contratar.
+              Publique vagas, organize candidatos e acompanhe todo o processo de contratação em um só lugar, com tecnologia para organizar e pessoas para decidir.
             </p>
 
             <div className="mt-8 flex flex-col gap-3 sm:flex-row lg:flex-col lg:items-start xl:flex-row">
-              <HireWhatsappButton className={`${buttonPrimary} w-full sm:w-auto`} />
+              <AppIntelliButton
+                cta="heroDemo"
+                className={`${buttonPrimary} w-full sm:w-auto`}
+                leading={<Icon name="chat" className="h-5 w-5" />}
+                trailing={<Icon name="arrow" className="h-4 w-4" />}
+              />
               <a href="#como-funciona" className={buttonSecondary}>
                 <Icon name="playCircle" className="h-5 w-5" />
                 Ver como funciona
@@ -549,7 +538,7 @@ function MarketingLanding({ campaign = false }: MarketingLandingProps) {
           <div className="relative min-w-0 lg:self-end">
             <img
               src={heroOfficeImage}
-              alt="Recrutadora da AK Talent preparando os finalistas de uma vaga"
+              alt="Profissional de RH usando a plataforma AK Talent em um escritório moderno"
               className="aspect-[4/3] w-full rounded-2xl object-cover object-[70%_center] sm:aspect-[16/10] lg:hidden"
             />
             <div className="relative -mt-24 px-3 sm:-mt-32 sm:px-10 lg:mt-0 lg:ml-auto lg:max-w-[27rem] lg:px-0 xl:max-w-[34rem]">
@@ -563,8 +552,8 @@ function MarketingLanding({ campaign = false }: MarketingLandingProps) {
         <Container>
           <div className="grid gap-7 lg:grid-cols-[16rem_1fr] lg:items-center">
             <div className="lg:border-r lg:border-slate-200 lg:pr-8">
-              <h2 className="font-display text-xl font-bold leading-snug text-ink-950">Recrutamos para todo tipo de negócio</h2>
-              <p className="mt-1.5 text-sm text-ink-600">Do restaurante à indústria, a AK encontra gente para a sua equipe.</p>
+              <h2 className="font-display text-xl font-bold leading-snug text-ink-950">Soluções para diferentes segmentos</h2>
+              <p className="mt-1.5 text-sm text-ink-600">Atendemos empresas de diversos setores e tamanhos.</p>
             </div>
             <ul className="grid grid-cols-3 gap-x-3 gap-y-6 sm:grid-cols-5 lg:grid-cols-9">
               {segments.map((segment) => (
@@ -584,10 +573,10 @@ function MarketingLanding({ campaign = false }: MarketingLandingProps) {
       >
         <Container className="grid gap-12 lg:grid-cols-[0.8fr_1.2fr] lg:items-center">
           <div>
-            <p className={eyebrowPill}>Como funciona para você</p>
-            <h2 className={`mt-4 ${sectionTitle}`}>Você não precisa de sistema nem de RH. Só do WhatsApp.</h2>
+            <p className={eyebrowPill}>Plataforma completa</p>
+            <h2 className={`mt-4 ${sectionTitle}`}>Tudo o que sua empresa precisa para recrutar melhor.</h2>
             <p className="mt-5 text-lg leading-8 text-ink-600">
-              A AK cuida de todo o processo e te manda só o que importa: quem são os finalistas e por que eles servem para a vaga.
+              Organize vagas, candidatos, entrevistas e contratações com mais eficiência e menos trabalho operacional.
             </p>
             <ul className="mt-7 grid gap-3.5">
               {platformFeatures.map((feature) => (
@@ -601,7 +590,7 @@ function MarketingLanding({ campaign = false }: MarketingLandingProps) {
             </ul>
             <a href="#como-funciona" className={`${buttonNavy} mt-8`}>
               <Icon name="playCircle" className="h-5 w-5" />
-              Ver o passo a passo
+              Conheça a plataforma
               <Icon name="arrow" className="h-4 w-4" />
             </a>
           </div>
@@ -616,17 +605,17 @@ function MarketingLanding({ campaign = false }: MarketingLandingProps) {
         </div>
         <img
           src={enterpriseImage}
-          alt="Equipe da AK Talent analisando candidatos"
+          alt="Equipe de RH colaborando em escritório corporativo da AK Talent"
           className="aspect-[16/9] w-full object-cover object-[70%_center] lg:hidden"
         />
 
         <Container className="relative py-14 sm:py-16 lg:py-20">
           <div className="lg:max-w-[40rem]">
             <p className="text-xs font-semibold uppercase tracking-[0.16em] text-gold-300">
-              Para quem precisa contratar e não tem tempo
+              Feito para operações de recrutamento de todos os tamanhos
             </p>
             <h2 className="mt-4 font-display text-3xl font-bold leading-tight tracking-[-0.02em] sm:text-4xl">
-              Precisa de uma pessoa ou de uma equipe inteira?
+              Pronto para grandes operações de contratação?
             </h2>
             <div className="mt-8 grid gap-6 sm:grid-cols-3 sm:gap-5">
               {enterpriseHighlights.map((item) => (
@@ -658,9 +647,9 @@ function MarketingLanding({ campaign = false }: MarketingLandingProps) {
         <Container className="grid gap-10 lg:grid-cols-[0.95fr_1.3fr_0.8fr] lg:items-center lg:gap-10">
           <div>
             <p className={eyebrowPill}>Vídeo institucional</p>
-            <h2 className={`mt-4 ${sectionTitle}`}>Veja como a AK trabalha para você</h2>
+            <h2 className={`mt-4 ${sectionTitle}`}>Veja a AK Talent em ação</h2>
             <p className="mt-5 text-base leading-7 text-ink-600">
-              Em menos de um minuto: você manda a vaga pelo WhatsApp, a AK faz a seleção e você recebe os finalistas prontos para escolher.
+              Do anúncio da vaga à contratação, conheça na prática como nossa plataforma ajuda sua empresa a ganhar tempo e contratar melhor.
             </p>
             <button type="button" title="Vídeo institucional em produção" className={`${buttonNavy} mt-7`}>
               <Icon name="playCircle" className="h-5 w-5" />
@@ -690,13 +679,18 @@ function MarketingLanding({ campaign = false }: MarketingLandingProps) {
           <div className="max-w-2xl">
             <span aria-hidden="true" className="block h-1 w-10 rounded-full bg-gold-600" />
             <h2 className="mt-5 font-display text-3xl font-bold leading-tight tracking-[-0.02em] sm:text-4xl">
-              Sua próxima contratação começa com uma mensagem.
+              Sua próxima contratação pode começar aqui.
             </h2>
             <p className="mt-4 text-lg leading-8 text-slate-300">
-              Conte no WhatsApp qual vaga você precisa preencher. A gente cuida do resto.
+              Converse com a AK Talent e descubra como podemos ajudar sua empresa a contratar melhor.
             </p>
           </div>
-          <HireWhatsappButton className={buttonPrimary} />
+          <AppIntelliButton
+            cta="finalDemo"
+            className={buttonPrimary}
+            leading={<Icon name="chat" className="h-5 w-5" />}
+            trailing={<Icon name="arrow" className="h-4 w-4" />}
+          />
         </Container>
       </section>
 

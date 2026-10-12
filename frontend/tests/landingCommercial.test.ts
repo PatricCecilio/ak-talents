@@ -11,35 +11,20 @@ function expectText(source: string, texts: string[]) {
   }
 }
 
-test('home tells the new model: the company talks to AK, AK selects, the company only chooses', () => {
+test('home landing follows the new enterprise visual narrative', () => {
   const source = read('src/pages/HomePage.tsx')
 
   expectText(source, [
-    'Você conta o que precisa.',
-    'A gente entrega os finalistas.',
-    'A AK Talent anuncia a vaga, filtra, entrevista e te envia pelo WhatsApp os melhores candidatos, com parecer e currículo. Você só escolhe quem contratar.',
-    'Recrutamos para todo tipo de negócio',
-    'Você não precisa de sistema nem de RH. Só do WhatsApp.',
-    'Precisa de uma pessoa ou de uma equipe inteira?',
-    'Veja como a AK trabalha para você',
+    'Encontre os melhores talentos',
+    'sem perder o controle.',
+    'Publique vagas, organize candidatos e acompanhe todo o processo de contratação em um só lugar',
+    'Soluções para diferentes segmentos',
+    'Tudo o que sua empresa precisa para recrutar melhor.',
+    'Pronto para grandes operações de contratação?',
+    'Veja a AK Talent em ação',
     'Vagas em destaque',
-    'Sua próxima contratação começa com uma mensagem.',
+    'Sua próxima contratação pode começar aqui.',
   ])
-  // Nothing suggesting the company signs up, logs in, posts jobs or follows a dashboard.
-  const visible = `${source}\n${read('src/components/Footer.tsx')}\n${read('index.html')}\n${read('public/site.webmanifest')}`
-  for (const old of [
-    'Publique vagas',
-    'Gestão de candidatos em um só painel',
-    'Relatórios e indicadores em tempo real',
-    'Plataforma completa',
-    'Conheça a plataforma',
-    'sem perder o controle',
-    'Equipes de RH',
-    'vagas simultâneas',
-    'Plataforma e operação de recrutamento',
-  ]) {
-    assert.ok(!visible.includes(old), old)
-  }
 })
 
 test('home uses the requested segment and platform structure', () => {
@@ -47,38 +32,32 @@ test('home uses the requested segment and platform structure', () => {
 
   expectText(source, ['Varejo', 'Restaurantes', 'Logística', 'Indústria', 'Saúde', 'Serviços', 'Educação', 'Franquias'])
   expectText(source, [
-    'Você conta pelo WhatsApp a vaga que precisa preencher',
-    'A AK escreve o anúncio e divulga a vaga',
-    'A AK filtra os candidatos e entrevista os melhores',
-    'Você recebe os finalistas com parecer e currículo',
-    'Você escolhe quem contratar, e a AK acompanha até o fim',
+    'Divulgação de vagas em múltiplos canais',
+    'Gestão de candidatos',
+    'Triagem',
+    'Entrevistas',
+    'Relatórios',
+    'Acompanhamento',
   ])
-  // Mockups now read as "what you receive"; no invented company name or unverifiable numbers.
-  expectText(source, ['Finalistas enviados a você', 'Aderência {match}', 'Vaga: Atendente de loja · Exemplo', 'Seus finalistas'])
-  expectText(source, ["{ value: 'WhatsApp', label: 'um só contato' }", "{ value: 'Finalistas', label: 'com parecer' }"])
-  assert.doesNotMatch(source, /50\+|1\.200\+|Padaria|Match \{match\}/)
+  expectText(source, ['50+', '1.200+', 'vagas simultâneas', 'candidatos por mês'])
 })
 
-test('company calls to action go to the commercial WhatsApp; the chat stays in the corner button', () => {
+test('commercial conversion is AppIntelli-first; WhatsApp only as fallback when there are no jobs', () => {
   const source = read('src/pages/HomePage.tsx')
   const ctas = read('src/services/appIntelliWidget.ts')
   const header = read('src/components/Header.tsx')
 
-  // Top and final calls: same wrapper and classes as before, now a WhatsApp link with the ready message.
-  assert.equal((source.match(/<HireWhatsappButton /g) ?? []).length, 2)
-  assert.match(source, /<HireWhatsappButton className=\{`\$\{buttonPrimary\} w-full sm:w-auto`\} \/>/)
-  assert.match(source, /<HireWhatsappButton className=\{buttonPrimary\} \/>/)
-  assert.match(source, /const contact = hireContact\(\)/)
-  assert.match(source, /'Falar no WhatsApp'/)
-  assert.doesNotMatch(source, /AppIntelliButton|cta="heroDemo"|cta="finalDemo"|cta="floatingChat"/)
+  assert.match(source, /cta="heroDemo"/)
+  assert.match(source, /cta="finalDemo"/)
+  assert.doesNotMatch(source, /cta="floatingChat"/)
   assert.match(source, /heroOfficeImage/)
   assert.match(source, /videoThumbnailImage/)
   assert.match(source, /enterpriseImage/)
   assert.doesNotMatch(header, /AppIntelliButton|headerContact/)
-  assert.doesNotMatch(source, /resolveWhatsappConfig|Prefiro deixar meus dados|<form/)
+  assert.doesNotMatch(source, /WhatsApp|resolveWhatsappConfig|Prefiro deixar meus dados|<form/)
   assert.doesNotMatch(ctas, /candidateId|applicationId|jobId|workspaceId|email|phone|telefone|full_name/)
 
-  // The "no jobs" notice keeps its own WhatsApp link for candidates.
+  // The only WhatsApp entry point on the home is the "no jobs" notice, never a commercial CTA.
   const notice = read('src/components/JobsUnavailableNotice.tsx')
   assert.match(source, /<JobsUnavailableNotice \/>/)
   assert.match(notice, /resolveWhatsappConfig/)
@@ -119,8 +98,7 @@ test('campaign route and SEO metadata are wired without external tracking script
 
   assert.match(routes, /\/solucoes\/recrutamento/)
   assert.match(routes, /RecruitmentSolutionPage/)
-  assert.match(html, /<title>AK Talent \| Recrutamento para pequenas e médias empresas<\/title>/)
-  assert.match(html, /Você conta a vaga pelo WhatsApp; a AK Talent anuncia, filtra, entrevista e envia os finalistas com parecer\. Você só escolhe\./)
+  assert.match(html, /AK Talent \| Recrutamento e triagem de candidatos/)
   assert.match(html, /og:title/)
   assert.doesNotMatch(`${routes}\n${html}`, /googletagmanager|gtag|Meta Pixel|fbq|tiktok|analytics/i)
 })

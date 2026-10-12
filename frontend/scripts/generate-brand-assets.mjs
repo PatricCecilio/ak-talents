@@ -20,9 +20,9 @@ const chromePath = process.env.CHROME_PATH || 'C:/Program Files/Google/Chrome/Ap
 const logoDataUrl = `data:image/png;base64,${readFileSync(logoPath).toString('base64')}`
 
 const BRAND = { ink: '#061424', gold: '#a87224', background: '#f5f7fa' }
-const HEADLINE = 'Você conta o que precisa.'
-const HEADLINE_ACCENT = 'A gente entrega os finalistas.'
-const TAGLINE = 'Recrutamento para pequenas e médias empresas'
+const HEADLINE = 'Encontre os melhores talentos'
+const HEADLINE_ACCENT = 'sem perder o controle.'
+const TAGLINE = 'Recrutamento para empresas que crescem'
 
 // Draws the mark (the part of the logo left of the "Ak Talent" text) into a square canvas and returns a PNG data URL.
 async function renderMark(page, { size, padding, background }) {
