@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
-import { getAdminJobs } from '../services/adminService'
+import { getAdminJobs, setCandidateActive } from '../services/adminService'
 import { getCurrentUser } from '../services/authService'
 import type { AdminJob } from '../types/user'
 import { AddCandidateDialog } from './AddCandidateDialog'
@@ -70,6 +70,17 @@ export function CandidatesPage() {
     }
   }
 
+  async function toggleActive(row: CandidateRow, active: boolean) {
+    setError('')
+    try {
+      await setCandidateActive(row.id, active)
+      setMessage(active ? `${row.name} foi reativado(a).` : `${row.name} foi desativado(a). Nada foi apagado; dá para reativar.`)
+      load()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Não foi possível alterar o candidato.')
+    }
+  }
+
   function actionsFor(row: CandidateRow): MenuAction[] {
     const list: MenuAction[] = [
       { label: 'Ver perfil e candidaturas', onSelect: () => navigate(`${PANEL_BASE}/candidatos/${row.id}`) },
@@ -87,6 +98,12 @@ export function CandidatesPage() {
       })
     }
     if (isAdmin) {
+      // Reversible (test data, duplicates): login blocked and applications hidden. Different from the LGPD erasure.
+      list.push(
+        row.is_active === false
+          ? { label: 'Reativar candidato', hint: 'Volta a entrar no site e as candidaturas reaparecem.', onSelect: () => void toggleActive(row, true) }
+          : { label: 'Desativar candidato', hint: 'Bloqueia o login e oculta as candidaturas. Nada é apagado; dá para reativar.', onSelect: () => void toggleActive(row, false) },
+      )
       list.push({ label: 'Excluir dados (LGPD)', danger: true, hint: 'Apaga dados pessoais e currículo. Mantém só números anônimos.', onSelect: () => setErasing(row) })
     }
     return list
@@ -141,7 +158,10 @@ export function CandidatesPage() {
                     <Link to={`${PANEL_BASE}/candidatos/${row.id}`} className={`flex items-center gap-3 ${panelFocus}`}>
                       <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-gold-300 text-xs font-bold text-ink-950">{initials(row.name)}</span>
                       <span className="min-w-0">
-                        <span className="block font-semibold text-ink-950">{row.name}</span>
+                        <span className="block font-semibold text-ink-950">
+                          {row.name}
+                          {row.is_active === false ? <span className="ml-2 rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-ink-600">Desativado</span> : null}
+                        </span>
                         <span className="block truncate text-xs text-ink-600">{row.email ?? 'sem e-mail'}</span>
                       </span>
                     </Link>

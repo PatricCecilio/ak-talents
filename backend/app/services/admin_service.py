@@ -88,7 +88,7 @@ def list_admin_users(db: Session, current_user: User) -> list[AdminUserRead]:
     return db.query(User).order_by(User.created_at.desc()).all()
 
 
-def _candidate_is_active(candidate: Candidate) -> bool:
+def candidate_is_active(candidate: Candidate) -> bool:
     # Account holders: their login. Applicants without an account: not all of their applications hidden.
     if candidate.user:
         return candidate.user.is_active
@@ -110,7 +110,7 @@ def _candidate_to_admin_read(candidate: Candidate) -> AdminCandidateRead:
         salary_expectation=candidate.salary_expectation,
         work_mode=candidate.work_mode,
         created_at=candidate.created_at,
-        is_active=_candidate_is_active(candidate),
+        is_active=candidate_is_active(candidate),
     )
 
 

@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { JobForm } from '../components/admin/JobForm'
 import { MoveStageDialog } from '../components/recruiter/MoveStageDialog'
-import { approveJob, getJobScreeningQuestions, hideJob, updateJobScreeningQuestions } from '../services/adminService'
+import { approveJob, getJobScreeningQuestions, hideJob, setApplicationHidden, updateJobScreeningQuestions } from '../services/adminService'
 import { getCurrentUser } from '../services/authService'
 import { formatContractType, formatSalary, formatWorkMode } from '../services/jobFormat'
 import { getJobPipeline } from '../services/pipelineService'
@@ -54,6 +54,8 @@ export function JobPage() {
   const [tab, setTab] = useState<Tab>('candidatos')
   const [view, setView] = useState<'quadro' | 'lista'>(readView)
   const [showExits, setShowExits] = useState(false)
+  // Admin only: also list the applications they hid, to show them again.
+  const [showHidden, setShowHidden] = useState(false)
   const [moving, setMoving] = useState<{ card: ApplicationCard; to?: StageValue } | null>(null)
   const [referring, setReferring] = useState<ApplicationCard | null>(null)
   const [adding, setAdding] = useState(false)
@@ -62,13 +64,13 @@ export function JobPage() {
   const [dragged, setDragged] = useState<ApplicationCard | null>(null)
 
   const load = useCallback(() => {
-    Promise.all([getPanelJob(id), getJobPipeline(id)])
+    Promise.all([getPanelJob(id), getJobPipeline(id, showHidden)])
       .then(([detail, board]) => {
         setJob(detail)
         setPipeline(board)
       })
       .catch((err: unknown) => setError(err instanceof Error ? err.message : 'Não foi possível carregar a vaga.'))
-  }, [id])
+  }, [id, showHidden])
 
   useEffect(() => {
     load()
@@ -104,7 +106,27 @@ export function JobPage() {
       { label: 'Abrir candidatura', onSelect: () => navigate(`${PANEL_BASE}/candidaturas/${card.id}`) },
       ...(card.allowed_next_stages.length ? [{ label: 'Mover para…', onSelect: () => setMoving({ card }) }] : []),
       { label: 'Indicar para outra vaga', hint: 'Cria a candidatura em Nova na outra vaga; esta não muda.', onSelect: () => setReferring(card) },
+      // Reversible, for test data and mistakes (not the LGPD erasure).
+      ...(isAdmin
+        ? [
+            card.is_hidden
+              ? { label: 'Mostrar candidatura', hint: 'Volta para o quadro e para as contagens.', onSelect: () => void toggleHidden(card, false) }
+              : { label: 'Ocultar candidatura', hint: 'Sai do quadro e das contagens; dá para mostrar de novo.', onSelect: () => void toggleHidden(card, true) },
+          ]
+        : []),
     ]
+  }
+
+  async function toggleHidden(card: ApplicationCard, hidden: boolean) {
+    setError('')
+    try {
+      await setApplicationHidden(card.id, hidden)
+      setMessage(hidden ? `Candidatura de ${card.candidate_name} ocultada (dá para mostrar de novo).` : `Candidatura de ${card.candidate_name} voltou a aparecer.`)
+      load()
+      refreshCounts()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Não foi possível alterar a candidatura.')
+    }
   }
 
   function onDrop(stage: StageValue) {
@@ -210,6 +232,14 @@ export function JobPage() {
         </div>
         {tab === 'candidatos' ? (
           <div className="flex flex-wrap items-center gap-3 pb-2 text-sm text-ink-600">
+            {isAdmin && (pipeline?.hidden_count ?? 0) > 0 ? (
+              <span>
+                Ocultas ({pipeline?.hidden_count}) ·{' '}
+                <button type="button" onClick={() => setShowHidden((value) => !value)} className={`font-semibold text-gold-800 ${panelFocus}`}>
+                  {showHidden ? 'esconder' : 'mostrar'}
+                </button>
+              </span>
+            ) : null}
             {exits.length ? (
               <span>
                 Reprovados e desistentes ({exits.length}) {showExits ? 'visíveis' : 'ocultos'} ·{' '}
@@ -276,13 +306,14 @@ export function JobPage() {
                         draggable={card.allowed_next_stages.length > 0}
                         onDragStart={() => setDragged(card)}
                         onDragEnd={() => setDragged(null)}
-                        className={`rounded-xl border bg-white p-3 shadow-sm ${late ? 'border-l-4 border-gold-400' : 'border-slate-200'} ${card.allowed_next_stages.length ? 'cursor-grab active:cursor-grabbing' : ''}`}
+                        className={`rounded-xl border bg-white p-3 shadow-sm ${late ? 'border-l-4 border-gold-400' : 'border-slate-200'} ${card.is_hidden ? 'border-dashed opacity-60' : ''} ${card.allowed_next_stages.length ? 'cursor-grab active:cursor-grabbing' : ''}`}
                       >
                         <Link to={`${PANEL_BASE}/candidaturas/${card.id}`} className={`block font-semibold text-ink-950 hover:text-gold-800 ${panelFocus}`}>
                           {card.candidate_name}
                         </Link>
                         <p className="mt-0.5 text-xs text-ink-600">{cardSubtitle(card.city, card.experience_years)}</p>
                         {card.possible_duplicate ? <DuplicateBadge /> : null}
+                        {card.is_hidden ? <HiddenBadge /> : null}
                         <div className="mt-2 flex items-center justify-between gap-2">
                           <span className={`text-xs ${late ? 'font-semibold text-gold-800' : 'text-ink-600'}`}>
                             {late ? (
@@ -327,6 +358,7 @@ export function JobPage() {
                     <td className="px-4 py-2.5 pl-5 font-semibold text-ink-950">
                       <Link to={`${PANEL_BASE}/candidaturas/${card.id}`} className={panelFocus}>{card.candidate_name}</Link>
                       {card.possible_duplicate ? <DuplicateBadge /> : null}
+                      {card.is_hidden ? <HiddenBadge /> : null}
                     </td>
                     <td className="px-4 py-2.5 text-ink-700">{cardSubtitle(card.city, card.experience_years)}</td>
                     <td className="px-4 py-2.5"><Pill>{COLUMN_TITLES[card.stage]}</Pill></td>
@@ -419,6 +451,10 @@ function DuplicateBadge() {
       Possível duplicado
     </span>
   )
+}
+
+function HiddenBadge() {
+  return <span className="ml-1 mt-1 inline-flex w-fit rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-ink-600">Oculta</span>
 }
 
 function JobDetails({ job }: { job: PanelJobDetail }) {

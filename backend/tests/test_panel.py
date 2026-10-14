@@ -266,6 +266,34 @@ class PanelTestCase(unittest.TestCase):
         self.assertEqual(caio("GET", "/panel/search?q=Atendente").json()["jobs"], [])
         self.assertEqual([hit["title"] for hit in caio("GET", "/panel/search?q=Recep").json()["jobs"]], ["Recepcionista"])
 
+    def test_admin_hides_and_shows_applications_and_deactivates_candidates(self) -> None:
+        board = lambda who="admin", extra="": self.call("GET", f"/recruiter/jobs/{self.rita_job.id}/applications{extra}", who=who).json()
+        target = self.app_new_today.id
+        self.assertEqual(self.call("PUT", f"/admin/applications/{target}/hidden", who="rita", json={"is_hidden": True}).status_code, 403)
+        self.assertEqual(self.call("PUT", f"/admin/applications/{target}/hidden", json={"is_hidden": True}).status_code, 200)
+        self.assertNotIn(target, [card["id"] for card in board()["applications"]])
+        self.assertEqual(board()["hidden_count"], 1)
+        # Only the admin lists hidden ones (to show them again); a recruiter asking gets nothing more.
+        with_hidden = {card["id"]: card["is_hidden"] for card in board(extra="?include_hidden=true")["applications"]}
+        self.assertTrue(with_hidden[target])
+        self.assertNotIn(target, [card["id"] for card in board("rita", "?include_hidden=true")["applications"]])
+        self.assertEqual(board("rita")["hidden_count"], 0)
+        self.assertEqual(self.call("PUT", f"/admin/applications/{target}/hidden", json={"is_hidden": False}).status_code, 200)
+        self.assertIn(target, [card["id"] for card in board()["applications"]])
+
+        # Deactivate / reactivate a candidate: reversible, separate from the LGPD erasure (data stays).
+        rafael = self.rafael.id
+        self.assertEqual(self.call("PUT", f"/admin/candidates/{rafael}/active", who="rita", json={"is_active": False}).status_code, 403)
+        self.assertEqual(self.call("PUT", f"/admin/candidates/{rafael}/active", json={"is_active": False}).status_code, 200)
+        row = next(item for item in self.call("GET", "/panel/candidates").json()["items"] if item["id"] == rafael)
+        self.assertFalse(row["is_active"])
+        detail = self.call("GET", f"/panel/candidates/{rafael}").json()
+        self.assertEqual((detail["name"], detail["is_active"]), ("Rafael Lima", False))
+        self.assertEqual(self.call("GET", f"/panel/candidates/{rafael}", who="rita").status_code, 404)
+        self.call("PUT", f"/admin/candidates/{rafael}/active", json={"is_active": True})
+        self.assertTrue(self.call("GET", f"/panel/candidates/{rafael}").json()["is_active"])
+        self.assertEqual(self.call("GET", f"/panel/candidates/{rafael}", who="rita").status_code, 200)
+
     def test_jobs_list_pages_of_ten(self) -> None:
         with self.SessionLocal() as db:
             for index in range(12):

@@ -105,11 +105,15 @@ class ApplicationCard(BaseModel):
     waiting_client_too_long: bool
     # Another visible application of the same job has the same phone or e-mail (warning only, nothing is blocked).
     possible_duplicate: bool = False
+    # Hidden by the admin (test data, mistakes): only listed for the admin when asked for.
+    is_hidden: bool = False
     allowed_next_stages: list[StageOption]
 
 
 class JobPipelineResponse(BaseModel):
     finalist_alert_days: int
+    # Admin only: how many applications of this job are hidden (0 for recruiters).
+    hidden_count: int = 0
     job: RecruiterJobSummary
     applications: list[ApplicationCard]
 

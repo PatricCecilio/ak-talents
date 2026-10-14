@@ -12,8 +12,9 @@ export function getRecruiterJobs(): Promise<RecruiterJobsResponse> {
   return apiRequest<RecruiterJobsResponse>('/recruiter/jobs')
 }
 
-export function getJobPipeline(jobId: number): Promise<JobPipelineResponse> {
-  return apiRequest<JobPipelineResponse>(`/recruiter/jobs/${jobId}/applications`)
+/** includeHidden: the admin also gets the applications they hid (the API ignores it for recruiters). */
+export function getJobPipeline(jobId: number, includeHidden = false): Promise<JobPipelineResponse> {
+  return apiRequest<JobPipelineResponse>(`/recruiter/jobs/${jobId}/applications${includeHidden ? '?include_hidden=true' : ''}`)
 }
 
 export function getApplicationDetail(applicationId: number): Promise<ApplicationDetail> {

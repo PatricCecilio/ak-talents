@@ -213,7 +213,10 @@ test('LGPD erasure: strong confirmation, cannot be undone, admin only', () => {
   assert.match(dialog, /const ready = understood && erasureConfirmed\(typed, candidate\.name\)/)
   assert.match(dialog, /disabled=\{!ready \|\| saving\}/)
   for (const page of ['src/panel/CandidatesPage.tsx', 'src/panel/CandidateProfilePage.tsx']) {
-    assert.match(read(page), /isAdmin \? \[?\{? ?label: 'Excluir dados \(LGPD\)'|if \(isAdmin\) \{\s*list\.push\(\{ label: 'Excluir dados \(LGPD\)'/, page)
+    const source = read(page)
+    // Either an inline admin-only item, or inside the `if (isAdmin) { … }` block that ends before `return list`.
+    const block = source.includes('if (isAdmin) {') ? source.slice(source.indexOf('if (isAdmin) {'), source.indexOf('return list', source.indexOf('if (isAdmin) {'))) : ''
+    assert.ok(/isAdmin \? \[\{ label: 'Excluir dados \(LGPD\)'/.test(source) || block.includes("label: 'Excluir dados (LGPD)'"), page)
   }
 })
 
@@ -233,4 +236,21 @@ test('recruiters: companies read-only, no team pages; nobody deactivates themsel
   const team = read('src/panel/TeamPages.tsx')
   assert.equal(team.match(/if \(!isAdmin\) return <p className="text-sm text-ink-600">\{ADMIN_ONLY\}<\/p>/g)?.length, 2)
   assert.match(team, /if \(member\.id !== selfId\) list\.push/)
+})
+
+test('admin only: hide/show an application and deactivate/reactivate a candidate (reversible, apart from LGPD)', () => {
+  const job = read('src/panel/JobPage.tsx')
+  assert.match(job, /\.\.\.\(isAdmin\s*\? \[\s*card\.is_hidden/)
+  assert.match(job, /label: 'Mostrar candidatura'/)
+  assert.match(job, /label: 'Ocultar candidatura'/)
+  assert.match(job, /getJobPipeline\(id, showHidden\)/)
+  assert.match(job, /isAdmin && \(pipeline\?\.hidden_count \?\? 0\) > 0/)
+  assert.match(read('src/services/pipelineService.ts'), /include_hidden=true/)
+  const candidates = read('src/panel/CandidatesPage.tsx')
+  assert.match(candidates, /label: 'Reativar candidato'/)
+  assert.match(candidates, /label: 'Desativar candidato'/)
+  // Both inside the admin-only block, and as their own items before the LGPD one.
+  const adminBlock = candidates.slice(candidates.indexOf('if (isAdmin) {'))
+  assert.ok(adminBlock.indexOf('Desativar candidato') < adminBlock.indexOf('Excluir dados (LGPD)'))
+  assert.match(candidates, /setCandidateActive\(row\.id, active\)/)
 })

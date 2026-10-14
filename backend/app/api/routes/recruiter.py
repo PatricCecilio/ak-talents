@@ -100,10 +100,12 @@ def get_recruiter_jobs(db: Session = Depends(get_db), current_user: User = Depen
 def get_recruiter_job_pipeline(
     job_id: int,
     stage: str | None = Query(default=None, max_length=30),
+    include_hidden: bool = Query(default=False),
     db: Session = Depends(get_db),
     current_user: User = Depends(staff),
 ):
-    return get_job_pipeline(db, job_id, current_user, stage)
+    """include_hidden: the admin also gets the applications they hid (ignored for recruiters)."""
+    return get_job_pipeline(db, job_id, current_user, stage, include_hidden)
 
 
 @router.get("/applications/{application_id}", response_model=ApplicationDetail)

@@ -13,7 +13,7 @@ from app.models.candidate import Candidate
 from app.models.company import Company
 from app.models.job import Job
 from app.models.screening import ScreeningAnswer, ScreeningQuestion
-from app.models.user import User
+from app.models.user import User, UserRole
 from app.schemas.pipeline import (
     ApplicationCard,
     ApplicationDetail,
@@ -131,18 +131,26 @@ def _possible_duplicates(db: Session, job_id: int) -> set[int]:
     return {application_id for ids in owners.values() if len(ids) > 1 for application_id in ids}
 
 
-def get_job_pipeline(db: Session, job_id: int, actor: User, stage: str | None = None) -> JobPipelineResponse:
+def get_job_pipeline(
+    db: Session, job_id: int, actor: User, stage: str | None = None, include_hidden: bool = False
+) -> JobPipelineResponse:
     job = job_for(db, actor, job_id)
 
-    query = _visible_applications(db).filter(Application.job_id == job.id)
+    # Hidden applications: only the admin can list them (to show them again).
+    with_hidden = include_hidden and actor.role == UserRole.admin.value
+    query = (db.query(Application) if with_hidden else _visible_applications(db)).filter(Application.job_id == job.id)
     if stage:
         query = query.filter(Application.stage == stage)
     applications = query.order_by(Application.stage_updated_at.desc(), Application.id.desc()).all()
 
     now = datetime.now(timezone.utc)
     duplicates = _possible_duplicates(db, job.id)
+    hidden_count = 0
+    if actor.role == UserRole.admin.value:
+        hidden_count = db.query(Application).filter(Application.job_id == job.id, Application.is_hidden.is_(True)).count()
     return JobPipelineResponse(
         finalist_alert_days=_alert_days(),
+        hidden_count=hidden_count,
         job=_summaries(db, [job])[0],
         applications=[
             ApplicationCard(
@@ -159,6 +167,7 @@ def get_job_pipeline(db: Session, job_id: int, actor: User, stage: str | None = 
                 created_at=application.created_at,
                 waiting_client_too_long=_waiting_too_long(application, now),
                 possible_duplicate=application.id in duplicates,
+                is_hidden=application.is_hidden,
                 allowed_next_stages=stage_options(allowed_next_stages(application, actor.role)),
             )
             for application in applications

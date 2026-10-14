@@ -48,11 +48,14 @@ export interface ApplicationCard {
   waiting_client_too_long: boolean
   /** Another application of the same job has the same phone or e-mail (warning only). */
   possible_duplicate?: boolean
+  is_hidden?: boolean
   allowed_next_stages: StageOption[]
 }
 
 export interface JobPipelineResponse {
   finalist_alert_days: number
+  /** Admin only: applications of this job that were hidden. */
+  hidden_count?: number
   job: RecruiterJobSummary
   applications: ApplicationCard[]
 }

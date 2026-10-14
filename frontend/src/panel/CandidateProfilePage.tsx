@@ -64,7 +64,10 @@ export function CandidateProfilePage() {
         <div className="flex items-center gap-4">
           <span className="grid h-14 w-14 place-items-center rounded-full bg-gold-300 font-display text-lg font-bold text-ink-950">{initials(candidate.name)}</span>
           <div>
-            <h1 className="font-display text-2xl font-bold tracking-[-0.02em] text-ink-950">{candidate.name}</h1>
+            <h1 className="font-display text-2xl font-bold tracking-[-0.02em] text-ink-950">
+              {candidate.name}
+              {candidate.is_active === false ? <span className="ml-2 align-middle rounded-full bg-slate-100 px-2 py-0.5 text-xs font-semibold text-ink-600">Desativado</span> : null}
+            </h1>
             <p className="text-sm text-ink-600">{candidate.has_account ? 'Tem conta no site' : 'Sem conta no site'} · no banco desde {new Date(candidate.created_at).toLocaleDateString('pt-BR')}</p>
           </div>
         </div>

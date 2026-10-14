@@ -41,6 +41,7 @@ from app.services.access import (
     job_for,
     visible_job_ids,
 )
+from app.services.admin_service import candidate_is_active
 from app.services.identity_service import normalize_email, normalize_phone
 from app.services.panel_service import PAGE_SIZE, as_utc, job_counts, month_start_utc, now_utc
 from app.services.pipeline_service import record_initial_stage
@@ -133,6 +134,7 @@ def list_candidates(
                 applications=len(visible),
                 has_account=candidate.user_id is not None,
                 source=candidate.source,
+                is_active=candidate_is_active(candidate),
             )
         )
     page = max(page, 1)
@@ -167,6 +169,7 @@ def candidate_detail(db: Session, actor: User, candidate_id: int) -> CandidateDe
         created_by_name=creator.name if creator else None,
         authorization_recorded_at=candidate.authorization_recorded_at,
         created_at=candidate.created_at,
+        is_active=candidate_is_active(candidate),
         applications=[
             CandidateApplicationRow(
                 id=application.id,

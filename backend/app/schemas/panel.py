@@ -115,6 +115,8 @@ class CandidateRow(BaseModel):
     applications: int
     has_account: bool
     source: str | None
+    # Deactivated by the admin (reversible; not the LGPD erasure): login blocked, applications hidden.
+    is_active: bool = True
 
 
 class CandidatesListResponse(Page):
@@ -154,6 +156,7 @@ class CandidateDetail(BaseModel):
     created_by_name: str | None
     authorization_recorded_at: datetime | None
     created_at: datetime
+    is_active: bool = True
     applications: list[CandidateApplicationRow]
 
 

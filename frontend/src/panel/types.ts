@@ -121,6 +121,7 @@ export interface CandidateRow {
   applications: number
   has_account: boolean
   source: string | null
+  is_active?: boolean
 }
 
 export interface CandidatesListResponse extends PageInfo {
@@ -168,6 +169,7 @@ export interface CandidateDetail {
   created_by_name: string | null
   authorization_recorded_at: string | null
   created_at: string
+  is_active?: boolean
   applications: CandidateApplicationRow[]
 }
 
